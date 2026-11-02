@@ -60,6 +60,11 @@
   }
 }
 
+.traits {
+  display: flex;
+  gap: spacing("lg");
+}
+
 .mini-stats {
   margin: 0;
   display: grid;

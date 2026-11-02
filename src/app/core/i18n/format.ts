@@ -1,4 +1,5 @@
 import { Dict, Lang } from './i18n.types';
+import { PolisDef } from '../../game/data/poleis';
 
 /** Replaces `{key}` placeholders in a dictionary template. */
 export function interpolate(template: string, params: Record<string, string | number>): string {
@@ -22,4 +23,9 @@ export function formatRate(value: number, lang: Lang): string {
 /** Calendar year from the simulation's signed year (positive = BC). */
 export function formatYear(year: number, t: Dict): string {
   return year > 0 ? interpolate(t.yearBC, { y: year }) : interpolate(t.yearAD, { y: 1 - year });
+}
+
+/** Display name of a polis, including vassals founded on historical sites. */
+export function polisName(t: Dict, def: PolisDef): string {
+  return def.kind === 'site' ? t.siteNames[def.id] : t.polisNames[def.id];
 }

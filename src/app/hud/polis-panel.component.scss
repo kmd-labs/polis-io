@@ -30,6 +30,14 @@
     min-width: 0;
   }
 
+  &__traits {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+
   &__eyebrow {
     font-size: font-size("xxs");
     font-weight: font-weight("medium");
@@ -113,8 +121,33 @@
   gap: spacing("xs");
 }
 
+.holdings {
+  display: flex;
+  gap: spacing("md");
+  font-size: font-size("xxs");
+  color: color("text-dim");
+  cursor: default;
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  b {
+    font-family: var(--font-family-mono);
+    font-weight: font-weight("semibold");
+    color: color("text-main");
+  }
+}
+
 .action {
   position: relative;
+
+  &--wide {
+    grid-column: 1 / -1;
+  }
+
   display: flex;
   flex-direction: column;
   min-width: 0;

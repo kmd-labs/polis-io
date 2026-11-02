@@ -133,13 +133,18 @@ export class MapRenderer {
       [2000, mix(c['neutral-400'], c['neutral-300'], 0.5)],
       [2500, c['neutral-200']]
     ];
-    this.polisCss = this.sim.poleis.map(p => this.theme.getTokenColor(p.def.color, '#64748b'));
-    this.polisRgb = this.polisCss.map(parseColor);
+    this.resolvePolisColors();
     this.font = this.theme.getFontFamily();
     this.mono = getComputedStyle(document.documentElement).getPropertyValue('--font-family-mono').trim() || 'monospace';
     this.buildSeaLayers();
     this.baseView = null;
     this.paintedKey = '';
+  }
+
+  /** Vassals founded mid-game wear their overlord's colour token. */
+  private resolvePolisColors() {
+    this.polisCss = this.sim.poleis.map(p => this.theme.getTokenColor(p.def.color, '#64748b'));
+    this.polisRgb = this.polisCss.map(parseColor);
   }
 
   colorOf(idx: number): string {
@@ -148,6 +153,7 @@ export class MapRenderer {
 
   render(ctx: CanvasRenderingContext2D, width: number, height: number, cam: Camera, opt: RenderOptions, now: number) {
     const { cols, rows } = this.sim.world;
+    if (this.polisRgb.length !== this.sim.poleis.length) this.resolvePolisColors();
     this.paintRaster(opt);
 
     ctx.fillStyle = this.css['bg-deep'];
@@ -161,6 +167,7 @@ export class MapRenderer {
     this.drawGrid(ctx, cam, width, height);
     this.drawPlayerOutline(ctx, cam);
     this.drawClaims(ctx, cam);
+    this.drawBuildings(ctx, cam, width, height);
     this.drawEdgeFade(ctx, cam);
     this.drawLabels(ctx, cam, opt, width, height);
     this.drawCapitals(ctx, cam, opt, width, height);
@@ -267,7 +274,8 @@ export class MapRenderer {
     } else if (opt.view === 'political') {
       const me = sim.poleis[sim.player];
       const hostile = !!me && me.wars.has(o) && (x + y) % 6 === 0;
-      const light = hostile ? 0.15 : focus ? 0.32 : 0.52;
+      const vassal = sim.poleis[o].overlord >= 0;
+      const light = hostile ? 0.15 : focus ? 0.32 : vassal ? 0.66 : 0.52;
       const k = 0.62 + 0.38 * s;
       const m = mix(tint, this.rgb['neutral-0'], light);
       col = [m[0] * k, m[1] * k, m[2] * k];
@@ -461,6 +469,57 @@ export class MapRenderer {
     ctx.restore();
   }
 
+  /** Farms as little ploughed fields, ports as anchors. */
+  private drawBuildings(ctx: CanvasRenderingContext2D, cam: Camera, width: number, height: number) {
+    const sim = this.sim;
+    const { cols } = sim.world;
+    const s = Math.max(7, Math.min(18, cam.scale * 3.2));
+    const ink = this.css['text-bright'];
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const b of sim.buildings) {
+      if (sim.owner[b.cell] < 0) continue;
+      const x = cam.ox + ((b.cell % cols) + 0.5) * cam.scale;
+      const y = cam.oy + (Math.floor(b.cell / cols) + 0.5) * cam.scale;
+      if (x < -s || y < -s || x > width + s || y > height + s) continue;
+      const pop = Math.min(1, (sim.time - b.t) / 0.3);
+      const r = (s / 2) * (0.4 + 0.6 * pop);
+      ctx.lineWidth = Math.max(1, s / 10);
+      ctx.strokeStyle = ink;
+      if (b.kind === 'farm') {
+        ctx.fillStyle = this.css['warning-200'];
+        ctx.beginPath();
+        ctx.roundRect(x - r, y - r, r * 2, r * 2, r * 0.3);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = this.css['success-600'];
+        ctx.beginPath();
+        for (let k = -1; k <= 1; k++) {
+          ctx.moveTo(x - r * 0.55 + k * r * 0.5, y + r * 0.55);
+          ctx.lineTo(x + r * 0.05 + k * r * 0.5, y - r * 0.55);
+        }
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = this.css['neutral-0'];
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = this.css['info-700'];
+        ctx.beginPath();
+        ctx.arc(x, y - r * 0.5, r * 0.18, 0, Math.PI * 2);
+        ctx.moveTo(x, y - r * 0.32);
+        ctx.lineTo(x, y + r * 0.6);
+        ctx.moveTo(x - r * 0.35, y - r * 0.1);
+        ctx.lineTo(x + r * 0.35, y - r * 0.1);
+        ctx.moveTo(x - r * 0.55, y + r * 0.2);
+        ctx.quadraticCurveTo(x, y + r * 0.85, x + r * 0.55, y + r * 0.2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
   // ─── Labels & capitals ────────────────────────────────────────────────────
 
   /** Spaced small caps for seas, a peak glyph for mountains. */
@@ -514,7 +573,8 @@ export class MapRenderer {
       const sx = cam.ox + p.cx * cam.scale;
       const sy = cam.oy + p.cy * cam.scale;
       const focus = p.idx === opt.hover || p.idx === opt.selected;
-      this.drawTemple(ctx, sx, sy, size * (focus ? 1.15 : 1), this.colorOf(p.idx), p.idx === this.sim.player);
+      const scale = (focus ? 1.15 : 1) * (p.overlord >= 0 ? 0.75 : 1);
+      this.drawTemple(ctx, sx, sy, size * scale, this.colorOf(p.idx), p.idx === this.sim.player);
       placed.push({ x: sx - size / 2, y: sy - size / 2, w: size, h: size });
     }
 

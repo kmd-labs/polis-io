@@ -1,16 +1,30 @@
 import { Component, computed, inject } from '@angular/core';
-import { LucideAngularModule, Coins, MapIcon, Shield, Sprout, Swords, TrendingUp, Users, Pickaxe } from 'lucide-angular';
+import {
+  LucideAngularModule,
+  Anchor,
+  Building2,
+  Coins,
+  Crown,
+  MapIcon,
+  Pickaxe,
+  Shield,
+  Sprout,
+  Swords,
+  TrendingUp,
+  Users,
+  Wheat
+} from 'lucide-angular';
 import { ButtonComponent, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, formatRate, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
-import { POLEIS } from '../game/data/poleis';
+import { TraitPipsComponent } from './trait-pips.component';
 
 /** Bottom-dock panel: the player's polis figures and its domestic actions. */
 @Component({
   selector: 'app-polis-panel',
   standalone: true,
-  imports: [LucideAngularModule, ButtonComponent, TooltipDirective],
+  imports: [LucideAngularModule, ButtonComponent, TooltipDirective, TraitPipsComponent],
   templateUrl: './polis-panel.component.html',
   styleUrl: './polis-panel.component.scss'
 })
@@ -18,11 +32,17 @@ export class PolisPanelComponent {
   readonly i18n = inject(I18nService);
   readonly game = inject(GameService);
 
-  readonly icons = { Coins, MapIcon, Shield, Sprout, Swords, TrendingUp, Users, Pickaxe };
+  readonly icons = { Anchor, Building2, Coins, Crown, MapIcon, Pickaxe, Shield, Sprout, Swords, TrendingUp, Users, Wheat };
 
   readonly name = computed(() => {
     const me = this.game.me();
-    return me ? this.i18n.t().polisNames[POLEIS[me.idx].id] : '';
+    this.i18n.t();
+    return me ? this.game.name(me.idx) : '';
+  });
+
+  readonly developHint = computed(() => {
+    const me = this.game.me();
+    return me ? interpolate(this.i18n.t().developHint, { c: this.num(me.developCost) }) : '';
   });
 
   readonly settleLabel = computed(() => {

@@ -29,6 +29,10 @@
               <span class="card__region">{{ c.region }}</span>
             </span>
             <span class="card__blurb">{{ c.blurb }}</span>
+            <span class="card__traits">
+              <app-trait-pips kind="militarism" [label]="t.statMilitarism" [value]="c.militarism"></app-trait-pips>
+              <app-trait-pips kind="culture" [label]="t.statCulture" [value]="c.culture"></app-trait-pips>
+            </span>
             <span class="card__stats">
               <span [attr.title]="t.statPopulation">
                 <lucide-icon [img]="icons.Users" [size]="11"></lucide-icon>{{ c.people }}

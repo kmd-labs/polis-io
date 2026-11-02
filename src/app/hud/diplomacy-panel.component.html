@@ -21,7 +21,15 @@
       </app-button>
     </header>
 
+    @if (vassalOf()) {
+      <p class="panel__hint">{{ vassalOf() }}</p>
+    }
+
     @if (target.alive) {
+      <div class="traits">
+        <app-trait-pips kind="militarism" [label]="t.statMilitarism" [value]="target.militarism" [hint]="t.statMilitarismHint"></app-trait-pips>
+        <app-trait-pips kind="culture" [label]="t.statCulture" [value]="target.culture" [hint]="t.statCultureHint"></app-trait-pips>
+      </div>
       <dl class="mini-stats">
         <div [appTooltip]="t.statPopulationHint">
           <dt><lucide-icon [img]="icons.Users" [size]="12"></lucide-icon>{{ t.statPopulation }}</dt>
@@ -46,7 +54,7 @@
             <lucide-icon [img]="icons.Handshake" [size]="14"></lucide-icon>
             <span>{{ t.offerPeace }}</span>
           </app-button>
-        } @else {
+        } @else if (target.overlord !== game.player()) {
           <app-button
             variant="toggle"
             [hot]="true"

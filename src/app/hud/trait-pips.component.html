@@ -1,0 +1,8 @@
+<span class="trait" [class]="'trait trait--' + kind()" [appTooltip]="hint()" [attr.aria-label]="label() + ' ' + value() + '/5'">
+  <span class="trait__label">{{ label() }}</span>
+  <span class="trait__pips" aria-hidden="true">
+    @for (on of pips(); track $index) {
+      <span class="trait__pip" [class.trait__pip--on]="on"></span>
+    }
+  </span>
+</span>

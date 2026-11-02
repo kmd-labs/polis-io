@@ -16,13 +16,21 @@ an animated sea, and has three views: political, terrain relief and soil fertili
   (or found a colony across the sea when your coast is full). Lowlands are more fertile; armies march slower in mountains.
   Every claimed pixel raises carrying capacity and permanently boosts growth and income (*Prosperity*).
 - **Train hoplites**: arms a batch of workers for drachmae. Hoplites cost upkeep.
+- **Militarism & culture** (1–5, from each city's historical reputation): militarism slightly strengthens
+  armies and garrison in battle (+4% per point); culture raises income (+8% per point).
+- **Develop the polis**: spend drachmae on a farm (the land feeds 2,500 more people) or a port (+12% income).
+  One time in ten a small vassal polis is founded on a nearby historical site (Tegea, Delphi, Abdera…);
+  vassals wear their overlord's colour and join all of its wars and treaties.
+- **War letters**: when a rival declares war on you, the game pauses and a short letter arrives in the voice
+  of that city (Solon of Athens, Chilon of Sparta, Periander of Corinth…) — scornful if they think you weak.
 - **Declare war**: click another polis, then *Declare war*. Small armies march out on their own and
   seize enemy pixels one by one. When two hostile armies meet they disappear into a cartoon brawl cloud
   and only one walks out. Beating a capital's garrison annexes the whole polis.
 - **Win** by holding half of the Greek land or by being the last polis standing. You lose if your capital falls.
 
 The HUD shows total population, workers (able-bodied civilians) and warriors, plus treasury,
-territory share and prosperity. <kbd>Space</kbd> pauses; the wheel or a pinch zooms; dragging pans.
+territory share and prosperity. Population follows Archaic densities: a few thousand to ten thousand people
+per city at the start, 25–35 people/km² on settled lowland, and roughly 2–3 million across a fully settled Hellas. <kbd>Space</kbd> pauses; the wheel or a pinch zooms; dragging pans.
 
 ## Development
 

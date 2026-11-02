@@ -4,13 +4,13 @@ import { BadgeComponent, ButtonComponent, ThemeService, TooltipDirective } from 
 import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
-import { POLEIS } from '../game/data/poleis';
+import { TraitPipsComponent } from './trait-pips.component';
 
 /** Bottom-dock panel: the selected foreign polis (declare war / offer peace) or the list of ongoing wars. */
 @Component({
   selector: 'app-diplomacy-panel',
   standalone: true,
-  imports: [LucideAngularModule, BadgeComponent, ButtonComponent, TooltipDirective],
+  imports: [LucideAngularModule, BadgeComponent, ButtonComponent, TooltipDirective, TraitPipsComponent],
   templateUrl: './diplomacy-panel.component.html',
   styleUrl: './diplomacy-panel.component.scss'
 })
@@ -49,8 +49,14 @@ export class DiplomacyPanelComponent {
     return !!target && this.game.canOfferPeace(target.idx);
   });
 
+  readonly vassalOf = computed(() => {
+    const target = this.game.target();
+    return target && target.overlord >= 0 ? interpolate(this.i18n.t().vassalOf, { b: this.name(target.overlord) }) : '';
+  });
+
   name(idx: number): string {
-    return this.i18n.t().polisNames[POLEIS[idx].id];
+    this.i18n.t();
+    return this.game.name(idx);
   }
 
   num(value: number): string {

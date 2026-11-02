@@ -164,6 +164,12 @@
     color: color("text-desc");
   }
 
+  &__traits {
+    display: flex;
+    gap: spacing("lg");
+    margin-top: 2px;
+  }
+
   &__stats {
     display: flex;
     flex-wrap: wrap;

@@ -123,6 +123,15 @@
     </dl>
   </ng-template>
 
+  <ng-template #letterTpl>
+    @if (letterView(); as letter) {
+      <figure class="letter" [style.--letter-color]="'var(--color-' + letter.color + ')'">
+        <blockquote class="letter__text">{{ letter.text }}</blockquote>
+        <figcaption class="letter__sender">— {{ letter.sender }}</figcaption>
+      </figure>
+    }
+  </ng-template>
+
   <app-popup [closeAriaLabel]="t.close"></app-popup>
   <app-tooltip></app-tooltip>
 </main>

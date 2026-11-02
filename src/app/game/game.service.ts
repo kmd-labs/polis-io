@@ -1,8 +1,9 @@
 import { Injectable, NgZone, computed, inject, signal } from '@angular/core';
 import { SplashService } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
+import { polisName } from '../core/i18n/format';
 import { loadMapData } from './map-loader';
-import { GameEvent, GameStatus, Simulation } from './simulation';
+import { DevelopmentOutcome, GameEvent, GameStatus, Simulation } from './simulation';
 import { World } from './world';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
@@ -27,7 +28,22 @@ export interface PolisView {
   trainBatch: number;
   trainCost: number;
   canTrain: boolean;
+  militarism: number;
+  culture: number;
+  farms: number;
+  ports: number;
+  vassals: number[];
+  overlord: number;
+  developCost: number;
+  canDevelop: boolean;
   wars: number[];
+}
+
+/** A declaration of war against the player, delivered as a letter. */
+export interface WarLetterView {
+  from: number;
+  /** Whether the sender thinks the player is weak. */
+  tone: 'taunt' | 'challenge';
 }
 
 export type GameSpeed = 1 | 2 | 4;
@@ -60,6 +76,8 @@ export class GameService {
   readonly year = signal(0);
   readonly poleis = signal<PolisView[]>([]);
   readonly events = signal<GameEvent[]>([]);
+  /** Pending war letter; the game is paused while it is open. */
+  readonly letter = signal<WarLetterView | null>(null);
 
   readonly me = computed(() => this.poleis()[this.player()] ?? null);
   readonly target = computed(() => {
@@ -69,6 +87,8 @@ export class GameService {
 
   private lastFrame = 0;
   private lastUi = 0;
+  private lastEventId = 0;
+  private pausedBeforeLetter = false;
 
   constructor() {
     void this.load();
@@ -124,6 +144,24 @@ export class GameService {
     this.publish();
   }
 
+  develop(): DevelopmentOutcome | null {
+    const outcome = this.sim.develop(this.sim.player);
+    this.publish();
+    return outcome;
+  }
+
+  /** Localized name of any polis, including vassals founded during the game. */
+  name(idx: number): string {
+    const p = this.sim?.poleis[idx];
+    return p ? polisName(this.i18n.t(), p.def) : '';
+  }
+
+  closeLetter() {
+    if (!this.letter()) return;
+    this.letter.set(null);
+    this.paused.set(this.pausedBeforeLetter);
+  }
+
   declareWar(target: number) {
     this.sim.declareWar(this.sim.player, target);
     this.publish();
@@ -149,6 +187,8 @@ export class GameService {
 
   restart() {
     this.sim.reset();
+    this.letter.set(null);
+    this.lastEventId = 0;
     this.selected.set(-1);
     this.preview.set(-1);
     this.paused.set(false);
@@ -195,9 +235,35 @@ export class GameService {
         trainBatch: sim.trainBatch(p),
         trainCost: sim.trainCost(p),
         canTrain: sim.canTrain(p),
+        militarism: p.militarism,
+        culture: p.culture,
+        farms: p.farms,
+        ports: p.ports,
+        vassals: sim.vassalsOf(p.idx),
+        overlord: p.overlord,
+        developCost: sim.developCost(p),
+        canDevelop: sim.canDevelop(p),
         wars: [...p.wars]
       }))
     );
     if (this.events().at(-1)?.id !== sim.events.at(-1)?.id) this.events.set([...sim.events]);
+    this.deliverLetters();
+  }
+
+  /** A rival declaring war on the player (or a vassal) sends a letter and stops the clock. */
+  private deliverLetters() {
+    const sim = this.sim;
+    const fresh = sim.events.filter(e => e.id > this.lastEventId);
+    if (!fresh.length) return;
+    this.lastEventId = fresh[fresh.length - 1].id;
+    if (sim.status !== 'playing' || this.letter()) return;
+    const mine = sim.bloc(sim.player);
+    const war = fresh.find(e => e.kind === 'war' && mine.includes(e.b) && !mine.includes(e.a));
+    if (!war) return;
+    const me = sim.poleis[sim.player];
+    const ratio = sim.warriors(sim.poleis[war.a]) / Math.max(1, sim.warriors(me));
+    this.pausedBeforeLetter = this.paused();
+    this.paused.set(true);
+    this.letter.set({ from: war.a, tone: ratio > 1.4 || me.drachmae < 100 ? 'taunt' : 'challenge' });
   }
 }

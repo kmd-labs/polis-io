@@ -1,10 +1,19 @@
-import { PolisId } from '../../game/data/poleis';
+import { PolisId, SiteId } from '../../game/data/poleis';
 
 export type Lang = 'en' | 'pl';
 
 export interface PolisInfo {
   region: string;
   blurb: string;
+}
+
+/** A declaration of war in the voice of a polis. */
+export interface WarLetter {
+  sender: string;
+  /** Used when the sender thinks you are weak. */
+  taunt: string;
+  /** Used against a worthy rival. */
+  challenge: string;
 }
 
 export interface GlossaryEntry {
@@ -77,6 +86,17 @@ export interface Dict {
   settleNoLand: string;
   train: string;
   trainHint: string;
+  develop: string;
+  developHint: string;
+  statMilitarism: string;
+  statCulture: string;
+  statMilitarismHint: string;
+  statCultureHint: string;
+  farms: string;
+  ports: string;
+  vassals: string;
+  buildingsHint: string;
+  vassalOf: string;
 
   // Diplomacy panel
   warsTitle: string;
@@ -100,6 +120,16 @@ export interface Dict {
   evSettle: string;
   evColony: string;
   evFall: string;
+  evFarm: string;
+  evPort: string;
+  evVassal: string;
+
+  // War letters
+  letterTitle: string;
+  letterDeclares: string;
+  letterAction: string;
+  letterGeneric: WarLetter;
+  letters: Record<PolisId, WarLetter>;
 
   // End of game
   victoryTitle: string;
@@ -122,4 +152,5 @@ export interface Dict {
 
   polisNames: Record<PolisId, string>;
   polisInfo: Record<PolisId, PolisInfo>;
+  siteNames: Record<SiteId, string>;
 }

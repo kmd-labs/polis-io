@@ -33,7 +33,6 @@ import { formatYear, interpolate } from './core/i18n/format';
 import { GameService } from './game/game.service';
 import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
-import { POLEIS } from './game/data/poleis';
 import { PolisPanelComponent } from './hud/polis-panel.component';
 import { DiplomacyPanelComponent } from './hud/diplomacy-panel.component';
 import { ChronicleComponent } from './hud/chronicle.component';
@@ -71,6 +70,22 @@ export class AppComponent {
 
   @ViewChild(MapCanvasComponent) private map?: MapCanvasComponent;
   @ViewChild('rulesTpl', { static: true }) private rulesTpl!: TemplateRef<unknown>;
+  @ViewChild('letterTpl', { static: true }) private letterTpl!: TemplateRef<unknown>;
+
+  /** Sender and text of the open war letter, localized. */
+  readonly letterView = computed(() => {
+    const letter = this.game.letter();
+    if (!letter) return null;
+    const t = this.i18n.t();
+    const def = this.game.sim.poleis[letter.from].def;
+    const name = this.game.name(letter.from);
+    const voice = def.kind === 'major' ? t.letters[def.id] : t.letterGeneric;
+    return {
+      sender: interpolate(voice.sender, { name }),
+      text: letter.tone === 'taunt' ? voice.taunt : voice.challenge,
+      color: def.color
+    };
+  });
 
   readonly icons = { Globe, BookOpen, Play, Pause, FastForward, Maximize, RotateCcw };
 
@@ -117,6 +132,12 @@ export class AppComponent {
       if (this.splash.revealed() && this.game.ready()) untracked(() => this.splash.finish());
     });
 
+    // A declaration of war arrives as a letter; the clock stays stopped until it is read.
+    effect(() => {
+      const letter = this.game.letter();
+      if (letter) untracked(() => this.openLetter(letter.from));
+    });
+
     // Announce the end of the game once.
     effect(() => {
       const status = this.game.status();
@@ -157,10 +178,23 @@ export class AppComponent {
     });
   }
 
+  private openLetter(from: number) {
+    const name = () => this.game.name(from);
+    this.popup.open({
+      id: 'war-letter',
+      title: computed(() => interpolate(this.i18n.t().letterTitle, { name: name() })),
+      subtitle: computed(() => interpolate(this.i18n.t().letterDeclares, { name: name() })),
+      template: this.letterTpl,
+      size: 'sm',
+      onClose: () => this.game.closeLetter(),
+      actions: [{ label: computed(() => this.i18n.t().letterAction), variant: 'play', hot: true }]
+    });
+  }
+
   private openEndPopup(status: 'won' | 'lost') {
     const sim = this.game.sim;
     const me = sim.poleis[sim.player];
-    const name = (idx: number) => (idx >= 0 ? this.i18n.t().polisNames[POLEIS[idx].id] : '');
+    const name = (idx: number) => (idx >= 0 ? this.game.name(idx) : '');
     const won = status === 'won';
     this.popup.open({
       id: 'game-over',

@@ -4,7 +4,6 @@ import { BreakpointService } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { formatYear, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
-import { POLEIS } from '../game/data/poleis';
 import { GameEventKind } from '../game/simulation';
 
 const TEMPLATE_KEY = {
@@ -13,7 +12,10 @@ const TEMPLATE_KEY = {
   peaceRefused: 'evPeaceRefused',
   settle: 'evSettle',
   colony: 'evColony',
-  fall: 'evFall'
+  fall: 'evFall',
+  farm: 'evFarm',
+  port: 'evPort',
+  vassal: 'evVassal'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Floating feed of the latest wars, treaties, colonies and conquests (top-right, under the view switcher). */
@@ -34,12 +36,12 @@ export class ChronicleComponent {
   readonly entries = computed(() => {
     const t = this.i18n.t();
     const player = this.game.player();
-    const name = (idx: number) => (idx >= 0 ? t.polisNames[POLEIS[idx].id] : '');
+    const name = (idx: number) => (idx >= 0 ? this.game.name(idx) : '');
     const limit = this.bp.mobile() ? 2 : 5;
     return this.game
       .events()
-      // Other poleis' settling and colonies are routine; only the player's own expeditions are news.
-      .filter(e => (e.kind !== 'settle' && e.kind !== 'colony') || e.a === player)
+      // Other poleis' settling and building are routine; only the player's own projects are news.
+      .filter(e => !['settle', 'colony', 'farm', 'port'].includes(e.kind) || e.a === player)
       .slice(-limit)
       .reverse()
       .map(e => ({

@@ -5,6 +5,7 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { POLEIS } from '../game/data/poleis';
+import { TraitPipsComponent } from './trait-pips.component';
 
 /**
  * Opening screen: a frosted list of the eighteen poleis beside the live map. Hovering a card
@@ -13,7 +14,7 @@ import { POLEIS } from '../game/data/poleis';
 @Component({
   selector: 'app-start-screen',
   standalone: true,
-  imports: [LucideAngularModule, ButtonComponent],
+  imports: [LucideAngularModule, ButtonComponent, TraitPipsComponent],
   templateUrl: './start-screen.component.html',
   styleUrl: './start-screen.component.scss'
 })
@@ -32,6 +33,8 @@ export class StartScreenComponent {
       return {
         idx,
         color: def.color,
+        militarism: def.militarism,
+        culture: def.culture,
         name: t.polisNames[def.id],
         region: t.polisInfo[def.id].region,
         blurb: t.polisInfo[def.id].blurb,

@@ -232,6 +232,30 @@
   }
 }
 
+.letter {
+  margin: 0;
+  padding: spacing("lg") spacing("xl");
+  border-left: 3px solid var(--letter-color);
+  border-radius: radius("sm");
+  background: color("warning-50");
+
+  &__text {
+    margin: 0;
+    font-size: font-size("md");
+    font-style: italic;
+    line-height: 1.55;
+    color: color("text-bright");
+  }
+
+  &__sender {
+    margin-top: spacing("sm");
+    font-size: font-size("xs");
+    font-weight: font-weight("semibold");
+    color: color("text-dim");
+    text-align: right;
+  }
+}
+
 .rules {
   margin: 0;
   display: grid;

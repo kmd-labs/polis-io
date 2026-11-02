@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { ThemeService, TooltipService } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
-import { formatNumber, interpolate } from '../core/i18n/format';
+import { formatNumber, interpolate, polisName } from '../core/i18n/format';
 import { GameService } from './game.service';
 import { Camera, MapLabel, MapRenderer, MapView } from './map-renderer';
 import { FOREIGN, WILD } from './simulation';
@@ -203,7 +203,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
           view: this.view(),
           hover: this.hover >= 0 ? this.hover : preview,
           selected: this.game.selected(),
-          names: this.game.sim.poleis.map(p => t.polisNames[p.def.id]),
+          names: this.game.sim.poleis.map(p => polisName(t, p.def)),
           labels
         },
         now
@@ -337,9 +337,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     if (owner >= 0) {
       const p = this.game.sim.poleis[owner];
       text = interpolate(t.hoverPolis, {
-        name: t.polisNames[p.def.id],
+        name: polisName(t, p.def),
         pop: formatNumber(this.game.sim.totalPopulation(p), lang)
       });
+      if (p.overlord >= 0) text += ` · ${interpolate(t.vassalOf, { b: this.game.name(p.overlord) })}`;
       text += ` · ${altitude}`;
     } else if (owner === WILD) {
       text = `${t.hoverWild} · ${altitude}`;

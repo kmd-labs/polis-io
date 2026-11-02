@@ -41,6 +41,14 @@ export const EN: Dict = {
       desc: 'Sends 10% of your workers away for good. They slowly claim free land next to your borders — or found a colony across the sea once your coast is full. More land raises your carrying capacity, and every new pixel permanently speeds up population growth and income.'
     },
     {
+      term: 'Militarism & culture',
+      desc: 'Every polis has a character rated 1–5. Militarism slightly strengthens its armies and garrison in battle (+4% per point); culture raises its income (+8% per point).'
+    },
+    {
+      term: 'Developing the polis',
+      desc: 'Spend drachmae on development. Usually you get a farm (the land feeds 2,500 more people) or a port (more trade income). In one case out of ten, a small new polis is founded on a nearby historical site — your vassal, which fights in all your wars.'
+    },
+    {
       term: 'Workers',
       desc: 'Civilians fit for physical labour. They earn drachmae, become settlers and are armed as hoplites.'
     },
@@ -101,6 +109,18 @@ export const EN: Dict = {
   settleNoLand: 'No wilderness left',
   train: 'Train hoplites',
   trainHint: 'Arm {n} workers as hoplites for {c} drachmae.',
+  develop: 'Develop the polis',
+  developHint:
+    'Spend {c} drachmae: usually a farm (+2,500 people the land can feed) or a port (+12% income); one time in ten, a small vassal polis that fights at your side.',
+  statMilitarism: 'Militarism',
+  statCulture: 'Culture',
+  statMilitarismHint: 'Slightly strengthens armies and garrison in battle (+4% per point).',
+  statCultureHint: 'Raises income from crafts, trade and festivals (+8% per point).',
+  farms: 'Farms',
+  ports: 'Ports',
+  vassals: 'Vassals',
+  buildingsHint: 'Farms, ports and vassal poleis created by development.',
+  vassalOf: 'Vassal of {b}',
 
   // Diplomacy panel
   warsTitle: 'Wars',
@@ -124,6 +144,111 @@ export const EN: Dict = {
   evSettle: 'Settlers of {a} set out into the wilderness',
   evColony: '{a} founded a colony across the sea',
   evFall: '{a} fell to {b}',
+  evFarm: '{a} laid out new farms',
+  evPort: '{a} built a harbour',
+  evVassal: '{a} founded {b}, a vassal polis',
+
+  // War letters
+  letterTitle: 'A letter from {name}',
+  letterDeclares: '{name} declares war on you.',
+  letterAction: 'To arms!',
+  letterGeneric: {
+    sender: 'The council of {name}',
+    taunt: 'Your storehouses are empty and your walls unmanned. We have come to take what you cannot hold.',
+    challenge: 'We were your children; now we are your equals. Let the spear decide which of us the gods favour.'
+  },
+  letters: {
+    athens: {
+      sender: 'Solon, archon of the Athenians',
+      taunt: 'Solon says you have neither silver nor soldiers. Good. Our new laws need new fields.',
+      challenge: 'Solon praises your city, but Attica is too narrow for our children. May the gods judge between us.'
+    },
+    sparta: {
+      sender: 'Chilon, ephor of the Lacedaemonians',
+      taunt: 'Few words: you are weak. We are coming.',
+      challenge: 'If.'
+    },
+    corinth: {
+      sender: 'Periander, tyrant of Corinth',
+      taunt: 'Periander walked through a wheat field and cut down the tallest ears. Yours did not even reach his knee.',
+      challenge: 'Two seas pay toll to Corinth. Your city will pay too — in silver or in blood.'
+    },
+    thebes: {
+      sender: 'The Boeotarchs of Thebes',
+      taunt: 'Cadmus sowed dragon teeth and warriors sprang up. In your fields nothing grows but excuses.',
+      challenge: 'The plain of Boeotia breeds strong men. Come and meet them.'
+    },
+    argos: {
+      sender: 'The heirs of Pheidon, kings of Argos',
+      taunt: 'Pheidon gave Hellas its weights and measures. We have weighed your army and found it wanting.',
+      challenge: 'Argos is older than your gods. Your walls are younger than our olive trees.'
+    },
+    chalkis: {
+      sender: 'The Hippobotae of Chalcis',
+      taunt: 'Our bronze is sharper than your wit and more plentiful than your hoplites.',
+      challenge: 'Chalcis has founded cities from Sicily to Thrace. Yours will be the next we rebuild.'
+    },
+    elis: {
+      sender: 'The Hellanodikai of Elis',
+      taunt: 'Even the sacred truce cannot protect a city with empty hands. Prepare to lose.',
+      challenge: 'Olympia teaches that the strongest wins the olive crown. Let us contest it.'
+    },
+    larisa: {
+      sender: 'The Aleuadae of Larissa',
+      taunt: 'Our horses have seen your army. They were not impressed.',
+      challenge: 'The Thessalian cavalry has not had a worthy foe in years. Ride out and meet it.'
+    },
+    korkyra: {
+      sender: 'The admirals of Corcyra',
+      taunt: 'Your harbour is quiet and your treasury quieter. Our triremes will fix both.',
+      challenge: 'We defied Corinth herself. We do not fear you.'
+    },
+    ambracia: {
+      sender: 'Gorgus, tyrant of Ambracia',
+      taunt: 'Even the wild Epirotes keep more spears than you. We will take your land as a gift.',
+      challenge: 'The son of Cypselus does not ask twice. Your fields, or your sons.'
+    },
+    potidaea: {
+      sender: 'The magistrates of Potidaea',
+      taunt: 'Macedon pays us for timber; you will pay us for peace — later.',
+      challenge: 'Our isthmus is narrow, but our resolve is not.'
+    },
+    thasos: {
+      sender: 'The council of Thasos',
+      taunt: 'Archilochus threw away his shield and lived to mock it. You have no shields to throw.',
+      challenge: 'Our gold mines buy many spears. Count yours carefully.'
+    },
+    mytilene: {
+      sender: 'Pittacus of Mytilene',
+      taunt: 'Pittacus says: know your opportunity. Yours has passed; ours has come.',
+      challenge: 'Sappho sings of love, Alcaeus of war. Today the lyre plays for Alcaeus.'
+    },
+    chios: {
+      sender: 'The Council of the Chians',
+      taunt: 'Homer was born on Chios; he will sing of how easily you fell.',
+      challenge: 'Our wine is the best in Hellas. We will drink it in your agora.'
+    },
+    samos: {
+      sender: 'The Geomoroi of Samos',
+      taunt: 'Hera favours the bold, and you are neither bold nor rich.',
+      challenge: 'Our engineers dig through mountains. Your walls will not trouble them.'
+    },
+    naxos: {
+      sender: 'The nobles of Naxos',
+      taunt: 'We carve lions of marble for Delos. For you a single pebble will do.',
+      challenge: 'Dionysus loves Naxos. Let us see whom Ares loves.'
+    },
+    knossos: {
+      sender: 'The Kosmoi of Knossos',
+      taunt: 'The Minotaur would find you a poor meal. So do we.',
+      challenge: 'Minos once ruled these seas. Knossos means to again.'
+    },
+    lindos: {
+      sender: 'Cleobulus, tyrant of Lindos',
+      taunt: 'Cleobulus teaches: measure is best. Your army is below every measure.',
+      challenge: 'Cleobulus teaches: measure is best. We have measured you and found you a worthy enemy.'
+    }
+  },
 
   // End of game
   victoryTitle: 'Hegemony of Hellas',
@@ -184,5 +309,18 @@ export const EN: Dict = {
     naxos: { region: 'Cyclades', blurb: 'Largest of the Cyclades, carving marble lions for the gods of Delos.' },
     knossos: { region: 'Crete', blurb: 'Heir to the Minoan palaces among the hundred cities of Crete.' },
     lindos: { region: 'Rhodes', blurb: 'A merchant city of Rhodes beneath the acropolis of Athena Lindia.' }
+  },
+
+  siteNames: {
+    tegea: 'Tegea', mantineia: 'Mantinea', sikyon: 'Sicyon', epidauros: 'Epidaurus', troizen: 'Troezen',
+    megara: 'Megara', plataea: 'Plataea', orchomenos: 'Orchomenus', delphi: 'Delphi', amphissa: 'Amphissa',
+    naupaktos: 'Naupactus', kalydon: 'Calydon', pylos: 'Pylos', methone: 'Methone', gytheion: 'Gytheio',
+    pharsalos: 'Pharsalus', pherai: 'Pherae', dion: 'Dion', olynthos: 'Olynthus', mende: 'Mende',
+    stageira: 'Stagira', abdera: 'Abdera', maroneia: 'Maroneia', amphipolis: 'Amphipolis', kassope: 'Cassope',
+    dodona: 'Dodona', thermon: 'Thermon', leukas: 'Leucas', ithaca: 'Ithaca', zakynthos: 'Zacynthus',
+    kythera: 'Cythera', melos: 'Melos', paros: 'Paros', andros: 'Andros', tenos: 'Tenos', karystos: 'Carystus',
+    eretria: 'Eretria', histiaia: 'Histiaea', lamia: 'Lamia', hermione: 'Hermione', phleious: 'Phlius',
+    gortyn: 'Gortyn', kydonia: 'Cydonia', lyttos: 'Lyttus', ialysos: 'Ialysos', kos: 'Kos', methymna: 'Methymna',
+    myrina: 'Myrina', samothrace: 'Samothrace', skiathos: 'Sciathus'
   }
 };
