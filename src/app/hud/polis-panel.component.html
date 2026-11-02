@@ -1,0 +1,92 @@
+@let t = i18n.t();
+@let me = game.me();
+
+<section class="panel glass-panel" [attr.aria-label]="me ? t.yourPolis : t.chooseTitle">
+  @if (game.status() === 'choosing') {
+    <header class="panel__head">
+      <lucide-icon class="panel__icon" [img]="icons.Landmark" [size]="16"></lucide-icon>
+      <h2 class="panel__title">{{ t.chooseTitle }}</h2>
+    </header>
+    <p class="panel__hint">{{ t.chooseHint }}</p>
+    <app-dropdown
+      variant="default"
+      direction="up"
+      menuMinWidth="200px"
+      [icon]="icons.Landmark"
+      [label]="t.choosePick"
+      [showCheck]="false"
+      [options]="polisOptions()"
+      [ariaLabel]="t.choosePick"
+      (valueChange)="game.choose($event)">
+    </app-dropdown>
+  } @else if (me) {
+    <header class="panel__head">
+      <span class="swatch" [style.background]="'var(--color-' + me.color + ')'"></span>
+      <div class="panel__titles">
+        <span class="panel__eyebrow">{{ t.yourPolis }}</span>
+        <h2 class="panel__title">{{ name() }}</h2>
+      </div>
+    </header>
+
+    <dl class="stats">
+      <div class="stat stat--major" [appTooltip]="t.statPopulationHint">
+        <dt><lucide-icon [img]="icons.Users" [size]="12"></lucide-icon>{{ t.statPopulation }}</dt>
+        <dd>{{ num(me.total) }}</dd>
+      </div>
+      <div class="stat stat--major" [appTooltip]="t.statWorkersHint">
+        <dt><lucide-icon [img]="icons.Pickaxe" [size]="12"></lucide-icon>{{ t.statWorkers }}</dt>
+        <dd>{{ num(me.workers) }}</dd>
+      </div>
+      <div class="stat stat--major" [appTooltip]="t.statWarriorsHint">
+        <dt><lucide-icon [img]="icons.Swords" [size]="12"></lucide-icon>{{ t.statWarriors }}</dt>
+        <dd>{{ num(me.warriors) }}</dd>
+      </div>
+      <div class="stat" [appTooltip]="t.statDrachmaeHint">
+        <dt><lucide-icon [img]="icons.Coins" [size]="12"></lucide-icon>{{ t.statDrachmae }}</dt>
+        <dd>
+          {{ num(me.drachmae) }}
+          <span class="stat__rate" [class.stat__rate--neg]="me.income < 0">{{ rate(me.income) }}</span>
+        </dd>
+      </div>
+      <div class="stat" [appTooltip]="t.statTerritoryHint">
+        <dt><lucide-icon [img]="icons.MapIcon" [size]="12"></lucide-icon>{{ t.statTerritory }}</dt>
+        <dd>{{ percent(me.share) }}</dd>
+      </div>
+      <div class="stat" [appTooltip]="t.statGrowthHint">
+        <dt><lucide-icon [img]="icons.TrendingUp" [size]="12"></lucide-icon>{{ t.statGrowth }}</dt>
+        <dd>{{ multiplier(me.prosperity) }}</dd>
+      </div>
+    </dl>
+
+    <div class="actions">
+      <div class="action">
+        <app-button
+          variant="preset"
+          extraClass="action__btn"
+          [active]="me.expedition !== null"
+          [disabled]="!me.canSettle"
+          [titleText]="settleHint()"
+          (btnClick)="game.settle()">
+          <lucide-icon [img]="icons.Sprout" [size]="14"></lucide-icon>
+          <span>{{ settleLabel() }}</span>
+        </app-button>
+        @if (me.expedition !== null) {
+          <span class="progress" aria-hidden="true">
+            <span class="progress__bar" [style.width.%]="me.expedition * 100"></span>
+          </span>
+        }
+      </div>
+      <div class="action">
+        <app-button
+          extraClass="action__btn"
+          [disabled]="!me.canTrain"
+          [titleText]="trainHint()"
+          (btnClick)="game.train()">
+          <lucide-icon [img]="icons.Shield" [size]="14"></lucide-icon>
+          <span>{{ t.train }}</span>
+          <span class="action__cost">−{{ num(me.trainCost) }}</span>
+        </app-button>
+      </div>
+    </div>
+  }
+</section>

@@ -27,7 +27,7 @@
     <text x="0" y="152" font-family="DejaVu-Sans, Inter, -apple-system, sans-serif" font-size="14" font-weight="bold" letter-spacing="3" fill="#D37400">INTERACTIVE DATA VISUALIZATION · OBSERVATORY</text>
 
     <!-- App Title (Dynamic from repository) -->
-    <text x="0" y="218" font-family="DejaVu-Sans, Inter, -apple-system, sans-serif" font-size="52" font-weight="bold" fill="#0f172a">Polis Io</text>
+    <text x="0" y="218" font-family="DejaVu-Sans, Inter, -apple-system, sans-serif" font-size="52" font-weight="bold" fill="#0f172a">Polis</text>
 
     <!-- App Description -->
     <text x="0" y="274" font-family="DejaVu-Sans, Inter, -apple-system, sans-serif" font-size="22" fill="#475569">Zero-friction 3D WebGL simulation and planetary telemetry.</text>

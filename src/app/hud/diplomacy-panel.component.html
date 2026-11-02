@@ -1,0 +1,85 @@
+@let t = i18n.t();
+@let target = game.target();
+@let me = game.me();
+
+<section class="panel glass-panel">
+  @if (target) {
+    <header class="panel__head">
+      <span class="swatch" [style.background]="'var(--color-' + target.color + ')'"></span>
+      <h2 class="panel__title">{{ name(target.idx) }}</h2>
+      @if (statusBadge(); as badge) {
+        <app-badge [text]="badge.text" [backgroundColor]="badge.color"></app-badge>
+      }
+      <app-button
+        variant="ghost"
+        size="sm"
+        extraClass="panel__close"
+        [iconOnly]="true"
+        [ariaLabel]="t.close"
+        (btnClick)="game.select(-1)">
+        <lucide-icon [img]="icons.X" [size]="14"></lucide-icon>
+      </app-button>
+    </header>
+
+    @if (target.alive) {
+      <dl class="mini-stats">
+        <div [appTooltip]="t.statPopulationHint">
+          <dt><lucide-icon [img]="icons.Users" [size]="12"></lucide-icon>{{ t.statPopulation }}</dt>
+          <dd>{{ num(target.total) }}</dd>
+        </div>
+        <div [appTooltip]="t.statWarriorsHint">
+          <dt><lucide-icon [img]="icons.Swords" [size]="12"></lucide-icon>{{ t.statWarriors }}</dt>
+          <dd>{{ num(target.warriors) }}</dd>
+        </div>
+        <div [appTooltip]="t.statTerritoryHint">
+          <dt><lucide-icon [img]="icons.MapIcon" [size]="12"></lucide-icon>{{ t.statTerritory }}</dt>
+          <dd>{{ percent(target.share) }}</dd>
+        </div>
+      </dl>
+
+      @if (game.status() === 'playing') {
+        @if (atWar()) {
+          <app-button
+            [disabled]="!peaceReady()"
+            [titleText]="peaceReady() ? t.offerPeaceHint : t.peaceCooldown"
+            (btnClick)="game.offerPeace(target.idx)">
+            <lucide-icon [img]="icons.Handshake" [size]="14"></lucide-icon>
+            <span>{{ t.offerPeace }}</span>
+          </app-button>
+        } @else {
+          <app-button
+            variant="toggle"
+            [hot]="true"
+            [active]="true"
+            [titleText]="t.declareWarHint"
+            (btnClick)="game.declareWar(target.idx)">
+            <lucide-icon [img]="icons.Swords" [size]="14"></lucide-icon>
+            <span>{{ t.declareWar }}</span>
+          </app-button>
+        }
+      }
+    } @else {
+      <p class="panel__hint">{{ fallenTo() }}</p>
+    }
+  } @else {
+    <header class="panel__head">
+      <lucide-icon class="panel__icon" [img]="icons.Swords" [size]="15"></lucide-icon>
+      <h2 class="panel__title">{{ t.warsTitle }}</h2>
+    </header>
+    @if (me && me.wars.length) {
+      <ul class="wars">
+        @for (enemy of me.wars; track enemy) {
+          <li>
+            <button type="button" class="war-chip" (click)="game.select(enemy)">
+              <span class="swatch swatch--sm" [style.background]="'var(--color-' + game.poleis()[enemy].color + ')'"></span>
+              {{ name(enemy) }}
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="panel__hint">{{ t.noWars }}</p>
+    }
+    <p class="panel__hint panel__hint--dim">{{ t.targetHint }}</p>
+  }
+</section>

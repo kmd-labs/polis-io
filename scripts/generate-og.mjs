@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '..');
 
-const appTitle = 'Polis Io';
+const appTitle = 'Polis';
 const appSlug = 'polis-io';
 
 let logoSvg = '';

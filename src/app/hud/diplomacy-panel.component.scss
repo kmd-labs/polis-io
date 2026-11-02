@@ -1,0 +1,124 @@
+@use "variables" as *;
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: spacing("sm");
+  padding: spacing("md") spacing("lg");
+  height: 100%;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: spacing("xs");
+    width: 100%;
+  }
+
+  &__icon {
+    color: color("danger");
+  }
+
+  &__title {
+    margin: 0;
+    font-size: font-size("md");
+    font-weight: font-weight("semibold");
+    color: color("text-bright");
+    white-space: nowrap;
+  }
+
+  ::ng-deep .panel__close {
+    margin-left: auto;
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: font-size("xs");
+    color: color("text-desc");
+    max-width: 30ch;
+
+    &--dim {
+      color: color("text-dim");
+    }
+  }
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: radius("xs");
+  flex-shrink: 0;
+
+  &--sm {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+.mini-stats {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: spacing("lg");
+
+  dt {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: font-size("xxs");
+    color: color("text-dim");
+  }
+
+  dd {
+    margin: 0;
+    font-family: var(--font-family-mono);
+    font-size: font-size("sm");
+    font-weight: font-weight("medium");
+    color: color("text-main");
+  }
+}
+
+.wars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: spacing("xxs");
+}
+
+.war-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: radius("pill");
+  border: 1px solid color("btn-active-red-border");
+  background: color("danger-soft");
+  font-size: font-size("xs");
+  font-weight: font-weight("medium");
+  color: color("text-bright");
+  cursor: pointer;
+  transition: background transition("fast");
+
+  &:hover {
+    background: color("btn-active-red");
+  }
+}
+
+@include respond-to("mobile") {
+  .panel {
+    padding: spacing("sm") spacing("md");
+    gap: spacing("xs");
+  }
+
+  .panel__hint--dim {
+    display: none;
+  }
+}

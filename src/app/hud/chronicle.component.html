@@ -1,0 +1,16 @@
+@if (entries().length) {
+  <section class="chronicle glass-panel" [attr.aria-label]="i18n.t().chronicle" aria-live="polite">
+    <header class="chronicle__head">
+      <lucide-icon [img]="scrollIcon" [size]="13"></lucide-icon>
+      <span>{{ i18n.t().chronicle }}</span>
+    </header>
+    <ol class="chronicle__list">
+      @for (e of entries(); track e.id) {
+        <li class="entry" [class.entry--mine]="e.mine" [class.entry--hostile]="e.hostile">
+          <span class="entry__year">{{ e.year }}</span>
+          <span class="entry__text">{{ e.text }}</span>
+        </li>
+      }
+    </ol>
+  </section>
+}

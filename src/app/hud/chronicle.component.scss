@@ -1,0 +1,71 @@
+@use "variables" as *;
+
+:host {
+  display: block;
+}
+
+.chronicle {
+  width: 280px;
+  padding: spacing("sm") spacing("md");
+  border-radius: radius("card");
+  animation: panelSlideIn transition("base");
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: spacing("xxs");
+    font-size: font-size("xxs");
+    font-weight: font-weight("semibold");
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: color("text-dim");
+  }
+
+  &__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.entry {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: spacing("xs");
+  padding: 3px 6px;
+  border-left: 2px solid transparent;
+  border-radius: radius("xs");
+  font-size: font-size("xs");
+  line-height: 1.35;
+  color: color("text-desc");
+  animation: panelSlideIn transition("base");
+
+  &__year {
+    font-family: var(--font-family-mono);
+    font-size: font-size("xxs");
+    color: color("text-dim");
+    padding-top: 1px;
+    white-space: nowrap;
+  }
+
+  &--mine {
+    border-left-color: color("accent");
+    background: color("accent-glow-soft");
+    color: color("text-bright");
+  }
+
+  &--mine.entry--hostile {
+    border-left-color: color("danger");
+    background: color("danger-soft");
+  }
+}
+
+@include respond-to("mobile") {
+  .chronicle {
+    width: min(240px, calc(100vw - 16px));
+  }
+}

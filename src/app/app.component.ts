@@ -1,6 +1,17 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, TemplateRef, ViewChild, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Globe, Activity, Layers, BookOpen } from 'lucide-angular';
+import {
+  LucideAngularModule,
+  Globe,
+  BookOpen,
+  Landmark,
+  Wheat,
+  Play,
+  Pause,
+  FastForward,
+  Maximize,
+  RotateCcw
+} from 'lucide-angular';
 import {
   BrandComponent,
   ButtonComponent,
@@ -11,13 +22,20 @@ import {
   SplashComponent,
   SplashService,
   AboutService,
-  TimelineSliderComponent,
   TooltipComponent,
   BreakpointService,
   SeoService
 } from '@kmd/design-system';
 import { I18nService } from './core/i18n/i18n.service';
 import { Lang } from './core/i18n/i18n.types';
+import { formatYear, interpolate } from './core/i18n/format';
+import { GameService } from './game/game.service';
+import { MapCanvasComponent } from './game/map-canvas.component';
+import { MapView } from './game/map-renderer';
+import { POLEIS } from './game/data/poleis';
+import { PolisPanelComponent } from './hud/polis-panel.component';
+import { DiplomacyPanelComponent } from './hud/diplomacy-panel.component';
+import { ChronicleComponent } from './hud/chronicle.component';
 
 @Component({
   selector: 'app-root',
@@ -30,8 +48,11 @@ import { Lang } from './core/i18n/i18n.types';
     DropdownComponent,
     PopupComponent,
     SplashComponent,
-    TimelineSliderComponent,
-    TooltipComponent
+    TooltipComponent,
+    MapCanvasComponent,
+    PolisPanelComponent,
+    DiplomacyPanelComponent,
+    ChronicleComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -43,20 +64,14 @@ export class AppComponent {
   readonly about = inject(AboutService);
   readonly splash = inject(SplashService);
   readonly seo = inject(SeoService);
+  readonly game = inject(GameService);
 
-  readonly globeIcon = Globe;
-  readonly bookOpenIcon = BookOpen;
+  @ViewChild(MapCanvasComponent) private map?: MapCanvasComponent;
+  @ViewChild('rulesTpl', { static: true }) private rulesTpl!: TemplateRef<unknown>;
 
-  readonly currentView = signal<string>('primary');
-  readonly sliderValue = signal<number>(0);
+  readonly icons = { Globe, BookOpen, Play, Pause, FastForward, Maximize, RotateCcw };
 
-  constructor() {
-    this.seo.update({
-      title: 'KMD · Polis Io',
-      description: 'Interactive scientific data visualization by KMD Labs.',
-      image: 'assets/design-system/og-image.png'
-    });
-  }
+  readonly currentView = signal<MapView>('political');
 
   readonly langOptions = computed<DropdownOption<Lang>[]>(() =>
     this.i18n.langs.map(l => ({
@@ -67,27 +82,91 @@ export class AppComponent {
     }))
   );
 
-  readonly viewOptions = computed<DropdownOption<string>[]>(() => {
+  readonly viewOptions = computed<DropdownOption<MapView>[]>(() => {
     const t = this.i18n.t();
     return [
-      { value: 'primary', label: t.viewPrimary, icon: Activity },
-      { value: 'secondary', label: t.viewSecondary, icon: Layers }
+      { value: 'political', label: t.viewPolitical, icon: Landmark },
+      { value: 'fertility', label: t.viewFertility, icon: Wheat }
     ];
   });
 
   readonly currentViewIcon = computed(
-    () => this.viewOptions().find(o => o.value === this.currentView())?.icon ?? Activity
+    () => this.viewOptions().find(o => o.value === this.currentView())?.icon ?? Landmark
   );
 
   readonly isPopupOpen = computed(() => this.popup.config() !== null);
+  readonly year = computed(() => formatYear(this.game.year(), this.i18n.t()));
+  readonly ended = computed(() => this.game.status() === 'won' || this.game.status() === 'lost');
+
+  constructor() {
+    effect(() => {
+      const t = this.i18n.t();
+      this.seo.update({
+        title: t.docTitle,
+        description: t.seoDescription,
+        image: 'assets/design-system/og-image.png'
+      });
+    });
+
+    // Announce the end of the game once.
+    effect(() => {
+      const status = this.game.status();
+      if (status === 'won' || status === 'lost') untracked(() => this.openEndPopup(status));
+    });
+  }
+
+  @HostListener('document:keydown.space', ['$event'])
+  onSpace(event: Event) {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('button, input, textarea, [role="listbox"]')) return;
+    event.preventDefault();
+    this.game.togglePause();
+  }
+
+  fitMap() {
+    this.map?.fit();
+  }
+
+  restart() {
+    this.popup.close();
+    this.game.restart();
+    this.map?.fit();
+  }
 
   openGlossary() {
+    // Freeze the battlefield while reading the rules.
+    const wasPaused = this.game.paused();
+    this.game.paused.set(true);
     this.popup.open({
+      onClose: () => this.game.paused.set(wasPaused),
       id: 'glossary',
       title: computed(() => this.i18n.t().glossary),
       description: computed(() => this.i18n.t().glossaryDesc),
+      template: this.rulesTpl,
       size: 'md',
       actions: [{ label: computed(() => this.i18n.t().close), variant: 'default' }]
+    });
+  }
+
+  private openEndPopup(status: 'won' | 'lost') {
+    const sim = this.game.sim;
+    const me = sim.poleis[sim.player];
+    const name = (idx: number) => (idx >= 0 ? this.i18n.t().polisNames[POLEIS[idx].id] : '');
+    const won = status === 'won';
+    this.popup.open({
+      id: 'game-over',
+      title: computed(() => (won ? this.i18n.t().victoryTitle : this.i18n.t().defeatTitle)),
+      description: computed(() =>
+        interpolate(won ? this.i18n.t().victoryDesc : this.i18n.t().defeatDesc, {
+          a: name(me.idx),
+          b: name(me.conqueror)
+        })
+      ),
+      size: 'sm',
+      actions: [
+        { label: computed(() => this.i18n.t().close), variant: 'default' },
+        { label: computed(() => this.i18n.t().playAgain), variant: 'play', hot: true, onClick: () => this.restart() }
+      ]
     });
   }
 }

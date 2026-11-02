@@ -8,7 +8,8 @@
     "build:gh-pages": "ng build --base-href /polis-io/",
     "build:og": "node scripts/generate-og.mjs",
     "watch": "ng build --watch --configuration development",
-    "setup:github": "node scripts/setup-github.mjs"
+    "setup:github": "node scripts/setup-github.mjs",
+    "build:map": "node scripts/build-map.mjs"
   },
   "private": true,
   "dependencies": {
