@@ -2,6 +2,11 @@ import { PolisId } from '../../game/data/poleis';
 
 export type Lang = 'en' | 'pl';
 
+export interface PolisInfo {
+  region: string;
+  blurb: string;
+}
+
 export interface GlossaryEntry {
   term: string;
   desc: string;
@@ -22,7 +27,11 @@ export interface Dict {
   changeLanguage: string;
   chooseView: string;
   viewPolitical: string;
+  viewRelief: string;
   viewFertility: string;
+  loadingMap: string;
+  loadingTerrain: string;
+  loadError: string;
   stageAriaLabel: string;
 
   // Bottom Dock & Glossary
@@ -39,10 +48,14 @@ export interface Dict {
   speed: string;
   fitMap: string;
 
-  // Choosing a polis
+  // Start screen
   chooseTitle: string;
-  chooseHint: string;
-  choosePick: string;
+  startEyebrow: string;
+  startIntro: string;
+  startHint: string;
+  startLead: string;
+  statArea: string;
+  areaKm2: string;
 
   // Player polis panel
   yourPolis: string;
@@ -99,6 +112,14 @@ export interface Dict {
   hoverPolis: string;
   hoverWild: string;
   hoverForeign: string;
+  hoverAltitude: string;
+
+  // Cartographic labels
+  seaIonian: string;
+  seaAegean: string;
+  seaCretan: string;
+  peakOlympus: string;
 
   polisNames: Record<PolisId, string>;
+  polisInfo: Record<PolisId, PolisInfo>;
 }

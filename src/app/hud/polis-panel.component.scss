@@ -51,13 +51,6 @@
     color: color("text-desc");
     max-width: 34ch;
   }
-
-  // The polis list is long; keep the upward menu inside the viewport.
-  ::ng-deep .dropdown__menu {
-    max-height: min(52vh, 420px);
-    overflow-y: auto;
-    @include custom-scrollbar;
-  }
 }
 
 .swatch {

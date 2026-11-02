@@ -5,6 +5,7 @@ import {
   Globe,
   BookOpen,
   Landmark,
+  Mountain,
   Wheat,
   Play,
   Pause,
@@ -36,6 +37,7 @@ import { POLEIS } from './game/data/poleis';
 import { PolisPanelComponent } from './hud/polis-panel.component';
 import { DiplomacyPanelComponent } from './hud/diplomacy-panel.component';
 import { ChronicleComponent } from './hud/chronicle.component';
+import { StartScreenComponent } from './hud/start-screen.component';
 
 @Component({
   selector: 'app-root',
@@ -52,7 +54,8 @@ import { ChronicleComponent } from './hud/chronicle.component';
     MapCanvasComponent,
     PolisPanelComponent,
     DiplomacyPanelComponent,
-    ChronicleComponent
+    ChronicleComponent,
+    StartScreenComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -86,6 +89,7 @@ export class AppComponent {
     const t = this.i18n.t();
     return [
       { value: 'political', label: t.viewPolitical, icon: Landmark },
+      { value: 'relief', label: t.viewRelief, icon: Mountain },
       { value: 'fertility', label: t.viewFertility, icon: Wheat }
     ];
   });
@@ -108,6 +112,11 @@ export class AppComponent {
       });
     });
 
+    // Keep the splash up until the map is decoded and the logo reveal has played.
+    effect(() => {
+      if (this.splash.revealed() && this.game.ready()) untracked(() => this.splash.finish());
+    });
+
     // Announce the end of the game once.
     effect(() => {
       const status = this.game.status();
@@ -118,19 +127,19 @@ export class AppComponent {
   @HostListener('document:keydown.space', ['$event'])
   onSpace(event: Event) {
     const target = event.target as HTMLElement | null;
-    if (target?.closest('button, input, textarea, [role="listbox"]')) return;
+    if (target?.closest('button, input, textarea, [role="listbox"]') || this.game.status() !== 'playing') return;
     event.preventDefault();
     this.game.togglePause();
   }
 
   fitMap() {
-    this.map?.fit();
+    this.map?.fit(true);
   }
 
   restart() {
     this.popup.close();
     this.game.restart();
-    this.map?.fit();
+    requestAnimationFrame(() => this.map?.fit(true));
   }
 
   openGlossary() {

@@ -12,7 +12,11 @@ export const EN: Dict = {
   changeLanguage: 'Language',
   chooseView: 'Map view',
   viewPolitical: 'Political map',
+  viewRelief: 'Terrain relief',
   viewFertility: 'Soil fertility',
+  loadingMap: 'Charting the coasts of Hellas…',
+  loadingTerrain: 'Raising the mountains…',
+  loadError: 'The map could not be loaded. Please refresh the page.',
   stageAriaLabel: 'Pixel map of Greece in 600 BC',
 
   // Bottom Dock & Glossary
@@ -27,6 +31,10 @@ export const EN: Dict = {
     {
       term: 'Wilderness',
       desc: 'Grey pixels claimed by no one. Their soil fertility (see the “Soil fertility” view) decides how many people the land can feed.'
+    },
+    {
+      term: 'Terrain',
+      desc: 'Every pixel has a real elevation. Settlers spread like water — over low plains and valleys first, hills and mountains last. Lowlands are more fertile, and armies march slower over high ground.'
     },
     {
       term: 'Settle the wilderness',
@@ -63,10 +71,15 @@ export const EN: Dict = {
   speed: 'Game speed',
   fitMap: 'Fit map to screen',
 
-  // Choosing a polis
+  // Start screen
   chooseTitle: 'Choose your polis',
-  chooseHint: 'Click a city-state on the map, or pick one from the list.',
-  choosePick: 'Pick a polis',
+  startEyebrow: 'Hellas · 600 BC',
+  startIntro:
+    'The Dark Ages are over. Eighteen city-states stand among the mountains and islands of Greece, and the wild land between them is up for grabs.',
+  startHint: 'Pick a city-state from the list or on the map',
+  startLead: 'Lead {name}',
+  statArea: 'Land',
+  areaKm2: '{n} km²',
 
   // Player polis panel
   yourPolis: 'Your polis',
@@ -123,6 +136,13 @@ export const EN: Dict = {
   hoverPolis: '{name} · {pop} people',
   hoverWild: 'Wilderness',
   hoverForeign: 'Barbarian lands, beyond Hellas',
+  hoverAltitude: '{m} m',
+
+  // Cartographic labels
+  seaIonian: 'Ionian Sea',
+  seaAegean: 'Aegean Sea',
+  seaCretan: 'Sea of Crete',
+  peakOlympus: 'Mt Olympus',
 
   polisNames: {
     athens: 'Athens',
@@ -143,5 +163,26 @@ export const EN: Dict = {
     naxos: 'Naxos',
     knossos: 'Knossos',
     lindos: 'Lindos'
+  },
+
+  polisInfo: {
+    athens: { region: 'Attica', blurb: 'Olive groves, the silver of Laurion and a restless assembly. Solon has just rewritten the laws.' },
+    sparta: { region: 'Laconia', blurb: 'A warrior state ruling the helots of the Eurotas valley, walled in by Taygetus and Parnon.' },
+    corinth: { region: 'Corinthia', blurb: 'Master of the Isthmus and two seas, rich from tolls, pottery and trade.' },
+    thebes: { region: 'Boeotia', blurb: 'First city of the Boeotian plain, the richest farmland of central Greece.' },
+    argos: { region: 'Argolis', blurb: 'Ancient rival of Sparta, proud of its legendary kings and its fertile plain.' },
+    chalkis: { region: 'Euboea', blurb: 'Bronze-smiths and colonisers on the narrow Euripus strait.' },
+    elis: { region: 'Elis', blurb: 'Keeper of Olympia and its sacred truce, amid the broad western lowlands.' },
+    larisa: { region: 'Thessaly', blurb: 'Horse-breeding aristocrats of the widest plain in Greece.' },
+    korkyra: { region: 'Corfu', blurb: 'A wealthy sea power at the gate of the Adriatic, defiant toward Corinth.' },
+    ambracia: { region: 'Epirus', blurb: 'A young Corinthian colony on the edge of the Epirote wilds.' },
+    potidaea: { region: 'Chalcidice', blurb: "Corinth's outpost on the Pallene isthmus, trading with Macedon." },
+    thasos: { region: 'Thasos', blurb: 'An island of gold mines and wine facing the Thracian shore.' },
+    mytilene: { region: 'Lesbos', blurb: 'Home of Sappho and Alcaeus, rich in olives and lyric song.' },
+    chios: { region: 'Chios', blurb: 'Famed for its wine and shipwrights; it claims to be the birthplace of Homer.' },
+    samos: { region: 'Samos', blurb: 'A naval power with a great temple of Hera and bold engineers.' },
+    naxos: { region: 'Cyclades', blurb: 'Largest of the Cyclades, carving marble lions for the gods of Delos.' },
+    knossos: { region: 'Crete', blurb: 'Heir to the Minoan palaces among the hundred cities of Crete.' },
+    lindos: { region: 'Rhodes', blurb: 'A merchant city of Rhodes beneath the acropolis of Athena Lindia.' }
   }
 };

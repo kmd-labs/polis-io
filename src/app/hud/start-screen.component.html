@@ -1,0 +1,61 @@
+@let t = i18n.t();
+
+<aside class="start-screen__panel glass-panel--heavy" [attr.aria-label]="t.chooseTitle">
+  <header class="start__head">
+    <span class="start__eyebrow">{{ t.startEyebrow }}</span>
+    <h1 class="start__title">{{ t.chooseTitle }}</h1>
+    <p class="start__intro">{{ t.startIntro }}</p>
+  </header>
+
+  <ul class="start__list">
+    @for (c of cards(); track c.idx) {
+      @let active = c.idx === game.selected();
+      <li>
+        <button
+          type="button"
+          class="card"
+          [id]="'polis-card-' + c.idx"
+          [class.card--selected]="active"
+          [attr.aria-pressed]="active"
+          (click)="game.select(c.idx)"
+          (pointerenter)="game.preview.set(c.idx)"
+          (pointerleave)="game.preview.set(-1)"
+          (focus)="game.preview.set(c.idx)"
+          (blur)="game.preview.set(-1)">
+          <span class="card__swatch" [style.background]="'var(--color-' + c.color + ')'"></span>
+          <span class="card__body">
+            <span class="card__top">
+              <span class="card__name">{{ c.name }}</span>
+              <span class="card__region">{{ c.region }}</span>
+            </span>
+            <span class="card__blurb">{{ c.blurb }}</span>
+            <span class="card__stats">
+              <span [attr.title]="t.statPopulation">
+                <lucide-icon [img]="icons.Users" [size]="11"></lucide-icon>{{ c.people }}
+              </span>
+              <span [attr.title]="t.statArea">
+                <lucide-icon [img]="icons.MapIcon" [size]="11"></lucide-icon>{{ c.area }}
+              </span>
+              <span [attr.title]="t.statWarriors">
+                <lucide-icon [img]="icons.Swords" [size]="11"></lucide-icon>{{ c.warriors }}
+              </span>
+            </span>
+          </span>
+        </button>
+      </li>
+    }
+  </ul>
+
+  <footer class="start__footer">
+    <app-button
+      variant="play"
+      extraClass="start__lead"
+      [hot]="!!chosen()"
+      [active]="!!chosen()"
+      [disabled]="!chosen()"
+      (btnClick)="game.begin()">
+      <lucide-icon [img]="icons.Play" [size]="14"></lucide-icon>
+      <span>{{ leadLabel() }}</span>
+    </app-button>
+  </footer>
+</aside>

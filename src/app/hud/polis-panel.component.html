@@ -1,25 +1,8 @@
 @let t = i18n.t();
 @let me = game.me();
 
-<section class="panel glass-panel" [attr.aria-label]="me ? t.yourPolis : t.chooseTitle">
-  @if (game.status() === 'choosing') {
-    <header class="panel__head">
-      <lucide-icon class="panel__icon" [img]="icons.Landmark" [size]="16"></lucide-icon>
-      <h2 class="panel__title">{{ t.chooseTitle }}</h2>
-    </header>
-    <p class="panel__hint">{{ t.chooseHint }}</p>
-    <app-dropdown
-      variant="default"
-      direction="up"
-      menuMinWidth="200px"
-      [icon]="icons.Landmark"
-      [label]="t.choosePick"
-      [showCheck]="false"
-      [options]="polisOptions()"
-      [ariaLabel]="t.choosePick"
-      (valueChange)="game.choose($event)">
-    </app-dropdown>
-  } @else if (me) {
+<section class="panel glass-panel" [attr.aria-label]="t.yourPolis">
+  @if (me) {
     <header class="panel__head">
       <span class="swatch" [style.background]="'var(--color-' + me.color + ')'"></span>
       <div class="panel__titles">

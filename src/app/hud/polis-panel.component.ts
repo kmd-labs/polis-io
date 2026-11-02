@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
-import { LucideAngularModule, Coins, Landmark, MapIcon, Shield, Sprout, Swords, TrendingUp, Users, Pickaxe } from 'lucide-angular';
-import { ButtonComponent, DropdownComponent, DropdownOption, TooltipDirective } from '@kmd/design-system';
+import { LucideAngularModule, Coins, MapIcon, Shield, Sprout, Swords, TrendingUp, Users, Pickaxe } from 'lucide-angular';
+import { ButtonComponent, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, formatRate, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
@@ -10,7 +10,7 @@ import { POLEIS } from '../game/data/poleis';
 @Component({
   selector: 'app-polis-panel',
   standalone: true,
-  imports: [LucideAngularModule, ButtonComponent, DropdownComponent, TooltipDirective],
+  imports: [LucideAngularModule, ButtonComponent, TooltipDirective],
   templateUrl: './polis-panel.component.html',
   styleUrl: './polis-panel.component.scss'
 })
@@ -18,14 +18,7 @@ export class PolisPanelComponent {
   readonly i18n = inject(I18nService);
   readonly game = inject(GameService);
 
-  readonly icons = { Coins, Landmark, MapIcon, Shield, Sprout, Swords, TrendingUp, Users, Pickaxe };
-
-  readonly polisOptions = computed<DropdownOption<number>[]>(() => {
-    const t = this.i18n.t();
-    return POLEIS.map((p, idx) => ({ value: idx, label: t.polisNames[p.id] })).sort((a, b) =>
-      a.label.localeCompare(b.label)
-    );
-  });
+  readonly icons = { Coins, MapIcon, Shield, Sprout, Swords, TrendingUp, Users, Pickaxe };
 
   readonly name = computed(() => {
     const me = this.game.me();

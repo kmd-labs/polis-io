@@ -1,5 +1,5 @@
 import { GREECE_MAP } from './data/greece-map';
-import { valueNoise } from './rng';
+import { hash01, valueNoise } from './rng';
 
 export enum Terrain {
   Sea = 0,
@@ -7,43 +7,112 @@ export enum Terrain {
   Foreign = 2
 }
 
+/** Decoded contents of the map raster. */
+export interface MapData {
+  cols: number;
+  rows: number;
+  terrain: Uint8Array;
+  /** Metres above sea level; negative values are sea depth. */
+  elevation: Float32Array;
+}
+
 /**
- * Static geography of the pixel map: terrain class, fertility and coastline per cell.
+ * Decodes the R (terrain) and G/B (elevation) channels of `assets/map/hellas.png`.
+ * `channels` is the stride of `pixels` (3 for RGB, 4 for canvas RGBA).
+ */
+export function decodeMapPixels(pixels: ArrayLike<number>, channels: number, cols: number, rows: number): MapData {
+  const size = cols * rows;
+  const terrain = new Uint8Array(size);
+  const elevation = new Float32Array(size);
+  for (let i = 0; i < size; i++) {
+    const p = i * channels;
+    terrain[i] = pixels[p];
+    elevation[i] = (pixels[p + 1] * 256 + pixels[p + 2] - GREECE_MAP.elevationOffset) * GREECE_MAP.elevationStep;
+  }
+  return { cols, rows, terrain, elevation };
+}
+
+/** Vertical exaggeration of the hillshade on land and on the sea floor. */
+const RELIEF_LAND = 1.6;
+const RELIEF_SEA = 0.5;
+
+/**
+ * Static geography of the pixel map: terrain class, elevation, hillshade, fertility and coastline.
  * Cells are addressed by flat index `i = y * cols + x`.
  */
 export class World {
-  readonly cols = GREECE_MAP.cols;
-  readonly rows = GREECE_MAP.rows;
-  readonly size = this.cols * this.rows;
-  readonly terrain = new Uint8Array(this.size);
-  /** 0.2 – 1.0 agricultural yield of a Greek land cell (0 elsewhere). */
-  readonly fertility = new Float32Array(this.size);
-  /** Sea cell touching land — rendered as shallow water. */
-  readonly shallow = new Uint8Array(this.size);
+  readonly cols: number;
+  readonly rows: number;
+  readonly size: number;
+  readonly cellKm = GREECE_MAP.cellKm;
+  readonly terrain: Uint8Array;
+  readonly elevation: Float32Array;
+  /** Lambert hillshade, lit from the north-west; 1 = flat ground. */
+  readonly shade: Float32Array;
+  /** 0.12 – 1.0 agricultural yield of a Greek land cell (0 elsewhere). */
+  readonly fertility: Float32Array;
+  /** Sea cell touching land — rendered as surf. */
+  readonly shallow: Uint8Array;
   /** Flat indices of every Greek land cell. */
   readonly greekCells: Int32Array;
 
-  constructor() {
-    let i = 0;
-    for (const m of GREECE_MAP.rle.matchAll(/(\d+)(.)/g)) {
-      const t = m[2] === 'g' ? Terrain.Greek : m[2] === 'f' ? Terrain.Foreign : Terrain.Sea;
-      this.terrain.fill(t, i, i + Number(m[1]));
-      i += Number(m[1]);
-    }
+  constructor(data: MapData) {
+    this.cols = data.cols;
+    this.rows = data.rows;
+    this.size = data.cols * data.rows;
+    this.terrain = data.terrain;
+    this.elevation = data.elevation;
+    this.shade = new Float32Array(this.size);
+    this.fertility = new Float32Array(this.size);
+    this.shallow = new Uint8Array(this.size);
 
+    const { cols, rows, terrain, elevation } = this;
+    const cellM = this.cellKm * 1000;
+    // Light from the north-west, 40° above the horizon.
+    const lx = -0.54;
+    const ly = -0.54;
+    const lz = 0.64;
     const greek: number[] = [];
-    for (let y = 0; y < this.rows; y++) {
-      for (let x = 0; x < this.cols; x++) {
-        const c = y * this.cols + x;
-        if (this.terrain[c] === Terrain.Sea) {
-          this.shallow[c] = this.neighbours8(x, y).some(n => this.terrain[n] !== Terrain.Sea) ? 1 : 0;
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const i = y * cols + x;
+        const sea = terrain[i] === Terrain.Sea;
+        // Clamp across the coastline so the shore itself does not read as a cliff.
+        const h = (j: number) => (sea ? Math.min(elevation[j], 0) : Math.max(elevation[j], 0));
+        const xl = x > 0 ? i - 1 : i;
+        const xr = x < cols - 1 ? i + 1 : i;
+        const yu = y > 0 ? i - cols : i;
+        const yd = y < rows - 1 ? i + cols : i;
+        const z = sea ? RELIEF_SEA : RELIEF_LAND;
+        const dx = ((h(xr) - h(xl)) / (2 * cellM)) * z;
+        const dy = ((h(yd) - h(yu)) / (2 * cellM)) * z;
+        const len = Math.hypot(dx, dy, 1);
+        this.shade[i] = Math.max(0.68, Math.min(1.22, (-dx * lx - dy * ly + lz) / len / lz));
+
+        let coastal = false;
+        for (let dy2 = -1; dy2 <= 1 && !coastal; dy2++) {
+          for (let dx2 = -1; dx2 <= 1; dx2++) {
+            const nx = x + dx2;
+            const ny = y + dy2;
+            if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+            if ((terrain[ny * cols + nx] === Terrain.Sea) !== sea) {
+              coastal = true;
+              break;
+            }
+          }
+        }
+        if (sea) {
+          this.shallow[i] = coastal ? 1 : 0;
           continue;
         }
-        if (this.terrain[c] !== Terrain.Greek) continue;
-        greek.push(c);
-        const n = 0.6 * valueNoise(x / 9, y / 9, 7) + 0.4 * valueNoise(x / 3.5, y / 3.5, 11);
-        const coastal = this.neighbours8(x, y).some(k => this.terrain[k] === Terrain.Sea) ? 0.12 : 0;
-        this.fertility[c] = Math.min(1, Math.max(0.2, 0.15 + n * 0.85 + coastal));
+        if (terrain[i] !== Terrain.Greek) continue;
+        greek.push(i);
+        // Plains and gentle valleys feed people; mountains and steep slopes do not.
+        const altitude = 1 - Math.min(1, elevation[i] / 1500) * 0.8;
+        const slope = 1 - Math.min(0.45, (Math.hypot(dx, dy) / RELIEF_LAND) * 15);
+        const noise = 0.85 + 0.3 * valueNoise(x / 14, y / 14, 7) + 0.05 * (hash01(x, y, 2) - 0.5);
+        this.fertility[i] = Math.min(1, Math.max(0.12, altitude * slope * noise + (coastal ? 0.06 : 0)));
       }
     }
     this.greekCells = Int32Array.from(greek);
@@ -78,16 +147,6 @@ export class World {
     if (x < this.cols - 1) out.push(this.index(x + 1, y));
     if (y > 0) out.push(this.index(x, y - 1));
     if (y < this.rows - 1) out.push(this.index(x, y + 1));
-    return out;
-  }
-
-  neighbours8(x: number, y: number): number[] {
-    const out: number[] = [];
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        if ((dx || dy) && this.inBounds(x + dx, y + dy)) out.push(this.index(x + dx, y + dy));
-      }
-    }
     return out;
   }
 

@@ -12,7 +12,11 @@ export const PL: Dict = {
   changeLanguage: 'Język',
   chooseView: 'Widok mapy',
   viewPolitical: 'Mapa polityczna',
+  viewRelief: 'Rzeźba terenu',
   viewFertility: 'Żyzność gleby',
+  loadingMap: 'Kreślimy wybrzeża Hellady…',
+  loadingTerrain: 'Wypiętrzamy góry…',
+  loadError: 'Nie udało się wczytać mapy. Odśwież stronę.',
   stageAriaLabel: 'Pikselowa mapa Grecji w 600 p.n.e.',
 
   // Bottom Dock & Glossary
@@ -27,6 +31,10 @@ export const PL: Dict = {
     {
       term: 'Dzicz',
       desc: 'Szare piksele niczyje. Ich żyzność (widok „Żyzność gleby”) decyduje, ilu ludzi wyżywi ziemia.'
+    },
+    {
+      term: 'Ukształtowanie terenu',
+      desc: 'Każdy piksel ma prawdziwą wysokość. Osadnicy rozlewają się jak woda — najpierw po nizinach i dolinach, na końcu po wzgórzach i górach. Niziny są żyźniejsze, a armie wolniej maszerują przez wysokie tereny.'
     },
     {
       term: 'Zasiedlanie dziczy',
@@ -63,10 +71,15 @@ export const PL: Dict = {
   speed: 'Tempo gry',
   fitMap: 'Dopasuj mapę do ekranu',
 
-  // Choosing a polis
+  // Start screen
   chooseTitle: 'Wybierz swoją polis',
-  chooseHint: 'Kliknij miasto-państwo na mapie albo wybierz je z listy.',
-  choosePick: 'Wybierz polis',
+  startEyebrow: 'Hellada · 600 p.n.e.',
+  startIntro:
+    'Wieki ciemne minęły. Wśród gór i wysp Grecji stoi osiemnaście miast-państw, a dzika ziemia między nimi czeka na tego, kto ją zajmie.',
+  startHint: 'Wybierz miasto-państwo z listy albo na mapie',
+  startLead: 'Prowadź: {name}',
+  statArea: 'Ziemia',
+  areaKm2: '{n} km²',
 
   // Player polis panel
   yourPolis: 'Twoja polis',
@@ -123,6 +136,13 @@ export const PL: Dict = {
   hoverPolis: '{name} · {pop} mieszkańców',
   hoverWild: 'Dzicz',
   hoverForeign: 'Ziemie barbarzyńców, poza Helladą',
+  hoverAltitude: '{m} m n.p.m.',
+
+  // Cartographic labels
+  seaIonian: 'Morze Jońskie',
+  seaAegean: 'Morze Egejskie',
+  seaCretan: 'Morze Kreteńskie',
+  peakOlympus: 'Olimp',
 
   polisNames: {
     athens: 'Ateny',
@@ -143,5 +163,26 @@ export const PL: Dict = {
     naxos: 'Naksos',
     knossos: 'Knossos',
     lindos: 'Lindos'
+  },
+
+  polisInfo: {
+    athens: { region: 'Attyka', blurb: 'Gaje oliwne, srebro z Laurionu i niespokojne zgromadzenie. Solon właśnie spisał nowe prawa.' },
+    sparta: { region: 'Lakonia', blurb: 'Państwo wojowników panujące nad helotami doliny Eurotasu, osłonięte Tajgetem i Parnonem.' },
+    corinth: { region: 'Koryntia', blurb: 'Pani Przesmyku i dwóch mórz, bogata z ceł, ceramiki i handlu.' },
+    thebes: { region: 'Beocja', blurb: 'Pierwsze miasto równiny beockiej, najżyźniejszej ziemi środkowej Grecji.' },
+    argos: { region: 'Argolida', blurb: 'Odwieczna rywalka Sparty, dumna z legendarnych królów i żyznej równiny.' },
+    chalkis: { region: 'Eubea', blurb: 'Kowale brązu i kolonizatorzy nad wąską cieśniną Euripos.' },
+    elis: { region: 'Elida', blurb: 'Strażniczka Olimpii i świętego rozejmu pośród szerokich zachodnich nizin.' },
+    larisa: { region: 'Tesalia', blurb: 'Arystokraci hodujący konie na największej równinie Grecji.' },
+    korkyra: { region: 'Korfu', blurb: 'Bogata potęga morska u wrót Adriatyku, krnąbrna wobec Koryntu.' },
+    ambracia: { region: 'Epir', blurb: 'Młoda kolonia Koryntu na skraju epirockiej dziczy.' },
+    potidaea: { region: 'Chalkidyka', blurb: 'Placówka Koryntu na przesmyku Pallene, handlująca z Macedonią.' },
+    thasos: { region: 'Tasos', blurb: 'Wyspa kopalń złota i wina naprzeciw trackiego brzegu.' },
+    mytilene: { region: 'Lesbos', blurb: 'Ojczyzna Safony i Alkajosa, bogata w oliwki i pieśń liryczną.' },
+    chios: { region: 'Chios', blurb: 'Słynie z wina i szkutników; twierdzi, że urodził się tu Homer.' },
+    samos: { region: 'Samos', blurb: 'Potęga morska z wielką świątynią Hery i śmiałymi inżynierami.' },
+    naxos: { region: 'Cyklady', blurb: 'Największa z Cyklad, rzeźbiąca marmurowe lwy dla bogów Delos.' },
+    knossos: { region: 'Kreta', blurb: 'Dziedziczka minojskich pałaców pośród stu miast Krety.' },
+    lindos: { region: 'Rodos', blurb: 'Kupieckie miasto Rodos u stóp akropolu Ateny Lindyjskiej.' }
   }
 };

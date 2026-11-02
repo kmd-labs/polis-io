@@ -3,14 +3,17 @@
 A pixel real-time strategy game set in Archaic Greece, 600 BC, built on the
 [KMD design system](https://github.com/kmd-labs/design-system) (Angular 21, standalone components, signals).
 
-The whole map is a raster of ~4 km pixels rasterized from Natural Earth. Every Greek land pixel
-belongs to one of 18 poleis or is still wild; land outside modern Greece is shown but never playable.
+The map is a 639×628 raster of ~1.25 km pixels: coastlines and borders from Natural Earth, elevation and
+sea depth from AWS Terrain Tiles. Every one of the 84,000 Greek land pixels belongs to one of 18 poleis or is
+still wild; land outside modern Greece is shown but never playable. The map is drawn as shaded relief with
+an animated sea, and has three views: political, terrain relief and soil fertility.
 
 ## Gameplay
 
-- **Choose a polis**: click a city-state on the map, or pick one from the list in the dock.
+- **Choose a polis** on the start screen (or click it on the map), then press *Lead*.
 - **Settle the wilderness**: sends 10% of your workers away for good. The settlers slowly claim
-  wild pixels next to your borders (or found a colony across the sea when your coast is full).
+  wild pixels next to your borders, flowing over low plains and valleys first and climbing hills last
+  (or found a colony across the sea when your coast is full). Lowlands are more fertile; armies march slower in mountains.
   Every claimed pixel raises carrying capacity and permanently boosts growth and income (*Prosperity*).
 - **Train hoplites**: arms a batch of workers for drachmae. Hoplites cost upkeep.
 - **Declare war**: click another polis, then *Declare war*. Small armies march out on their own and
@@ -27,17 +30,25 @@ territory share and prosperity. <kbd>Space</kbd> pauses; the wheel or a pinch zo
 npm install
 npm start            # http://localhost:4200
 npm run build
-npm run build:map    # re-rasterize src/app/game/data/greece-map.ts from Natural Earth
+npm run build:map    # rebuild src/assets/map/hellas.png (+ metadata) from Natural Earth and Terrain Tiles
 ```
 
 | Path | Purpose |
 | :--- | :--- |
 | `src/app/game/simulation.ts` | Framework-free simulation: economy, settling, AI, armies, battles (`RULES` holds the balance) |
-| `src/app/game/world.ts` | Static geography: terrain, fertility, coastline |
-| `src/app/game/map-renderer.ts` | Canvas renderer (pixel raster, outlines, temples, armies) |
+| `src/app/game/world.ts` | Static geography: terrain, elevation, hillshade, fertility, coastline |
+| `src/app/game/map-loader.ts` | Loads and decodes `assets/map/hellas.png` (R = terrain, G/B = elevation) |
+| `src/app/game/map-renderer.ts` | Canvas renderer (shaded relief, animated sea, outlines, temples, armies) |
 | `src/app/game/fight-cloud.ts` | Cartoon brawl animation |
 | `src/app/game/game.service.ts` | Game clock outside the Angular zone and signal snapshots for the HUD |
-| `src/app/hud/` | Dock panels (your polis, diplomacy) and the chronicle feed |
+| `src/app/hud/` | Start screen, dock panels (your polis, diplomacy) and the chronicle feed |
 | `src/app/core/i18n/` | English and Polish dictionaries |
 
 See [AGENTS.md](AGENTS.md) for the KMD design-system conventions this app follows.
+
+## Data
+
+- Coastlines and borders: [Natural Earth](https://www.naturalearthdata.com/) 1:10m (public domain).
+- Elevation and bathymetry: [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) (Mapzen Terrarium),
+  derived from SRTM, GMTED, ETOPO1 and other sources — see the
+  [attribution list](https://github.com/tilezen/joerd/blob/master/docs/attribution.md).

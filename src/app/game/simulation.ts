@@ -1,4 +1,6 @@
 import { POLEIS, PolisDef } from './data/poleis';
+import { MinHeap } from './heap';
+import { hash01 } from './rng';
 import { Terrain, World } from './world';
 
 /** Cell owner codes; values >= 0 are polis indices. */
@@ -10,9 +12,10 @@ export const WILD = -1;
 export const RULES = {
   startYear: 600,
   secondsPerYear: 4,
-  startRadius: 7,
+  /** Travel budget (cells) of the founding territory; climbing 1000 m doubles the cost of a step. */
+  startReach: 15,
   /** Carrying capacity per unit of owned fertility. */
-  peoplePerFertility: 380,
+  peoplePerFertility: 42,
   /** Share of civilians fit for physical labour. */
   laborShare: 0.55,
   growthRate: 0.02,
@@ -20,20 +23,27 @@ export const RULES = {
   upkeepPerWarrior: 0.003,
   /** "Settle the wilderness" sends this share of workers away for good. */
   settleShare: 0.1,
-  settlersPerCell: 40,
-  settleInterval: 0.8,
-  prosperityPerCell: 0.005,
+  settlersPerCell: 4.5,
+  /** Cells claimed per second by an expedition. */
+  settleRate: 11,
+  prosperityPerCell: 0.00055,
   maxProsperity: 2,
   trainShare: 0.06,
   trainCostPerHoplite: 1.2,
-  armySpeedLand: 2.2,
-  armySpeedSea: 1.4,
+  /** Cells per second. */
+  armySpeedLand: 6.5,
+  armySpeedSea: 4.2,
+  /** Speed lost per 1000 m of altitude. */
+  mountainSlowdown: 0.35,
   captureDwell: 1.4,
+  /** Radius (cells) of ground seized each time an army settles in. */
+  captureRadius: 1.6,
   battleDuration: 1.8,
-  battleRange: 1.3,
+  battleRange: 3.6,
   wallsBonus: 1.25,
   aiWarGrace: 45,
   aiPlayerGrace: 90,
+  aiWarRange: 165,
   maxWorldWars: 4,
   victoryShare: 0.5
 } as const;
@@ -44,6 +54,9 @@ export interface Expedition {
   timer: number;
   /** Already reported a colony across the sea during this expedition. */
   colony: boolean;
+  /** Wild cells bordering the settled land, lowest ground first. */
+  frontier: MinHeap;
+  queued: Set<number>;
 }
 
 export interface PolisState {
@@ -68,6 +81,8 @@ export interface PolisState {
   nextAi: number;
   nextSpawn: number;
   conqueror: number;
+  /** Bumped whenever one of its cells changes owner. */
+  version: number;
 }
 
 export interface Army {
@@ -127,7 +142,10 @@ export class Simulation {
   player = -1;
   /** Bumped whenever any cell changes owner, so renderers know to repaint. */
   version = 0;
+  /** Bumped on every reset; renderers repaint everything. */
+  resets = 0;
   wildCells = 0;
+  private dirty: number[] = [];
 
   private nextId = 1;
   private readonly rand = Math.random;
@@ -155,6 +173,8 @@ export class Simulation {
     this.time = 0;
     this.status = 'choosing';
     this.player = -1;
+    this.dirty = [];
+    this.resets++;
 
     this.poleis = POLEIS.map((def, idx) => {
       const p = w.project(def.lon, def.lat);
@@ -180,29 +200,40 @@ export class Simulation {
         peaceCooldown: new Map<number, number>(),
         nextAi: 2 + idx * 0.17,
         nextSpawn: 0,
-        conqueror: -1
+        conqueror: -1,
+        version: 0
       };
     });
 
-    // Multi-source BFS so neighbouring poleis split contested land fairly.
-    const depth = new Int16Array(w.size).fill(-1);
-    let frontier: number[] = [];
+    // Multi-source Dijkstra: founding land spreads over plains and stops at mountains,
+    // and neighbouring poleis split contested ground fairly.
+    const heap = new MinHeap();
+    const cost = new Float64Array(w.size).fill(Infinity);
+    const from = new Int16Array(w.size).fill(-1);
     for (const p of this.poleis) {
-      this.setOwner(p.capital, p.idx, false);
-      depth[p.capital] = 0;
-      frontier.push(p.capital);
+      cost[p.capital] = 0;
+      from[p.capital] = p.idx;
+      heap.push(p.capital, 0);
     }
-    for (let d = 1; d <= RULES.startRadius; d++) {
-      const next: number[] = [];
-      for (const c of frontier) {
-        for (const n of w.neighbours4(c % w.cols, Math.floor(c / w.cols))) {
-          if (this.owner[n] !== WILD || depth[n] >= 0) continue;
-          depth[n] = d;
-          this.setOwner(n, this.owner[c], false);
-          next.push(n);
+    while (heap.size) {
+      const k = heap.peekKey();
+      const c = heap.pop();
+      if (k > cost[c] || this.owner[c] !== WILD) continue;
+      this.setOwner(c, from[c], false);
+      const x = c % w.cols;
+      const y = (c - x) / w.cols;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if ((!dx && !dy) || !w.inBounds(x + dx, y + dy)) continue;
+          const n = w.index(x + dx, y + dy);
+          if (this.owner[n] !== WILD) continue;
+          const next = k + Math.hypot(dx, dy) * (1 + Math.max(0, w.elevation[n]) / 1000);
+          if (next > RULES.startReach || next >= cost[n]) continue;
+          cost[n] = next;
+          from[n] = from[c];
+          heap.push(n, next);
         }
       }
-      frontier = next;
     }
 
     for (const p of this.poleis) {
@@ -273,7 +304,18 @@ export class Simulation {
     if (!this.canSettle(p)) return;
     const settlers = this.settlers(p);
     p.civilians -= settlers;
-    p.expedition = { settlers, initial: settlers, timer: 0, colony: false };
+    const frontier = new MinHeap();
+    const queued = new Set<number>();
+    const w = this.world;
+    for (const c of w.greekCells) {
+      if (this.owner[c] !== WILD) continue;
+      const x = c % w.cols;
+      if (w.neighbours4(x, (c - x) / w.cols).some(n => this.owner[n] === idx)) {
+        queued.add(c);
+        frontier.push(c, this.settleCost(p, c));
+      }
+    }
+    p.expedition = { settlers, initial: settlers, timer: 0, colony: false, frontier, queued };
     this.emit('settle', idx);
   }
 
@@ -399,17 +441,29 @@ export class Simulation {
     const e = p.expedition;
     if (!e) return;
     e.timer += dt;
-    while (e.timer >= RULES.settleInterval && e.settlers >= RULES.settlersPerCell) {
-      e.timer -= RULES.settleInterval;
-      const pick = this.pickWildCell(p);
-      if (pick.cell < 0) break;
-      if (pick.colony && !e.colony) {
-        e.colony = true;
-        this.emit('colony', p.idx);
+    const w = this.world;
+    while (e.timer >= 1 / RULES.settleRate && e.settlers >= RULES.settlersPerCell && this.wildCells > 0) {
+      e.timer -= 1 / RULES.settleRate;
+      let cell = e.frontier.pop();
+      while (cell >= 0 && this.owner[cell] !== WILD) cell = e.frontier.pop();
+      if (cell < 0) {
+        // The home coast is full: sail away and found a colony.
+        cell = this.nearestWild(p);
+        if (cell < 0) break;
+        if (!e.colony) {
+          e.colony = true;
+          this.emit('colony', p.idx);
+        }
       }
-      this.setOwner(pick.cell, p.idx, true);
+      this.setOwner(cell, p.idx, true);
       e.settlers -= RULES.settlersPerCell;
       p.prosperity = Math.min(RULES.maxProsperity, p.prosperity + RULES.prosperityPerCell);
+      const x = cell % w.cols;
+      for (const n of w.neighbours4(x, (cell - x) / w.cols)) {
+        if (this.owner[n] !== WILD || e.queued.has(n)) continue;
+        e.queued.add(n);
+        e.frontier.push(n, this.settleCost(p, n));
+      }
     }
     if (e.settlers < RULES.settlersPerCell || this.wildCells === 0) {
       // Whoever could not be given land returns home.
@@ -418,30 +472,30 @@ export class Simulation {
     }
   }
 
-  /** Best wild cell bordering the polis; across the sea (a colony) when its own coast is full. */
-  private pickWildCell(p: PolisState): { cell: number; colony: boolean } {
+  /** Settlers flow like water: low, fertile ground near home first, hills and mountains last. */
+  private settleCost(p: PolisState, cell: number): number {
+    const w = this.world;
+    const x = cell % w.cols;
+    const y = (cell - x) / w.cols;
+    const d = Math.hypot(x + 0.5 - p.cx, y + 0.5 - p.cy);
+    return w.elevation[cell] / 600 + d * 0.0035 - w.fertility[cell] * 0.4 + hash01(x, y, p.idx) * 0.25;
+  }
+
+  /** Closest wild cell to the capital, anywhere in Hellas. */
+  private nearestWild(p: PolisState): number {
     const w = this.world;
     let best = -1;
-    let bestScore = -Infinity;
-    let nearest = -1;
-    let nearestD = Infinity;
+    let bestD = Infinity;
     for (const c of w.greekCells) {
       if (this.owner[c] !== WILD) continue;
       const x = c % w.cols;
-      const y = (c - x) / w.cols;
-      const d = Math.hypot(x + 0.5 - p.cx, y + 0.5 - p.cy);
-      if (d + this.rand() * 4 < nearestD) {
-        nearestD = d;
-        nearest = c;
-      }
-      if (!w.neighbours4(x, y).some(n => this.owner[n] === p.idx)) continue;
-      const score = w.fertility[c] + this.rand() * 0.35 - d * 0.012;
-      if (score > bestScore) {
-        bestScore = score;
+      const d = Math.hypot(x + 0.5 - p.cx, (c - x) / w.cols + 0.5 - p.cy) + this.rand() * 12;
+      if (d < bestD) {
+        bestD = d;
         best = c;
       }
     }
-    return best >= 0 ? { cell: best, colony: false } : { cell: nearest, colony: nearest >= 0 };
+    return best;
   }
 
   private think(p: PolisState) {
@@ -461,7 +515,7 @@ export class Simulation {
       for (const q of this.poleis) {
         if (!q.alive || q === p || p.wars.has(q.idx)) continue;
         if (q.idx === this.player && this.time < RULES.aiPlayerGrace) continue;
-        if (Math.hypot(q.cx - p.cx, q.cy - p.cy) > 55) continue;
+        if (Math.hypot(q.cx - p.cx, q.cy - p.cy) > RULES.aiWarRange) continue;
         const ratio = mine / Math.max(1, this.warriors(q));
         if (ratio > bestRatio) {
           bestRatio = ratio;
@@ -538,21 +592,40 @@ export class Simulation {
         this.startBattle(a, null, victim.idx);
         continue;
       }
-      this.capture(a.target, a.owner, victim.idx);
+      this.captureAround(a, tx, ty);
       a.strength *= 0.99;
       a.target = this.adjacentEnemyCell(a);
     }
   }
 
-  /** Moves the army toward (tx, ty); returns true on arrival. Ships are slower than marching hoplites. */
+  /** Seizes every enemy cell within the capture radius, sparing defended capitals. */
+  private captureAround(a: Army, tx: number, ty: number) {
+    const w = this.world;
+    const r = RULES.captureRadius;
+    for (let y = Math.floor(ty - r); y <= Math.floor(ty + r); y++) {
+      for (let x = Math.floor(tx - r); x <= Math.floor(tx + r); x++) {
+        if (!w.inBounds(x, y) || Math.hypot(x + 0.5 - tx, y + 0.5 - ty) > r) continue;
+        const c = w.index(x, y);
+        if (!this.isEnemyCell(a, c)) continue;
+        const victim = this.poleis[this.owner[c]];
+        if (c === victim.capital && victim.garrison >= 1) continue;
+        this.capture(c, a.owner, victim.idx);
+      }
+    }
+  }
+
+  /** Moves the army toward (tx, ty); returns true on arrival. Ships and mountain paths are slow. */
   private walk(a: Army, tx: number, ty: number, dt: number): boolean {
     const dx = tx - a.x;
     const dy = ty - a.y;
     const d = Math.hypot(dx, dy);
-    if (d < 0.15) return true;
+    if (d < 0.35) return true;
     const cell = this.world.cellAt(a.x, a.y);
     const atSea = cell < 0 || this.world.terrain[cell] === Terrain.Sea;
-    const step = Math.min(d, (atSea ? RULES.armySpeedSea : RULES.armySpeedLand) * dt);
+    const speed = atSea
+      ? RULES.armySpeedSea
+      : RULES.armySpeedLand * (1 - Math.min(0.6, (this.world.elevation[cell] / 1000) * RULES.mountainSlowdown));
+    const step = Math.min(d, speed * dt);
     a.x += (dx / d) * step;
     a.y += (dy / d) * step;
     return false;
@@ -581,7 +654,7 @@ export class Simulation {
       if (o < 0 || !p.wars.has(o)) continue;
       const x = c % w.cols;
       const y = (c - x) / w.cols;
-      const d = Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) + this.rand() * 6;
+      const d = Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) + this.rand() * 18;
       if (d < bestD) {
         bestD = d;
         best = c;
@@ -596,8 +669,8 @@ export class Simulation {
     const x0 = a.target % w.cols;
     const y0 = Math.floor(a.target / w.cols);
     const options: number[] = [];
-    for (let dy = -2; dy <= 2; dy++) {
-      for (let dx = -2; dx <= 2; dx++) {
+    for (let dy = -4; dy <= 4; dy++) {
+      for (let dx = -4; dx <= 4; dx++) {
         if (!w.inBounds(x0 + dx, y0 + dy)) continue;
         const c = w.index(x0 + dx, y0 + dy);
         if (this.isEnemyCell(a, c)) options.push(c);
@@ -688,14 +761,24 @@ export class Simulation {
     if (prev >= 0) {
       this.poleis[prev].cells--;
       this.poleis[prev].fertility -= f;
+      this.poleis[prev].version++;
     } else if (prev === WILD) {
       this.wildCells--;
     }
     this.owner[cell] = idx;
     this.poleis[idx].cells++;
     this.poleis[idx].fertility += f;
+    this.poleis[idx].version++;
     if (flash) this.claims.push({ cell, t: this.time });
+    this.dirty.push(cell);
     this.version++;
+  }
+
+  /** Cells that changed owner since the last call (for incremental repaints). */
+  takeDirty(): number[] {
+    const out = this.dirty;
+    this.dirty = [];
+    return out;
   }
 
   private capture(cell: number, winner: number, loser: number) {

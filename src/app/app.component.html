@@ -1,7 +1,7 @@
 @let t = i18n.t();
 
 <main class="viewport">
-  <app-splash (revealed)="splash.finish()"></app-splash>
+  <app-splash></app-splash>
 
   <!-- Fullscreen Visualization Stage -->
   <section class="stage" [attr.aria-label]="t.stageAriaLabel">
@@ -46,14 +46,16 @@
     </div>
   </header>
 
+  @if (game.ready() && game.status() === 'choosing') {
+    <app-start-screen></app-start-screen>
+  }
+
   <!-- Bottom Dock: polis economy, diplomacy, time controls & rules -->
+  @if (game.ready() && game.status() !== 'choosing') {
   <footer class="dock-wrap">
     <div class="dock">
       <app-polis-panel class="dock__polis"></app-polis-panel>
-
-      @if (game.status() !== 'choosing') {
-        <app-diplomacy-panel class="dock__diplomacy"></app-diplomacy-panel>
-      }
+      <app-diplomacy-panel class="dock__diplomacy"></app-diplomacy-panel>
 
       <section class="dock__time glass-panel">
         <span class="dock__year" [attr.aria-live]="'off'">{{ year() }}</span>
@@ -108,6 +110,7 @@
       </section>
     </div>
   </footer>
+  }
 
   <ng-template #rulesTpl>
     <dl class="rules">

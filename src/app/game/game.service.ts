@@ -1,4 +1,7 @@
 import { Injectable, NgZone, computed, inject, signal } from '@angular/core';
+import { SplashService } from '@kmd/design-system';
+import { I18nService } from '../core/i18n/i18n.service';
+import { loadMapData } from './map-loader';
 import { GameEvent, GameStatus, Simulation } from './simulation';
 import { World } from './world';
 
@@ -14,6 +17,8 @@ export interface PolisView {
   drachmae: number;
   income: number;
   cells: number;
+  /** Land area in km². */
+  area: number;
   share: number;
   prosperity: number;
   settlers: number;
@@ -30,22 +35,29 @@ export type GameSpeed = 1 | 2 | 4;
 const UI_REFRESH_MS = 200;
 
 /**
- * Drives the simulation clock outside Angular's zone and publishes signal snapshots for the HUD.
- * The canvas renderer reads `sim` directly every animation frame.
+ * Loads the map, drives the simulation clock outside Angular's zone and publishes signal snapshots
+ * for the HUD. The canvas renderer reads `sim` directly every animation frame.
  */
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly zone = inject(NgZone);
+  private readonly splash = inject(SplashService);
+  private readonly i18n = inject(I18nService);
 
-  readonly world = new World();
-  readonly sim = new Simulation(this.world);
+  /** Available once `ready()` is true. */
+  world!: World;
+  sim!: Simulation;
 
+  readonly ready = signal(false);
   readonly status = signal<GameStatus>('choosing');
   readonly player = signal(-1);
+  /** Polis inspected on the map (or pre-selected on the start screen). */
   readonly selected = signal(-1);
+  /** Polis highlighted while hovering the start screen list. */
+  readonly preview = signal(-1);
   readonly paused = signal(false);
   readonly speed = signal<GameSpeed>(1);
-  readonly year = signal(this.sim.year);
+  readonly year = signal(0);
   readonly poleis = signal<PolisView[]>([]);
   readonly events = signal<GameEvent[]>([]);
 
@@ -57,28 +69,49 @@ export class GameService {
 
   private lastFrame = 0;
   private lastUi = 0;
-  private frame = 0;
 
   constructor() {
-    this.publish();
-    this.zone.runOutsideAngular(() => {
-      this.frame = requestAnimationFrame(t => this.loop(t));
-    });
+    void this.load();
   }
 
-  choose(idx: number) {
-    this.sim.choose(idx);
-    this.selected.set(-1);
-    this.paused.set(false);
-    this.publish();
+  private async load() {
+    const t = this.i18n.t();
+    try {
+      this.splash.setProgress(10, t.loadingMap);
+      const data = await loadMapData(f => this.splash.setProgress(10 + f * 70, t.loadingMap));
+      this.splash.setProgress(85, t.loadingTerrain);
+      // Let the status paint before the synchronous terrain analysis.
+      await new Promise(r => setTimeout(r, 16));
+      this.world = new World(data);
+      this.sim = new Simulation(this.world);
+      this.splash.setProgress(100, '');
+      this.ready.set(true);
+      this.publish();
+      this.zone.runOutsideAngular(() => requestAnimationFrame(ts => this.loop(ts)));
+    } catch (err) {
+      console.error(err);
+      this.splash.setError(t.loadError);
+    }
   }
 
+  /** On the start screen a click pre-selects; in game it inspects another polis. */
   select(idx: number) {
     if (this.sim.status === 'choosing') {
-      if (idx >= 0) this.choose(idx);
+      this.selected.set(idx);
       return;
     }
     this.selected.set(idx === this.player() ? -1 : idx);
+  }
+
+  /** Starts the game leading the pre-selected polis. */
+  begin() {
+    const idx = this.selected();
+    if (idx < 0) return;
+    this.sim.choose(idx);
+    this.selected.set(-1);
+    this.preview.set(-1);
+    this.paused.set(false);
+    this.publish();
   }
 
   settle() {
@@ -117,6 +150,7 @@ export class GameService {
   restart() {
     this.sim.reset();
     this.selected.set(-1);
+    this.preview.set(-1);
     this.paused.set(false);
     this.speed.set(1);
     this.publish();
@@ -130,12 +164,13 @@ export class GameService {
       this.lastUi = now;
       this.zone.run(() => this.publish());
     }
-    this.frame = requestAnimationFrame(t => this.loop(t));
+    requestAnimationFrame(t => this.loop(t));
   }
 
   private publish() {
     const sim = this.sim;
     const greek = this.world.greekCells.length;
+    const cellArea = this.world.cellKm * this.world.cellKm;
     this.status.set(sim.status);
     this.player.set(sim.player);
     this.year.set(sim.year);
@@ -151,6 +186,7 @@ export class GameService {
         drachmae: Math.floor(p.drachmae),
         income: p.income,
         cells: p.cells,
+        area: p.cells * cellArea,
         share: p.cells / greek,
         prosperity: p.prosperity,
         settlers: sim.settlers(p),
