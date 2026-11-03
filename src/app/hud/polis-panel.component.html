@@ -82,28 +82,6 @@
       </div>
       <div class="action">
         <app-button
-          extraClass="action__btn"
-          [disabled]="!me.canTrain"
-          [titleText]="trainHint()"
-          (btnClick)="game.train()">
-          <lucide-icon [img]="icons.Shield" [size]="14"></lucide-icon>
-          <span>{{ t.train }}</span>
-          <span class="action__cost">−{{ num(me.trainCost) }}</span>
-        </app-button>
-      </div>
-      <div class="action">
-        <app-button
-          extraClass="action__btn"
-          [disabled]="!me.canDevelop"
-          [titleText]="developHint()"
-          (btnClick)="game.develop()">
-          <lucide-icon [img]="icons.Building2" [size]="14"></lucide-icon>
-          <span>{{ t.develop }}</span>
-          <span class="action__cost">−{{ num(me.developCost) }}</span>
-        </app-button>
-      </div>
-      <div class="action">
-        <app-button
           variant="play"
           extraClass="action__btn action__btn--buildings"
           [hot]="true"

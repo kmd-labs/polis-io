@@ -45,12 +45,16 @@ export const EN: Dict = {
       desc: 'Every polis has a character rated 1–5. Militarism slightly strengthens its armies and garrison in battle (+4% per point); culture raises its income (+8% per point).'
     },
     {
+      term: 'Budget',
+      desc: 'The budget window on the left divides all income between five funds — military, colonization, agriculture, trade and culture — with sliders that always add up to 100% (none below 5%). Each fund spends itself: the military pays upkeep, raises its buildings and trains hoplites; colonization sends settlers and founds colonies; agriculture and trade raise their buildings, then farms and ports; culture holds festivals.'
+    },
+    {
       term: 'Developing the countryside',
-      desc: 'Spend drachmae and, 1 to 12 months later, a farm (the land feeds 2,500 more people) or a port (+12% income) appears — usually on low ground near the sea, not right under the city walls. In one case out of ten, a small new polis is founded on a historical site — your vassal, which fights in all your wars.'
+      desc: 'The agriculture and trade funds lay out farms (the land feeds 2,500 more people) and ports (+12% income); they appear 1 to 12 months later, usually on low ground near the sea, not right under the city walls. The colonization fund, once the nearby wilderness is settled, founds colonies on historical sites — vassal poleis that fight in all your wars.'
     },
     {
       term: 'Polis buildings',
-      desc: 'The Buildings button in your panel opens three trees — agriculture, trade and military — of six buildings each, unlocked in order. Every building takes a year to raise, costs drachmae and some of the citizens’ satisfaction, and grants a bonus to the whole polis.'
+      desc: 'The Buildings button opens three trees — agriculture, trade and military — of six buildings each, unlocked in order. Each tree is paid for by its budget fund, which buys the next building as soon as it has saved enough; it takes a year to raise, costs some of the citizens’ satisfaction, and grants a bonus to the whole polis.'
     },
     {
       term: 'Satisfaction',
@@ -70,7 +74,7 @@ export const EN: Dict = {
     },
     {
       term: 'Hoplites',
-      desc: 'Your warriors. They garrison the capital and march out in small armies during war. Each one costs upkeep; unpaid hoplites desert.'
+      desc: 'Your warriors, trained by the military fund and paid from it. They garrison the capital and march out in small armies during war. If the military fund runs dry, unpaid hoplites desert.'
     },
     {
       term: 'War',
@@ -128,18 +132,36 @@ export const EN: Dict = {
   statPopulationHint: 'Everyone living in your polis: civilians and warriors.',
   statWorkersHint: 'Civilians fit for physical work. They produce income and can be sent as settlers.',
   statWarriorsHint: 'Hoplites in the garrison and in the field.',
-  statDrachmaeHint: 'Treasury and income per second (after hoplite upkeep).',
+  statDrachmaeHint: 'Treasury across all five budget funds, and net income per second (after hoplite upkeep).',
   statTerritoryHint: 'Share of all Greek land you hold.',
   statGrowthHint: 'Growth and income multiplier earned by settling the wilderness.',
   settle: 'Settle the wilderness',
   settleHint: 'Send 10% of your workers ({n}) to claim wild land. More land speeds up population growth and income.',
   settling: 'Settling… {p}%',
   settleNoLand: 'No wilderness left',
-  train: 'Train hoplites',
-  trainHint: 'Arm {n} workers as hoplites for {c} drachmae.',
-  develop: 'Develop the countryside',
-  developHint:
-    'Spend {c} drachmae: in 1–12 months a farm (the land feeds 2,500 more) or a port (+12% income) appears — usually on low ground near the sea, away from the walls; one time in ten, a small vassal polis that fights at your side.',
+  // Budget
+  budget: 'Budget',
+  budgetHint:
+    'All income — taxes, trade, spoils and tribute — is split between five funds. Each fund pays for its own projects automatically as soon as it has saved enough.',
+  budgetRule: 'Shares always add up to 100%; none can go below 5%. Hoplite upkeep comes out of the military fund.',
+  budgetKeys: {
+    military: { name: 'Military', desc: 'Pays the hoplites’ upkeep, then raises the military buildings and trains new hoplites.' },
+    colonization: { name: 'Colonization', desc: 'Sends settlers into the wilderness; once there is no free land near, founds colonies on historical sites.' },
+    agriculture: { name: 'Agriculture', desc: 'Raises the agricultural buildings, then lays out new farms.' },
+    trade: { name: 'Trade', desc: 'Raises the trade buildings, then builds new ports.' },
+    culture: { name: 'Culture', desc: 'Holds festivals: satisfaction, slowly rising culture and a little power projection.' }
+  },
+  purchases: {
+    hoplites: 'hoplites',
+    expedition: 'settlers’ expedition',
+    colony: 'new colony',
+    farm: 'new farm',
+    port: 'new port',
+    festival: 'festival'
+  },
+  nextPurchase: 'next: {what} ({c})',
+  savingOnly: 'saving',
+  fundedBy: '{budget} fund: {f} / {c} dr',
   developTitle: 'Surveyors set out',
   developFarm: 'New farms will be laid out in your countryside in {m}.',
   developPort: 'A harbour will rise on your coast in {m}.',
@@ -191,7 +213,6 @@ export const EN: Dict = {
     barracks: { name: 'Barracks', desc: 'Common messes for the citizens-in-arms: one more army, marches 15% faster.' },
     ares: { name: 'Temple of Ares', desc: 'The war god’s favour: +2 power projection, +5% battle strength.' }
   },
-  build: 'Build',
   buildCost: '{d} dr · −{s}%',
   built: 'Built',
   underConstruction: 'Under construction…',
@@ -259,6 +280,9 @@ export const EN: Dict = {
   evCaptured: '{b} stormed {a}',
   evRevolt: '{a} rose in revolt against {b}',
   evRansom: '{a} bought its freedom from {b}',
+  evFestival: '{a} held a great festival',
+  evFarmPlanned: 'Surveyors lay out new farms — ready in {m}',
+  evPortPlanned: 'Work begins on a new port — ready in {m}',
 
   // Conquest decision
   conquestTitle: '{name} lies at your feet',

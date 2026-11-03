@@ -50,6 +50,10 @@
     <app-start-screen></app-start-screen>
   }
 
+  @if (game.ready() && game.status() !== 'choosing') {
+    <app-budget-panel></app-budget-panel>
+  }
+
   <!-- Bottom Dock: polis economy, diplomacy, time controls & rules -->
   @if (game.ready() && game.status() !== 'choosing') {
   <footer class="dock-wrap">

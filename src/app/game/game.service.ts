@@ -4,7 +4,18 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { polisName } from '../core/i18n/format';
 import { loadMapData } from './map-loader';
 import { IMPROVEMENTS, ImprovementId, ImprovementTree, improvementCost } from './data/improvements';
-import { ConquestChoice, DevelopmentPlan, GameEvent, GameStatus, Simulation, WarReport } from './simulation';
+import {
+  BUDGET_KEYS,
+  Budget,
+  BudgetKey,
+  ConquestChoice,
+  DevelopmentPlan,
+  GameEvent,
+  GameStatus,
+  Purchase,
+  Simulation,
+  WarReport
+} from './simulation';
 import { World } from './world';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
@@ -16,7 +27,9 @@ export interface PolisView {
   total: number;
   workers: number;
   warriors: number;
+  /** Everything in the five funds. */
   drachmae: number;
+  /** Net income per second (after hoplite upkeep). */
   income: number;
   cells: number;
   /** Land area in km². */
@@ -26,9 +39,6 @@ export interface PolisView {
   settlers: number;
   expedition: number | null;
   canSettle: boolean;
-  trainBatch: number;
-  trainCost: number;
-  canTrain: boolean;
   militarism: number;
   culture: number;
   farms: number;
@@ -52,8 +62,10 @@ export interface PolisView {
   relation: number;
   tributeGold: number;
   tributeWorkers: number;
-  developCost: number;
-  canDevelop: boolean;
+  /** Shares (%), fund balances and what each fund is saving for (player only). */
+  budget: Budget;
+  funds: Budget;
+  purchases: Partial<Record<BudgetKey, Purchase | null>>;
   wars: number[];
 }
 
@@ -66,7 +78,8 @@ export interface ImprovementView {
   progress: number;
   drachmae: number;
   satisfaction: number;
-  affordable: boolean;
+  /** Drachmae saved so far in the fund that pays for this tree. */
+  saved: number;
 }
 
 /**
@@ -186,16 +199,10 @@ export class GameService {
     this.publish();
   }
 
-  train() {
-    this.sim.train(this.sim.player);
+  /** Moves one budget slider; the others give way so the shares still add up to 100%. */
+  setBudget(key: BudgetKey, value: number) {
+    this.sim.setBudget(this.sim.player, key, value);
     this.publish();
-  }
-
-  /** Sends surveyors into the countryside and tells the player what will rise there, and when. */
-  develop() {
-    const plan = this.sim.develop(this.sim.player);
-    this.publish();
-    if (plan) this.enqueue([{ kind: 'develop', work: plan.kind, months: plan.months, site: plan.site }]);
   }
 
   /** Localized name of any polis, including vassals founded during the game. */
@@ -210,11 +217,6 @@ export class GameService {
     const next = this.queue.shift() ?? null;
     this.notice.set(next);
     if (!next) this.paused.set(this.pausedBeforeNotice);
-  }
-
-  improve(id: ImprovementId) {
-    this.sim.improve(this.sim.player, id);
-    this.publish();
   }
 
   resolveConquest(idx: number, choice: ConquestChoice) {
@@ -293,7 +295,7 @@ export class GameService {
         total: sim.totalPopulation(p),
         workers: sim.workers(p),
         warriors: sim.warriors(p),
-        drachmae: Math.floor(p.drachmae),
+        drachmae: Math.floor(sim.treasury(p)),
         income: p.income,
         cells: p.cells,
         area: p.cells * cellArea,
@@ -302,9 +304,6 @@ export class GameService {
         settlers: sim.settlers(p),
         expedition: p.expedition ? 1 - p.expedition.settlers / p.expedition.initial : null,
         canSettle: sim.canSettle(p),
-        trainBatch: sim.trainBatch(p),
-        trainCost: sim.trainCost(p),
-        canTrain: sim.canTrain(p),
         militarism: p.militarism,
         culture: p.culture,
         farms: p.farms,
@@ -325,8 +324,9 @@ export class GameService {
         tributeGold: Math.round(p.tributeGold),
         tributeWorkers: Math.round(p.tributeWorkers),
         overlord: p.overlord,
-        developCost: sim.developCost(p),
-        canDevelop: sim.canDevelop(p),
+        budget: { ...p.budget },
+        funds: { ...p.funds },
+        purchases: p.idx === sim.player ? Object.fromEntries(BUDGET_KEYS.map(k => [k, sim.nextPurchase(p, k)])) : {},
         wars: [...p.wars]
       }))
     );
@@ -346,9 +346,9 @@ export class GameService {
         tier: def.tier,
         state: sim.improvementState(p, def.id),
         progress: work ? Math.min(1, (sim.time - work.start) / (work.done - work.start)) : 0,
-        drachmae: cost.drachmae,
+        drachmae: sim.improvementPrice(p, def.id),
         satisfaction: cost.satisfaction,
-        affordable: sim.canImprove(p, def.id)
+        saved: Math.floor(p.funds[def.tree])
       };
     });
   }
@@ -369,7 +369,7 @@ export class GameService {
     for (const e of fresh) {
       if (e.kind === 'war' && mine.includes(e.b) && !mine.includes(e.a)) {
         const ratio = sim.warriors(sim.poleis[e.a]) / Math.max(1, sim.warriors(me));
-        incoming.push({ kind: 'war', from: e.a, tone: ratio > 1.4 || me.drachmae < 100 ? 'taunt' : 'challenge' });
+        incoming.push({ kind: 'war', from: e.a, tone: ratio > 1.4 || sim.treasury(me) < 100 ? 'taunt' : 'challenge' });
       } else if (e.kind === 'allianceOffer' && e.b === sim.player) {
         incoming.push({ kind: 'alliance', from: e.a });
       }
@@ -393,6 +393,10 @@ export class GameService {
     }
     for (const c of conquests) incoming.push({ kind: 'conquest', from: c });
     for (const r of warReports) incoming.push({ kind: 'warEnd', ...r });
+    // The player's budget founded a colony: say where and when.
+    for (const { owner, plan } of sim.takePlans()) {
+      if (owner === sim.player) incoming.push({ kind: 'develop', work: plan.kind, months: plan.months, site: plan.site });
+    }
     this.enqueue(incoming);
   }
 

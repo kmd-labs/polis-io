@@ -138,6 +138,10 @@
     }
   }
 
+  &__progress--funds span {
+    opacity: 0.55;
+  }
+
   &__cost {
     font-family: var(--font-family-mono);
     font-size: font-size("xxs");

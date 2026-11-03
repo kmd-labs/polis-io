@@ -1,5 +1,6 @@
 import { PolisId, SiteId } from '../../game/data/poleis';
 import { ImprovementId, ImprovementTree } from '../../game/data/improvements';
+import { BudgetKey, Purchase } from '../../game/simulation';
 
 export type Lang = 'en' | 'pl';
 
@@ -85,10 +86,15 @@ export interface Dict {
   settleHint: string;
   settling: string;
   settleNoLand: string;
-  train: string;
-  trainHint: string;
-  develop: string;
-  developHint: string;
+  // Budget
+  budget: string;
+  budgetHint: string;
+  budgetRule: string;
+  budgetKeys: Record<BudgetKey, { name: string; desc: string }>;
+  purchases: Record<Exclude<Purchase['kind'], 'improvement'>, string>;
+  nextPurchase: string;
+  savingOnly: string;
+  fundedBy: string;
   developTitle: string;
   developFarm: string;
   developPort: string;
@@ -119,7 +125,6 @@ export interface Dict {
   polisScreenIntro: string;
   trees: Record<ImprovementTree, string>;
   improvements: Record<ImprovementId, { name: string; desc: string }>;
-  build: string;
   buildCost: string;
   built: string;
   underConstruction: string;
@@ -186,6 +191,9 @@ export interface Dict {
   evCaptured: string;
   evRevolt: string;
   evRansom: string;
+  evFestival: string;
+  evFarmPlanned: string;
+  evPortPlanned: string;
 
   // Conquest decision
   conquestTitle: string;

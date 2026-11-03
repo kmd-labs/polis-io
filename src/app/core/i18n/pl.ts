@@ -45,12 +45,16 @@ export const PL: Dict = {
       desc: 'Każda polis ma charakter oceniony w skali 1–5. Militaryzm nieznacznie wzmacnia jej armie i garnizon w bitwie (+4% za punkt), a kultura zwiększa dochody (+8% za punkt).'
     },
     {
+      term: 'Budżet',
+      desc: 'Okno budżetu po lewej dzieli cały dochód między pięć funduszy — wojsko, kolonizację, rolnictwo, handel i kulturę — suwakami, które zawsze sumują się do 100% (żaden poniżej 5%). Każdy fundusz sam wydaje pieniądze: wojsko opłaca żołd, wznosi swoje budowle i szkoli hoplitów; kolonizacja wysyła osadników i zakłada kolonie; rolnictwo i handel wznoszą budowle, a potem farmy i porty; kultura urządza święta.'
+    },
+    {
       term: 'Rozwój okolic',
-      desc: 'Wydaj drachmy, a po 1–12 miesiącach powstanie farma (ziemia wyżywi 2500 osób więcej) albo port (+12% dochodów) — zwykle na nizinie nad morzem, nie tuż pod murami miasta. W jednym przypadku na dziesięć w historycznym miejscu powstaje małe nowe polis — twój wasal, który walczy we wszystkich twoich wojnach.'
+      desc: 'Fundusze rolnictwa i handlu zakładają farmy (ziemia wyżywi 2500 osób więcej) i porty (+12% dochodów); powstają po 1–12 miesiącach, zwykle na nizinie nad morzem, nie tuż pod murami miasta. Fundusz kolonizacji, gdy okoliczna dzicz zostanie zasiedlona, zakłada kolonie w historycznych miejscach — polis-wasale, które walczą we wszystkich twoich wojnach.'
     },
     {
       term: 'Budowle polis',
-      desc: 'Przycisk Budowle w twoim panelu otwiera trzy drzewa — rolnictwo, handel i wojsko — po sześć budowli, odblokowywanych po kolei. Każda budowla powstaje rok, kosztuje drachmy i część zadowolenia obywateli, a daje bonus całej polis.'
+      desc: 'Przycisk Budowle otwiera trzy drzewa — rolnictwo, handel i wojsko — po sześć budowli, odblokowywanych po kolei. Każde drzewo opłaca jego fundusz w budżecie, który kupuje kolejną budowlę, gdy tylko uzbiera dość pieniędzy; budowa trwa rok, kosztuje część zadowolenia obywateli i daje bonus całej polis.'
     },
     {
       term: 'Zadowolenie',
@@ -70,7 +74,7 @@ export const PL: Dict = {
     },
     {
       term: 'Hoplici',
-      desc: 'Twoi wojownicy. Strzegą stolicy, a w czasie wojny wyruszają w małych armiach. Każdy kosztuje żołd; nieopłaceni hoplici dezerterują.'
+      desc: 'Twoi wojownicy, szkoleni i opłacani z funduszu wojskowego. Strzegą stolicy, a w czasie wojny wyruszają w małych armiach. Gdy fundusz wojskowy się wyczerpie, nieopłaceni hoplici dezerterują.'
     },
     {
       term: 'Wojna',
@@ -128,18 +132,36 @@ export const PL: Dict = {
   statPopulationHint: 'Wszyscy mieszkańcy polis: cywile i wojownicy.',
   statWorkersHint: 'Cywile zdolni do pracy fizycznej. Wytwarzają dochód i mogą wyruszyć jako osadnicy.',
   statWarriorsHint: 'Hoplici w garnizonie i w polu.',
-  statDrachmaeHint: 'Skarbiec i dochód na sekundę (po odliczeniu żołdu).',
+  statDrachmaeHint: 'Skarbiec ze wszystkich pięciu funduszy budżetu i dochód netto na sekundę (po odliczeniu żołdu).',
   statTerritoryHint: 'Udział we wszystkich ziemiach greckich.',
   statGrowthHint: 'Mnożnik przyrostu i dochodów zdobyty dzięki zasiedlaniu dziczy.',
   settle: 'Zasiedlaj dzicz',
   settleHint: 'Wyślij 10% robotników ({n}), by zajęli dziką ziemię. Więcej ziemi przyspiesza przyrost ludności i dochody.',
   settling: 'Zasiedlanie… {p}%',
   settleNoLand: 'Brak wolnej ziemi',
-  train: 'Szkol hoplitów',
-  trainHint: 'Uzbrój {n} robotników jako hoplitów za {c} drachm.',
-  develop: 'Rozwijaj okolice',
-  developHint:
-    'Wydaj {c} drachm: za 1–12 miesięcy powstanie farma (ziemia wyżywi 2500 osób więcej) albo port (+12% dochodów) — zwykle na nizinie nad morzem, z dala od murów; raz na dziesięć — małe polis-wasal, które walczy u twojego boku.',
+  // Budget
+  budget: 'Budżet',
+  budgetHint:
+    'Cały dochód — podatki, handel, łupy i daniny — trafia do pięciu funduszy. Każdy fundusz sam opłaca swoje przedsięwzięcia, gdy tylko uzbiera dość pieniędzy.',
+  budgetRule: 'Udziały zawsze sumują się do 100%; żaden nie spadnie poniżej 5%. Żołd hoplitów pochodzi z funduszu wojskowego.',
+  budgetKeys: {
+    military: { name: 'Wojsko', desc: 'Opłaca żołd hoplitów, potem wznosi budowle wojskowe i szkoli nowych hoplitów.' },
+    colonization: { name: 'Kolonizacja', desc: 'Wysyła osadników w dzicz; gdy w pobliżu zabraknie wolnej ziemi, zakłada kolonie w historycznych miejscach.' },
+    agriculture: { name: 'Rozwój rolnictwa', desc: 'Wznosi budowle rolnicze, potem zakłada nowe farmy.' },
+    trade: { name: 'Rozwój handlu', desc: 'Wznosi budowle handlowe, potem buduje nowe porty.' },
+    culture: { name: 'Rozwój kultury', desc: 'Urządza święta: zadowolenie, powoli rosnąca kultura i odrobina projekcji siły.' }
+  },
+  purchases: {
+    hoplites: 'hoplici',
+    expedition: 'wyprawa osadników',
+    colony: 'nowa kolonia',
+    farm: 'nowa farma',
+    port: 'nowy port',
+    festival: 'święto'
+  },
+  nextPurchase: 'dalej: {what} ({c})',
+  savingOnly: 'oszczędza',
+  fundedBy: 'fundusz „{budget}”: {f} / {c} dr',
   developTitle: 'Mierniczowie wyruszają',
   developFarm: 'Za {m} w twojej okolicy powstaną nowe farmy.',
   developPort: 'Za {m} na twoim wybrzeżu stanie port.',
@@ -191,7 +213,6 @@ export const PL: Dict = {
     barracks: { name: 'Koszary', desc: 'Wspólne posiłki obywateli-żołnierzy: o jedną armię więcej, marsz szybszy o 15%.' },
     ares: { name: 'Świątynia Aresa', desc: 'Łaska boga wojny: +2 projekcji siły, +5% siły w bitwie.' }
   },
-  build: 'Buduj',
   buildCost: '{d} dr · −{s}%',
   built: 'Zbudowano',
   underConstruction: 'W budowie…',
@@ -259,6 +280,9 @@ export const PL: Dict = {
   evCaptured: 'Polis {b} zdobywa polis {a}',
   evRevolt: 'Polis {a} buntuje się przeciw polis {b}',
   evRansom: 'Polis {a} wykupuje wolność od polis {b}',
+  evFestival: 'Polis {a} urządza wielkie święto',
+  evFarmPlanned: 'Mierniczowie wytyczają nowe farmy — gotowe za {m}',
+  evPortPlanned: 'Rusza budowa nowego portu — gotowy za {m}',
 
   // Conquest decision
   conquestTitle: 'Polis {name} u twoich stóp',

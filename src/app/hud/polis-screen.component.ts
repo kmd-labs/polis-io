@@ -1,6 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
 import { LucideAngularModule, Check, Coins, Hammer, Lock, Shield, Smile, Wheat } from 'lucide-angular';
-import { ButtonComponent } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
@@ -10,7 +9,7 @@ import { TREES } from '../game/data/improvements';
 @Component({
   selector: 'app-polis-screen',
   standalone: true,
-  imports: [LucideAngularModule, ButtonComponent],
+  imports: [LucideAngularModule],
   templateUrl: './polis-screen.component.html',
   styleUrl: './polis-screen.component.scss'
 })
@@ -37,7 +36,13 @@ export class PolisScreenComponent {
           ...b,
           name: t.improvements[b.id].name,
           desc: t.improvements[b.id].desc,
-          cost: interpolate(t.buildCost, { d: formatNumber(b.drachmae, lang), s: b.satisfaction })
+          cost: interpolate(t.buildCost, { d: formatNumber(b.drachmae, lang), s: b.satisfaction }),
+          funding: interpolate(t.fundedBy, {
+            budget: t.budgetKeys[b.tree].name,
+            f: formatNumber(Math.min(b.saved, b.drachmae), lang),
+            c: formatNumber(b.drachmae, lang)
+          }),
+          funded: Math.min(1, b.saved / b.drachmae)
         }))
     }));
   });

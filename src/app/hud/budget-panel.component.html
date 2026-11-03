@@ -1,0 +1,44 @@
+@let t = i18n.t();
+
+<section class="budget glass-panel" [attr.aria-label]="t.budget">
+  <button type="button" class="budget__head" [attr.aria-expanded]="open()" [appTooltip]="t.budgetHint" (click)="toggle()">
+    <lucide-icon class="budget__icon" [img]="icons.Coins" [size]="15"></lucide-icon>
+    <span class="budget__title">{{ t.budget }}</span>
+    @if (summary(); as s) {
+      <span class="budget__treasury">
+        {{ s.treasury }} <span class="budget__rate" [class.budget__rate--neg]="s.negative">{{ s.income }}</span>
+      </span>
+    }
+    <lucide-icon class="budget__chevron" [class.budget__chevron--open]="open()" [img]="icons.ChevronDown" [size]="14"></lucide-icon>
+  </button>
+
+  @if (open()) {
+    <div class="budget__rows">
+      @for (row of rows(); track row.key) {
+        <div class="row" [class]="'row row--' + row.key">
+          <div class="row__top" [appTooltip]="row.desc">
+            <lucide-icon [img]="row.icon" [size]="13"></lucide-icon>
+            <span class="row__name">{{ row.name }}</span>
+            <span class="row__share">{{ row.share }}%</span>
+          </div>
+          <input
+            class="row__slider"
+            type="range"
+            [min]="min"
+            [max]="max"
+            step="1"
+            [value]="row.share"
+            [style.--fill]="((row.share - min) / (max - min)) * 100 + '%'"
+            [attr.aria-label]="row.name"
+            (input)="set(row.key, $event)" />
+          <div class="row__meta">
+            <span class="row__fund">{{ row.fund }} dr</span>
+            <span class="row__next">{{ row.next }}</span>
+          </div>
+          <span class="row__progress"><span [style.width.%]="row.progress * 100"></span></span>
+        </div>
+      }
+    </div>
+    <p class="budget__hint">{{ t.budgetRule }}</p>
+  }
+</section>

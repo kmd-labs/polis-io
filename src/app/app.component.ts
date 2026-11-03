@@ -46,6 +46,7 @@ import { PolisPanelComponent } from './hud/polis-panel.component';
 import { DiplomacyPanelComponent } from './hud/diplomacy-panel.component';
 import { ChronicleComponent } from './hud/chronicle.component';
 import { StartScreenComponent } from './hud/start-screen.component';
+import { BudgetPanelComponent } from './hud/budget-panel.component';
 
 @Component({
   selector: 'app-root',
@@ -63,7 +64,8 @@ import { StartScreenComponent } from './hud/start-screen.component';
     PolisPanelComponent,
     DiplomacyPanelComponent,
     ChronicleComponent,
-    StartScreenComponent
+    StartScreenComponent,
+    BudgetPanelComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'

@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { LucideAngularModule, ScrollText } from 'lucide-angular';
 import { BreakpointService } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
-import { formatYear, interpolate } from '../core/i18n/format';
+import { formatPlural, formatYear, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { GameEventKind } from '../game/simulation';
 
@@ -24,7 +24,10 @@ const TEMPLATE_KEY = {
   secession: 'evSecession',
   captured: 'evCaptured',
   revolt: 'evRevolt',
-  ransom: 'evRansom'
+  ransom: 'evRansom',
+  festival: 'evFestival',
+  farmPlanned: 'evFarmPlanned',
+  portPlanned: 'evPortPlanned'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Floating feed of the latest wars, treaties, colonies and conquests (top-right, under the view switcher). */
@@ -50,13 +53,17 @@ export class ChronicleComponent {
     return this.game
       .events()
       // Other poleis' settling and building are routine; only the player's own projects are news.
-      .filter(e => !['settle', 'colony', 'farm', 'port', 'allianceOffer', 'siege'].includes(e.kind) || (e.kind === 'siege' ? e.a === player || e.b === player : e.a === player && e.kind !== 'allianceOffer'))
+      .filter(e => !['settle', 'colony', 'farm', 'port', 'allianceOffer', 'siege', 'festival', 'farmPlanned', 'portPlanned'].includes(e.kind) || (e.kind === 'siege' ? e.a === player || e.b === player : e.a === player && e.kind !== 'allianceOffer'))
       .slice(-limit)
       .reverse()
       .map(e => ({
         id: e.id,
         year: formatYear(e.year, t),
-        text: interpolate(t[TEMPLATE_KEY[e.kind]], { a: name(e.a), b: name(e.b) }),
+        text: interpolate(t[TEMPLATE_KEY[e.kind]], {
+          a: name(e.a),
+          b: name(e.b),
+          m: e.n ? formatPlural(e.n, t.monthsOne, t.monthsFew, t.monthsMany) : ''
+        }),
         mine: e.a === player || e.b === player,
         hostile: ['war', 'fall', 'siege', 'client', 'annexed', 'revolt'].includes(e.kind)
       }));

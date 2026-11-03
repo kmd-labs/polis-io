@@ -34,11 +34,11 @@
                     </span>
                   }
                   @default {
-                    <app-button size="sm" extraClass="building__build" [disabled]="!b.affordable" (btnClick)="game.improve(b.id)">
-                      <lucide-icon [img]="icons.Hammer" [size]="12"></lucide-icon>
-                      <span>{{ t.build }}</span>
-                      <span class="building__cost">{{ b.cost }}</span>
-                    </app-button>
+                    <span class="building__status">
+                      <lucide-icon [img]="icons.Coins" [size]="11"></lucide-icon>{{ b.funding }}
+                    </span>
+                    <span class="building__progress building__progress--funds"><span [style.width.%]="b.funded * 100"></span></span>
+                    <span class="building__cost">{{ b.cost }}</span>
                   }
                 }
               </div>

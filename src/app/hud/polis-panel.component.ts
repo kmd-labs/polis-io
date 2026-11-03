@@ -106,11 +106,6 @@ export class PolisPanelComponent {
       : hint;
   });
 
-  readonly developHint = computed(() => {
-    const me = this.game.me();
-    return me ? interpolate(this.i18n.t().developHint, { c: this.num(me.developCost) }) : '';
-  });
-
   readonly settleLabel = computed(() => {
     const t = this.i18n.t();
     const me = this.game.me();
@@ -124,11 +119,6 @@ export class PolisPanelComponent {
     if (!me) return '';
     if (!me.canSettle && me.expedition == null && this.game.sim.wildCells === 0) return t.settleNoLand;
     return interpolate(t.settleHint, { n: this.num(me.settlers) });
-  });
-
-  readonly trainHint = computed(() => {
-    const me = this.game.me();
-    return me ? interpolate(this.i18n.t().trainHint, { n: this.num(me.trainBatch), c: this.num(me.trainCost) }) : '';
   });
 
   num(value: number): string {

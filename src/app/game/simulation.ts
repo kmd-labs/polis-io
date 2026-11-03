@@ -11,6 +11,57 @@ import { MinHeap } from './heap';
 import { hash01 } from './rng';
 import { Terrain, World } from './world';
 
+/** The five funds every drachma of income is split into. */
+export type BudgetKey = 'military' | 'colonization' | 'agriculture' | 'trade' | 'culture';
+export type Budget = Record<BudgetKey, number>;
+export const BUDGET_KEYS: readonly BudgetKey[] = ['military', 'colonization', 'agriculture', 'trade', 'culture'];
+
+/** Lowest share (%) any fund can be cut to. */
+export const BUDGET_MIN = 5;
+
+/** Fund that pays for the buildings of each Polis-screen tree. */
+const TREE_FUND: Record<ImprovementTree, BudgetKey> = { agriculture: 'agriculture', trade: 'trade', military: 'military' };
+
+/**
+ * Sets one share and rescales the others in proportion so that the five still add up to 100%,
+ * none of them below the minimum. Shares are whole percents.
+ */
+export function rebalanceBudget(budget: Budget, key: BudgetKey, value: number): Budget {
+  const others = BUDGET_KEYS.filter(k => k !== key);
+  const v = Math.round(Math.max(BUDGET_MIN, Math.min(100 - BUDGET_MIN * others.length, value)));
+  const spare = 100 - v - BUDGET_MIN * others.length;
+  const above = others.reduce((sum, k) => sum + Math.max(0, budget[k] - BUDGET_MIN), 0);
+  const out = { ...budget, [key]: v } as Budget;
+  // Largest-remainder rounding: whole percents that never dip below the minimum.
+  const raw = others.map(k => {
+    const weight = above > 0 ? Math.max(0, budget[k] - BUDGET_MIN) / above : 1 / others.length;
+    return { k, value: BUDGET_MIN + spare * weight };
+  });
+  for (const r of raw) out[r.k] = Math.floor(r.value);
+  let left = 100 - BUDGET_KEYS.reduce((sum, k) => sum + out[k], 0);
+  for (const r of [...raw].sort((a, b) => (b.value % 1) - (a.value % 1))) {
+    if (left-- <= 0) break;
+    out[r.k]++;
+  }
+  return out;
+}
+
+/** Scales arbitrary weights into a valid budget (whole percents, each at least the minimum). */
+function normalizeBudget(weights: Budget): Budget {
+  const total = BUDGET_KEYS.reduce((sum, k) => sum + weights[k], 0);
+  const out = {} as Budget;
+  for (const k of BUDGET_KEYS) out[k] = Math.max(BUDGET_MIN, Math.round((weights[k] / total) * 100));
+  const drift = 100 - BUDGET_KEYS.reduce((sum, k) => sum + out[k], 0);
+  const largest = BUDGET_KEYS.reduce((a, b) => (out[a] >= out[b] ? a : b));
+  out[largest] += drift;
+  return out;
+}
+
+/** What a fund is saving for next. */
+export type Purchase =
+  | { kind: 'improvement'; id: ImprovementId; cost: number }
+  | { kind: 'hoplites' | 'expedition' | 'colony' | 'farm' | 'port' | 'festival'; cost: number };
+
 /** Palette tokens for poleis that break away during a fall (unused by the founding cities). */
 const SECESSION_COLORS = ['success-700', 'info-600', 'danger-700', 'purple-400', 'primary-500', 'info-800', 'neutral-800'];
 
@@ -53,13 +104,6 @@ export const RULES = {
   militarismBonus: 0.04,
   /** Income bonus per point of culture. */
   cultureBonus: 0.08,
-  /** Development: base cost + share of population, rising with every project. */
-  developBase: 250,
-  developPerCapita: 0.02,
-  developGrowth: 0.5,
-  /** Development outcomes: vassal below the first threshold, farm below the second, port above. */
-  vassalChance: 0.1,
-  farmChance: 0.55,
   /** People of carrying capacity added by each farm. */
   farmCapacity: 2500,
   /** Income bonus per port. */
@@ -167,6 +211,28 @@ export const RULES = {
   /** Armies this close (cells) to a raging battle join their side, up to this many per side. */
   joinRange: 6,
   maxArmiesPerSide: 4,
+  /** Budget costs: a settlers' expedition, a colony, a farm, a port and a festival. */
+  expeditionBase: 40,
+  expeditionPerSettler: 0.25,
+  colonyBase: 1200,
+  colonyPerCapita: 0.03,
+  farmBase: 200,
+  portBase: 250,
+  worksPerCapita: 0.015,
+  /** Each farm or port already standing makes the next one dearer. */
+  worksGrowth: 0.35,
+  festivalBase: 80,
+  festivalPerCapita: 0.008,
+  festivalGrowth: 0.3,
+  /** What a festival brings: satisfaction, culture (up to 5) and renown. */
+  festivalMood: 3,
+  festivalCulture: 0.1,
+  festivalPrestige: 0.2,
+  /** City size (people) at which buildings cost twice their base price. */
+  improvementPopScale: 40000,
+  /** Hoplites the military fund keeps under arms: share of civilians plus the fund's share times this. */
+  armyBase: 0.04,
+  armyPerShare: 0.5,
   /** Countryside developments take this many months, at random, to appear. */
   developMonthsMin: 1,
   developMonthsMax: 12,
@@ -277,6 +343,13 @@ export interface PolisState {
   /** Tribute received from client states so far. */
   tributeGold: number;
   tributeWorkers: number;
+  /** Shares (%) of income going to each fund, and the drachmae each fund holds. */
+  budget: Budget;
+  funds: Budget;
+  festivals: number;
+  colonies: number;
+  /** A fund found no site for its project; it looks again after this time. */
+  retryAt: Budget;
   /** Completed buildings of the Polis screen and their summed nationwide bonuses. */
   built: Set<ImprovementId>;
   effects: ImprovementEffects;
@@ -432,7 +505,10 @@ export type GameEventKind =
   | 'secession'
   | 'captured'
   | 'revolt'
-  | 'ransom';
+  | 'ransom'
+  | 'festival'
+  | 'farmPlanned'
+  | 'portPlanned';
 
 export interface GameEvent {
   id: number;
@@ -440,6 +516,8 @@ export interface GameEvent {
   a: number;
   b: number;
   year: number;
+  /** Extra figure for the chronicle, e.g. months until planned works are ready. */
+  n?: number;
 }
 
 export type GameStatus = 'choosing' | 'playing' | 'won' | 'lost';
@@ -463,6 +541,8 @@ export class Simulation {
   warReports: WarReport[] = [];
   /** Open wars of the player, by enemy. */
   private playerWars = new Map<number, WarStats>();
+  /** Colonies commissioned, for the pop-up. */
+  private plans: { owner: number; plan: DevelopmentPlan }[] = [];
   /** Cities the player has stormed, awaiting a decision. */
   private conquests: number[] = [];
   /** Pairs of poleis whose land touches (key: lower * 4096 + higher), refreshed every second. */
@@ -569,6 +649,11 @@ export class Simulation {
       besieged: 0,
       tributeGold: 0,
       tributeWorkers: 0,
+      budget: this.defaultBudget(def),
+      funds: { military: 0, colonization: 0, agriculture: 0, trade: 0, culture: 0 },
+      festivals: 0,
+      colonies: 0,
+      retryAt: { military: 0, colonization: 0, agriculture: 0, trade: 0, culture: 0 },
       built: new Set<ImprovementId>(),
       effects: { ...NO_EFFECTS },
       works: []
@@ -686,18 +771,9 @@ export class Simulation {
     return lo + (RULES.satisfactionHigh - lo) * (p.satisfaction / 100);
   }
 
-  developCost(p: PolisState): number {
-    const base = RULES.developBase + this.totalPopulation(p) * RULES.developPerCapita;
-    return Math.round(base * (1 + RULES.developGrowth * p.developments) * (1 - p.effects.develop));
-  }
-
   /** Settlers needed per cell of wilderness (terraces make each go further). */
   settlersPerCell(p: PolisState): number {
     return RULES.settlersPerCell / (1 + p.effects.settle);
-  }
-
-  canDevelop(p: PolisState): boolean {
-    return p.alive && p.drachmae >= this.developCost(p);
   }
 
   /** A polis together with its overlord and fellow vassals: they share every war and peace. */
@@ -745,8 +821,40 @@ export class Simulation {
     return Math.ceil(this.trainBatch(p) * RULES.trainCostPerHoplite * (1 - p.effects.train));
   }
 
+  /** All the drachmae a polis holds: its five funds plus anything not yet allocated. */
+  treasury(p: PolisState): number {
+    return p.drachmae + BUDGET_KEYS.reduce((sum, k) => sum + p.funds[k], 0);
+  }
+
+  /** Takes a share of every fund (ransom, plunder). Returns the amount taken. */
+  private plunder(p: PolisState, share: number): number {
+    let taken = 0;
+    for (const k of BUDGET_KEYS) {
+      taken += p.funds[k] * share;
+      p.funds[k] *= 1 - share;
+    }
+    return taken;
+  }
+
+  /** The player (or the AI) reallocates its income. */
+  setBudget(idx: number, key: BudgetKey, value: number) {
+    const p = this.poleis[idx];
+    if (p) p.budget = rebalanceBudget(p.budget, key, value);
+  }
+
+  /** A city's habits: warlike cities arm, cultured ones celebrate, everyone settles while land is free. */
+  private defaultBudget(def: PolisDef): Budget {
+    return normalizeBudget({
+      military: 15 + 6 * def.militarism,
+      colonization: 25,
+      agriculture: 20,
+      trade: 15,
+      culture: 6 + 4 * def.culture
+    });
+  }
+
   canTrain(p: PolisState): boolean {
-    return p.alive && p.drachmae >= this.trainCost(p) && this.workers(p) > this.trainBatch(p) * 3;
+    return p.alive && this.workers(p) > this.trainBatch(p) * 3;
   }
 
   canOfferPeace(p: PolisState, target: number): boolean {
@@ -776,11 +884,10 @@ export class Simulation {
     this.emit('settle', idx);
   }
 
-  train(idx: number) {
+  private train(idx: number) {
     const p = this.poleis[idx];
     if (!this.canTrain(p)) return;
     const batch = this.trainBatch(p);
-    p.drachmae -= this.trainCost(p);
     p.civilians -= batch;
     p.garrison += batch;
     this.mood(p, RULES.satisfactionTrain, true);
@@ -809,18 +916,18 @@ export class Simulation {
     return (
       p.alive &&
       this.improvementState(p, id) === 'available' &&
-      p.drachmae >= cost.drachmae &&
+      p.funds[TREE_FUND[IMPROVEMENT_BY_ID.get(id)!.tree]] >= this.improvementPrice(p, id) &&
       p.satisfaction >= cost.satisfaction
     );
   }
 
-  /** Lays the foundations of a building; it stands a year later. */
-  improve(idx: number, id: ImprovementId) {
+  /** Lays the foundations of a building, paid from its tree's fund; it stands a year later. */
+  private improve(idx: number, id: ImprovementId) {
     const p = this.poleis[idx];
     if (!this.canImprove(p, id)) return;
     const def = IMPROVEMENT_BY_ID.get(id)!;
     const cost = improvementCost(def.tier);
-    p.drachmae -= cost.drachmae;
+    p.funds[TREE_FUND[def.tree]] -= this.improvementPrice(p, id);
     this.mood(p, -cost.satisfaction, true);
     p.works.push({ id, tree: def.tree, start: this.time, done: this.time + RULES.secondsPerYear });
   }
@@ -1055,39 +1162,35 @@ export class Simulation {
   // ─── Development ──────────────────────────────────────────────────────────
 
   /**
-   * Develops the countryside: surveyors pick a site — usually low ground near the sea, away from the
-   * walls — for a farm, a port or (one time in ten) a vassal town, which appears 1–12 months later.
+   * Commissions works in the countryside: surveyors pick a site — usually low ground near the sea,
+   * away from the walls — and the farm, port or colony appears 1–12 months later.
+   * Returns the plan, or null when no suitable site exists.
    */
-  develop(idx: number): DevelopmentPlan | null {
-    const p = this.poleis[idx];
-    if (!this.canDevelop(p)) return null;
-    p.drachmae -= this.developCost(p);
-    p.developments++;
-
-    const roll = this.rand();
+  private commission(p: PolisState, kind: DevelopmentOutcome): DevelopmentPlan | null {
     let plan: Omit<PendingDevelopment, 'owner' | 'ready'> | null = null;
-    if (roll < RULES.vassalChance) {
+    if (kind === 'vassal') {
       const site = this.vassalSite(p);
-      if (site) plan = { kind: 'vassal', cell: site.cell, site: site.id };
-    }
-    if (!plan && roll >= RULES.farmChance) {
-      const port = this.portSite(p);
-      if (port >= 0) plan = { kind: 'port', cell: port, site: null };
-    }
-    if (!plan) {
-      const farm = this.farmSite(p);
-      if (farm >= 0) plan = { kind: 'farm', cell: farm, site: null };
-    }
-    if (!plan) {
-      const port = this.portSite(p);
-      if (port >= 0) plan = { kind: 'port', cell: port, site: null };
+      if (site) plan = { kind, cell: site.cell, site: site.id };
+    } else {
+      const cell = kind === 'farm' ? this.farmSite(p) : this.portSite(p);
+      if (cell >= 0) plan = { kind, cell, site: null };
     }
     if (!plan) return null;
     if (plan.site) this.usedSites.add(plan.site);
+    p.developments++;
     const span = RULES.developMonthsMax - RULES.developMonthsMin + 1;
     const months = RULES.developMonthsMin + Math.floor(this.rand() * span);
-    this.pendingDevelopments.push({ ...plan, owner: idx, ready: this.time + (months * RULES.secondsPerYear) / 12 });
-    return { kind: plan.kind, months, site: plan.site };
+    this.pendingDevelopments.push({ ...plan, owner: p.idx, ready: this.time + (months * RULES.secondsPerYear) / 12 });
+    if (kind === 'vassal') this.plans.push({ owner: p.idx, plan: { kind, months, site: plan.site } });
+    else this.emit(kind === 'farm' ? 'farmPlanned' : 'portPlanned', p.idx, -1, months);
+    return { kind, months, site: plan.site };
+  }
+
+  /** Colonies commissioned since the UI last asked (the player is told by a pop-up). */
+  takePlans(): { owner: number; plan: DevelopmentPlan }[] {
+    const out = this.plans;
+    this.plans = [];
+    return out;
   }
 
   /** Completes developments whose time has come, if their site is still in the right hands. */
@@ -1328,14 +1431,14 @@ export class Simulation {
     const culture = 1 + RULES.cultureBonus * p.culture;
     const trade = 1 + RULES.portBonus * p.ports;
     const bonus = (1 + p.effects.income) * mood;
-    p.income =
-      this.workers(p) * RULES.incomePerWorker * p.prosperity * (0.7 + 0.3 * avgFertility) * culture * trade * bonus -
-      this.warriors(p) * RULES.upkeepPerWarrior;
-    p.drachmae += p.income * dt;
+    const gross = this.workers(p) * RULES.incomePerWorker * p.prosperity * (0.7 + 0.3 * avgFertility) * culture * trade * bonus;
+    const upkeep = this.warriors(p) * RULES.upkeepPerWarrior;
+    p.income = gross - upkeep;
+    p.drachmae += gross * dt;
     // A client state sends part of its income and a stream of labourers to its overlord.
     const lord = p.client && p.overlord >= 0 ? this.poleis[p.overlord] : null;
     if (lord?.alive) {
-      const gold = Math.max(0, p.income) * RULES.tributeShare * dt;
+      const gold = gross * RULES.tributeShare * dt;
       const workers = p.civilians * RULES.tributeWorkers * dt;
       p.drachmae -= gold;
       p.civilians -= workers;
@@ -1344,11 +1447,132 @@ export class Simulation {
       lord.tributeGold += gold;
       lord.tributeWorkers += workers;
     }
-    if (p.drachmae < 0) {
+    this.allocate(p, upkeep, dt);
+  }
+
+  /**
+   * Splits every drachma that came in — taxes, trade, spoils, tribute — between the five funds,
+   * pays the hoplites from the military chest, then lets each fund buy what it is saving for.
+   */
+  private allocate(p: PolisState, upkeep: number, dt: number) {
+    const cash = Math.max(0, p.drachmae);
+    p.drachmae = 0;
+    for (const k of BUDGET_KEYS) p.funds[k] += (cash * p.budget[k]) / 100;
+    p.funds.military -= upkeep * dt;
+    if (p.funds.military < 0) {
       // Unpaid hoplites go home.
-      p.drachmae = 0;
+      p.funds.military = 0;
       p.garrison *= 1 - 0.03 * dt;
     }
+    const next = Object.fromEntries(BUDGET_KEYS.map(k => [k, this.nextPurchase(p, k)])) as Record<BudgetKey, Purchase | null>;
+    // A fund with nothing left to buy passes its savings on to the others, by their shares.
+    const busy = BUDGET_KEYS.filter(k => next[k] || (k === 'colonization' && p.expedition));
+    const busyShare = busy.reduce((sum, k) => sum + p.budget[k], 0);
+    for (const k of BUDGET_KEYS) {
+      if (busy.includes(k) || p.funds[k] <= 0 || busyShare <= 0) continue;
+      for (const o of busy) p.funds[o] += (p.funds[k] * p.budget[o]) / busyShare;
+      p.funds[k] = 0;
+    }
+    for (const k of BUDGET_KEYS) {
+      const n = next[k];
+      if (n && p.funds[k] >= n.cost && this.time >= p.retryAt[k]) this.buy(p, k, n);
+    }
+  }
+
+  /** How far the army is below the size the military share calls for (0 = full, 1 = none). */
+  private armyShortfall(p: PolisState): number {
+    const share = p.budget.military / 100;
+    const target = p.civilians * (RULES.armyBase + RULES.armyPerShare * share);
+    return Math.max(0, 1 - this.warriors(p) / Math.max(1, target));
+  }
+
+  /** Drachmae a building costs: dearer by tier, and for larger cities. */
+  improvementPrice(p: PolisState, id: ImprovementId): number {
+    const base = improvementCost(IMPROVEMENT_BY_ID.get(id)!.tier).drachmae;
+    return Math.round(base * (1 + this.totalPopulation(p) / RULES.improvementPopScale));
+  }
+
+  /**
+   * What a fund is saving for. Tree funds weigh their next building against their recurring project
+   * (hoplites, farms, ports) and take the cheaper — every farm or port makes the next one dearer, so
+   * the two alternate; an army below half its intended strength always comes first.
+   */
+  nextPurchase(p: PolisState, key: BudgetKey): Purchase | null {
+    const recurring = this.recurringPurchase(p, key);
+    const tree = (Object.keys(TREE_FUND) as ImprovementTree[]).find(t => TREE_FUND[t] === key);
+    if (!tree) return recurring;
+    const def = [...IMPROVEMENT_BY_ID.values()].find(d => d.tree === tree && this.improvementState(p, d.id) === 'available');
+    if (!def || p.satisfaction < improvementCost(def.tier).satisfaction) return recurring;
+    if (key === 'military' && recurring && this.armyShortfall(p) > 0.5) return recurring;
+    const building: Purchase = { kind: 'improvement', id: def.id, cost: this.improvementPrice(p, def.id) };
+    return recurring && recurring.cost < building.cost ? recurring : building;
+  }
+
+  private recurringPurchase(p: PolisState, key: BudgetKey): Purchase | null {
+    const pop = this.totalPopulation(p);
+    const works = (kind: 'farm' | 'port') => {
+      const count = kind === 'farm' ? p.farms : p.ports;
+      const pending = this.pendingDevelopments.filter(d => d.owner === p.idx && d.kind === kind).length;
+      const base = kind === 'farm' ? RULES.farmBase : RULES.portBase;
+      const discount = 1 - p.effects.develop;
+      return Math.round((base + pop * RULES.worksPerCapita) * (1 + RULES.worksGrowth * (count + pending)) * discount);
+    };
+    switch (key) {
+      case 'military':
+        return this.canTrain(p) && this.armyShortfall(p) > 0 ? { kind: 'hoplites', cost: this.trainCost(p) } : null;
+      case 'colonization':
+        if (p.expedition) return null;
+        if (this.canSettle(p)) {
+          return { kind: 'expedition', cost: Math.round(RULES.expeditionBase + this.settlers(p) * RULES.expeditionPerSettler) };
+        }
+        if (!this.vassalSite(p)) return null;
+        return {
+          kind: 'colony',
+          cost: Math.round((RULES.colonyBase + pop * RULES.colonyPerCapita) * (1 + 0.5 * p.colonies) * (1 - p.effects.develop))
+        };
+      case 'agriculture':
+        return { kind: 'farm', cost: works('farm') };
+      case 'trade':
+        return this.harbourOf(p) >= 0 ? { kind: 'port', cost: works('port') } : null;
+      case 'culture':
+        return {
+          kind: 'festival',
+          cost: Math.round((RULES.festivalBase + pop * RULES.festivalPerCapita) * (1 + RULES.festivalGrowth * p.festivals))
+        };
+    }
+  }
+
+  private buy(p: PolisState, key: BudgetKey, next: Purchase) {
+    let done = true;
+    switch (next.kind) {
+      case 'improvement':
+        this.improve(p.idx, next.id);
+        return;
+      case 'hoplites':
+        this.train(p.idx);
+        break;
+      case 'expedition':
+        this.settle(p.idx);
+        break;
+      case 'colony':
+        done = !!this.commission(p, 'vassal');
+        if (done) p.colonies++;
+        break;
+      case 'farm':
+      case 'port':
+        done = !!this.commission(p, next.kind);
+        break;
+      case 'festival':
+        p.festivals++;
+        p.culture = Math.min(5, p.culture + RULES.festivalCulture);
+        p.prestige += RULES.festivalPrestige;
+        this.mood(p, RULES.festivalMood);
+        this.emit('festival', p.idx);
+        break;
+    }
+    if (done) p.funds[key] -= next.cost;
+    // No site to be found: look again in a little while instead of every tick.
+    else p.retryAt[key] = this.time + 5;
   }
 
   private expedition(p: PolisState, dt: number) {
@@ -1415,17 +1639,16 @@ export class Simulation {
 
   private think(p: PolisState) {
     if (p.captured) return;
-    if (this.canSettle(p) && this.rand() < 0.3) this.settle(p.idx);
-    const militancy = 0.05 + 0.015 * p.militarism;
-    if (this.canTrain(p) && this.warriors(p) < p.civilians * militancy && this.rand() < 0.6) this.train(p.idx);
+    // The AI steers through its budget: arm in wartime, settle while land is free.
+    p.budget = normalizeBudget({
+      military: 15 + 6 * p.militarism + (p.wars.size ? 25 : 0),
+      colonization: this.wildCells > 0 ? 25 : 8,
+      agriculture: 20,
+      trade: 15,
+      culture: 6 + 4 * p.culture
+    });
     // Vassals follow their overlord in war and peace.
     if (p.overlord >= 0 && this.poleis[p.overlord].alive) return;
-    if (p.drachmae > this.developCost(p) * 1.5 && this.rand() < 0.08) this.develop(p.idx);
-    if (this.rand() < 0.06) {
-      const options = [...IMPROVEMENT_BY_ID.keys()].filter(id => this.canImprove(p, id));
-      const id = options[Math.floor(this.rand() * options.length)];
-      if (id && p.drachmae > improvementCost(IMPROVEMENT_BY_ID.get(id)!.tier).drachmae * 2) this.improve(p.idx, id);
-    }
 
     let worldWars = 0;
     for (const q of this.poleis) worldWars += q.wars.size;
@@ -2310,7 +2533,7 @@ export class Simulation {
 
     if (choice === 'raze') {
       if (this.rand() < RULES.razeSuccess) {
-        gold = Math.round(l.drachmae * 0.5 + pop * 0.05);
+        gold = Math.round(this.plunder(l, 0.5) + pop * 0.05);
         slaves = Math.round(pop * 0.2);
         l.civilians = Math.max(0, l.civilians - slaves);
         this.raze(l, this.player, null);
@@ -2329,8 +2552,7 @@ export class Simulation {
         this.makeClient(l, this.player);
         fate = 'client';
       } else {
-        gold = Math.round(l.drachmae * 0.6 + pop * 0.12);
-        l.drachmae *= 0.4;
+        gold = Math.round(this.plunder(l, 0.6) + pop * 0.12);
         l.garrison = Math.round(l.civilians * 0.02);
         this.emit('ransom', idx, this.player);
         fate = 'ransom';
@@ -2400,8 +2622,8 @@ export class Simulation {
     if (!rivals || cells >= this.world.greekCells.length * RULES.victoryShare) this.status = 'won';
   }
 
-  private emit(kind: GameEventKind, a: number, b = -1) {
-    this.events.push({ id: this.nextId++, kind, a, b, year: this.year });
+  private emit(kind: GameEventKind, a: number, b = -1, n?: number) {
+    this.events.push({ id: this.nextId++, kind, a, b, year: this.year, n });
     if (this.events.length > 40) this.events.shift();
   }
 }

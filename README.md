@@ -16,13 +16,16 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   wild pixels next to your borders, flowing over low plains and valleys first and climbing hills last
   (or found a colony across the sea when your coast is full). Lowlands are more fertile; armies march slower in mountains.
   Every claimed pixel raises carrying capacity and permanently boosts growth and income (*Prosperity*).
-- **Train hoplites**: arms a batch of workers for drachmae. Hoplites cost upkeep.
+- **Budget**: a permanent window splits all income — taxes, trade, spoils, tribute — between five funds with
+  sliders that always add up to 100% (none below 5%): military, colonization, agriculture, trade and culture.
+  Each fund spends itself: the military pays hoplite upkeep, raises military buildings and trains hoplites;
+  colonization sends settlers and, once the wilderness nearby is gone, founds colonies; agriculture and trade
+  alternate between their buildings and new farms/ports; culture holds festivals (satisfaction, culture, renown).
+  A fund with nothing left to buy passes its savings to the others.
 - **Militarism & culture** (1–5, from each city's historical reputation): militarism slightly strengthens
   armies and garrison in battle (+4% per point); culture raises income (+8% per point).
-- **Develop the countryside**: spend drachmae and, 1–12 months later (surveyors tell you what and when),
-  a farm (the land feeds 2,500 more people) or a port (+12% income) appears — more often on low ground near
-  the sea, rarely right under the walls. One time in ten a small vassal polis is founded on a historical site
-  (Tegea, Delphi, Abdera…); vassals wear their overlord's colour and join all of its wars and treaties.
+- **Countryside works**: farms (the land feeds 2,500 more) and ports (+12% income) appear 1–12 months after
+  their fund commissions them — more often on low ground near the sea, rarely right under the walls.
 - **Armies in the field**: battles draw in nearby armies of both sides (up to four a side); an army facing an
   enemy 2.5× its size falls back, losing stragglers, and may scatter into two; 20% of overrun land — up to
   half far from home — is simply left as wilderness.

@@ -158,7 +158,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const area: Area = { left: 12, top: 64, right: this.width - 12, bottom: this.height - 12 };
     const dock = document.querySelector('.dock-wrap .dock');
     if (dock) area.bottom = Math.min(area.bottom, dock.getBoundingClientRect().top - 8);
-    const panel = document.querySelector('.start-screen__panel');
+    const panel = document.querySelector('.start-screen__panel') ?? document.querySelector('app-budget-panel');
     if (panel) {
       const r = panel.getBoundingClientRect();
       if (r.top > this.height * 0.3) area.bottom = Math.min(area.bottom, r.top - 8);
