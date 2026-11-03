@@ -384,6 +384,8 @@ export interface PolisState {
   captured: boolean;
   /** Diplomatic reputation with every other polis, by index (−100…+100). */
   relations: number[];
+  /** The military fund ran dry this tick: unpaid hoplites are going home. */
+  unpaid: boolean;
   /** Battles won and lost, for the history and the hegemony rankings. */
   battlesWon: number;
   battlesLost: number;
@@ -712,6 +714,7 @@ export class Simulation {
       client: false,
       captured: false,
       relations: [],
+      unpaid: false,
       battlesWon: 0,
       battlesLost: 0,
       lastVictoryAt: -Infinity,
@@ -1561,7 +1564,8 @@ export class Simulation {
     for (const k of BUDGET_KEYS) p.funds[k] += (cash * p.budget[k]) / 100;
     p.funds.military -= upkeep * dt;
     this.demobilize(p, dt);
-    if (p.funds.military < 0) {
+    p.unpaid = p.funds.military < 0;
+    if (p.unpaid) {
       // Unpaid hoplites go home.
       p.funds.military = 0;
       p.garrison *= 1 - 0.03 * dt;

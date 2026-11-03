@@ -22,6 +22,7 @@ import { BreakpointService, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { GameService } from '../game/game.service';
 import { MapView } from '../game/map-renderer';
+import { AlertsComponent } from './alerts.component';
 import { BudgetPanelComponent } from './budget-panel.component';
 import { ChronicleComponent } from './chronicle.component';
 import { DiplomacyListComponent } from './diplomacy-list.component';
@@ -46,6 +47,7 @@ import { TopBarComponent } from './top-bar.component';
     LucideAngularModule,
     TooltipDirective,
     TopBarComponent,
+    AlertsComponent,
     BudgetPanelComponent,
     PolisPanelComponent,
     PolisScreenComponent,

@@ -259,6 +259,17 @@ export interface Dict {
   dipListHint: string;
   standings: Record<'war' | 'ally' | 'vassal' | 'client' | 'peace', string>;
   chronicleEmpty: string;
+  alertsLabel: string;
+  alertOpen: string;
+  alertSiege: string;
+  alertSiegeAlly: string;
+  alertDeserting: string;
+  alertAllyWar: string;
+  alertColonyBlocked: string;
+  alertFundIdle: string;
+  alertVictory: string;
+  alertWarEnd: string;
+  alertDevelop: string;
   embassyAccept: string;
   embassyDecline: string;
 
