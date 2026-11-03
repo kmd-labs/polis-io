@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { LucideAngularModule, ChevronDown, Coins, Landmark, LucideIconData, Shield, Sprout, Wheat, Ship } from 'lucide-angular';
 import { BreakpointService, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
@@ -15,6 +15,7 @@ import { BUDGET_KEYS, BUDGET_MIN, BudgetKey, Purchase } from '../game/simulation
   selector: 'app-budget-panel',
   standalone: true,
   imports: [LucideAngularModule, TooltipDirective],
+  host: { '[class.embedded]': 'embedded()' },
   templateUrl: './budget-panel.component.html',
   styleUrl: './budget-panel.component.scss'
 })
@@ -34,17 +35,20 @@ export class BudgetPanelComponent {
     culture: Landmark
   };
 
+  /** Inside the HUD drawer: always open, no frame or heading of its own. */
+  readonly embedded = input(false);
+
   /** Collapsed to its header on small screens until opened. */
   readonly open = signal(true);
 
   constructor() {
-    effect(() => this.open.set(!this.bp.tablet()));
+    effect(() => this.open.set(this.embedded() || !this.bp.tablet()));
   }
 
   readonly summary = computed(() => {
     const me = this.game.me();
     const lang = this.i18n.lang();
-    return me ? { treasury: formatNumber(me.drachmae, lang), income: formatRate(me.income, lang), negative: me.income < 0 } : null;
+    return me ? { treasury: formatNumber(me.drachmae, lang), income: formatRate(this.game.perMonth(me.income), lang), negative: me.income < 0 } : null;
   });
 
   readonly rows = computed(() => {

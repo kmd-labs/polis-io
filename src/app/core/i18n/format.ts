@@ -47,3 +47,8 @@ export function formatYears(n: number, t: Dict): string {
 export function fmt1(value: number, lang: Lang): string {
   return value.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 1 });
 }
+
+/** Short form for tight spaces: 18,146 → "18.1K" / "18,1 tys.". */
+export function formatCompact(value: number, lang: Lang): string {
+  return Math.round(value).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { notation: 'compact', maximumFractionDigits: 1 });
+}

@@ -1,6 +1,14 @@
 @use "variables" as *;
 @use "app/theme/greek" as greek;
 
+:host(.embedded) {
+  position: static;
+  width: auto;
+  max-height: none;
+  display: block;
+  pointer-events: auto;
+}
+
 :host {
   position: fixed;
   top: calc(2 * var(--header-offset-top) + var(--kmd-brand-h));
@@ -29,6 +37,16 @@
 
   &::before {
     @include greek.frieze(top, 5px, 18px, 6px, 0.4);
+  }
+
+  &--embedded {
+    padding: 0;
+    overflow: visible;
+    animation: none;
+
+    &::before {
+      content: none;
+    }
   }
 
   &__head {

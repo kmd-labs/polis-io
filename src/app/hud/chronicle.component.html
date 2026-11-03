@@ -1,9 +1,13 @@
+@let t = i18n.t();
+
 @if (entries().length) {
-  <section class="chronicle glass-panel" [attr.aria-label]="i18n.t().chronicle" aria-live="polite">
-    <header class="chronicle__head">
-      <lucide-icon [img]="scrollIcon" [size]="13"></lucide-icon>
-      <span>{{ i18n.t().chronicle }}</span>
-    </header>
+  <section class="chronicle" [class.glass-panel]="framed()" [class.chronicle--bare]="!framed()" [attr.aria-label]="t.chronicle" aria-live="polite">
+    @if (framed()) {
+      <header class="chronicle__head">
+        <lucide-icon [img]="scrollIcon" [size]="13"></lucide-icon>
+        <span>{{ t.chronicle }}</span>
+      </header>
+    }
     <ol class="chronicle__list">
       @for (e of entries(); track e.id) {
         <li class="entry" [class.entry--mine]="e.mine" [class.entry--hostile]="e.hostile">
@@ -13,4 +17,6 @@
       }
     </ol>
   </section>
+} @else if (!framed()) {
+  <p class="chronicle__empty">{{ t.chronicleEmpty }}</p>
 }

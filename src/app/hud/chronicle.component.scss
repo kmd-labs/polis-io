@@ -22,6 +22,19 @@
     color: color("text-dim");
   }
 
+  &--bare {
+    width: auto;
+    padding: 0;
+    border-radius: 0;
+    animation: none;
+  }
+
+  &__empty {
+    margin: 0;
+    font-size: font-size("xs");
+    color: color("text-dim");
+  }
+
   &__list {
     margin: 0;
     padding: 0;

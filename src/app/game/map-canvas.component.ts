@@ -88,6 +88,12 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       untracked(() => this.flyTo(idx));
     });
 
+    // Lists in the HUD ask for a polis to be brought into view.
+    effect(() => {
+      const req = this.game.focusRequest();
+      if (req) untracked(() => this.flyTo(req.idx));
+    });
+
     // Once the game begins, centre the player's capital in whatever part of the map the HUD leaves free.
     let previous = this.game.status();
     effect(() => {
@@ -197,12 +203,36 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     };
   }
 
-  /** Viewport minus the header strip, the bottom dock and the start screen panel. */
+  /** Re-frames the map after HUD panels open or fold, unless the player has moved the camera. */
+  reframe() {
+    if (!this.userMoved) requestAnimationFrame(() => this.fit(true));
+  }
+
+  /**
+   * Viewport minus the HUD: every element marked `data-occlude="top|left|right|bottom"` takes its
+   * edge, and the start screen panel takes the side it sits on.
+   */
   private freeArea(): Area {
     const area: Area = { left: 12, top: 64, right: this.width - 12, bottom: this.height - 12 };
-    const dock = document.querySelector('.dock-wrap .dock');
-    if (dock) area.bottom = Math.min(area.bottom, dock.getBoundingClientRect().top - 8);
-    const panel = document.querySelector('.start-screen__panel') ?? document.querySelector('app-budget-panel');
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>('[data-occlude]'))) {
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      switch (el.dataset['occlude']) {
+        case 'top':
+          area.top = Math.max(area.top, r.bottom + 8);
+          break;
+        case 'left':
+          area.left = Math.max(area.left, r.right + 12);
+          break;
+        case 'right':
+          area.right = Math.min(area.right, r.left - 12);
+          break;
+        case 'bottom':
+          area.bottom = Math.min(area.bottom, r.top - 8);
+          break;
+      }
+    }
+    const panel = document.querySelector('.start-screen__panel');
     if (panel) {
       const r = panel.getBoundingClientRect();
       if (r.top > this.height * 0.3) area.bottom = Math.min(area.bottom, r.top - 8);
@@ -211,6 +241,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       else area.left = Math.max(area.left, r.right + 12);
     }
     if (area.bottom - area.top < 160) area.bottom = area.top + 160;
+    if (area.right - area.left < 160) area.right = area.left + 160;
     return area;
   }
 

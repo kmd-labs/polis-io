@@ -5,9 +5,15 @@
 }
 
 .screen__intro {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: block;
+  line-height: 1.5;
+
+  lucide-icon {
+    display: inline-block;
+    margin-right: 4px;
+    vertical-align: -2px;
+  }
+
   margin: 0 0 spacing("lg");
   font-size: font-size("sm");
   color: color("text-desc");

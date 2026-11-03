@@ -14,6 +14,7 @@ import {
   GameEvent,
   GameStatus,
   Purchase,
+  RULES,
   Simulation,
   WarReport
 } from './simulation';
@@ -107,7 +108,9 @@ export type Notice =
   | { kind: 'conquest'; from: number }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
-export type GameSpeed = 1 | 2 | 4;
+/** Clock multipliers behind the five speed keys (1–5). */
+export const SPEEDS = [1, 2, 4, 8, 16] as const;
+export type GameSpeed = (typeof SPEEDS)[number];
 
 const UI_REFRESH_MS = 200;
 
@@ -130,6 +133,8 @@ export class GameService {
   readonly player = signal(-1);
   /** Polis inspected on the map (or pre-selected on the start screen). */
   readonly selected = signal(-1);
+  /** The map camera flies to this polis whenever a new request is set. */
+  readonly focusRequest = signal<{ idx: number } | null>(null);
   /** Polis highlighted while hovering the start screen list. */
   readonly preview = signal(-1);
   readonly paused = signal(false);
@@ -183,6 +188,12 @@ export class GameService {
       return;
     }
     this.selected.set(idx === this.player() ? -1 : idx);
+  }
+
+  /** Selects a polis from a list and brings it into view. */
+  focus(idx: number) {
+    this.select(idx);
+    this.focusRequest.set({ idx });
   }
 
   /** Starts the game leading the pre-selected polis. */
@@ -250,7 +261,18 @@ export class GameService {
   }
 
   cycleSpeed() {
-    this.speed.update(s => (s === 1 ? 2 : s === 2 ? 4 : 1));
+    this.speed.update(s => SPEEDS[(SPEEDS.indexOf(s) + 1) % SPEEDS.length]);
+  }
+
+  /** Speed by key: 1 = normal … 5 = fastest. */
+  setSpeed(level: number) {
+    const speed = SPEEDS[level - 1];
+    if (speed) this.speed.set(speed);
+  }
+
+  /** Converts a per-second simulation rate into a per-month figure for display. */
+  perMonth(perSecond: number): number {
+    return (perSecond * RULES.secondsPerYear) / 12;
   }
 
   restart() {

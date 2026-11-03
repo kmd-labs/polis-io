@@ -74,7 +74,21 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 The HUD is styled after classical Greece — parchment and marble panels, terracotta rules, meander friezes and
 Cinzel capitals for titles, and pixel-art temples, towns, farms, ports and siege camps on the map. It shows total population, workers (able-bodied civilians) and warriors, plus treasury,
 territory share and prosperity. Population follows Archaic densities: a few thousand to ten thousand people
-per city at the start, 25–35 people/km² on settled lowland, and roughly 2–3 million across a fully settled Hellas. <kbd>Space</kbd> pauses; the wheel or a pinch zooms; dragging pans.
+per city at the start, 25–35 people/km² on settled lowland, and roughly 2–3 million across a fully settled Hellas.
+
+The in-game HUD sits on the edges of the map, grand-strategy style:
+
+- **Top bar**: your banner, drachmae (+ per month), population, workers, hoplites (now / target), satisfaction,
+  power projection and territory; on the right the date, pause, five speeds and the rules.
+- **Left drawer** (collapsible to an icon rail): *Budget*, *Polis* (figures and building trees), *Diplomacy*
+  (every city and its standing with you) and *Chronicle*.
+- **Right outliner** (collapsible): wars with a strength bar, allies, sieges and the latest news.
+- **Map modes** bottom-right: political, terrain relief, soil fertility and relations; the card of a selected
+  foreign city appears bottom-left.
+- On phones the drawer and the outliner become a bottom sheet behind a tab bar.
+
+Panel layout is remembered per browser. Keys: <kbd>Space</kbd> pauses, <kbd>1</kbd>–<kbd>5</kbd> set the speed,
+<kbd>B</kbd> opens the budget, <kbd>Esc</kbd> folds the drawer; the wheel or a pinch zooms; dragging pans.
 
 ## Development
 
@@ -82,6 +96,7 @@ per city at the start, 25–35 people/km² on settled lowland, and roughly 2–3
 npm install
 npm start            # http://localhost:4200
 npm run build
+npm test             # unit tests (Vitest) for the pure functions
 npm run build:map    # rebuild src/assets/map/hellas.png (+ metadata) from Natural Earth and Terrain Tiles
 ```
 
@@ -93,7 +108,7 @@ npm run build:map    # rebuild src/assets/map/hellas.png (+ metadata) from Natur
 | `src/app/game/map-renderer.ts` | Canvas renderer (shaded relief, animated sea, outlines, temples, armies) |
 | `src/app/game/fight-cloud.ts` | Cartoon brawl animation |
 | `src/app/game/game.service.ts` | Game clock outside the Angular zone and signal snapshots for the HUD |
-| `src/app/hud/` | Start screen, dock panels (your polis, diplomacy) and the chronicle feed |
+| `src/app/hud/` | Start screen and the in-game HUD (`app-hud`: top bar, drawer tabs, outliner, map modes) |
 | `src/app/core/i18n/` | English and Polish dictionaries |
 
 See [AGENTS.md](AGENTS.md) for the KMD design-system conventions this app follows.

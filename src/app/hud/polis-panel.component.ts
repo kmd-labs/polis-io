@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { PopupService } from '@kmd/design-system';
 import {
   LucideAngularModule,
@@ -40,6 +40,9 @@ export class PolisPanelComponent {
   readonly icons = { Anchor, Coins, Crown, Flag, Handshake, Landmark, Smile, MapIcon, Pickaxe, Sailboat, Swords, TrendingUp, Users, Wheat };
 
   private readonly popup = inject(PopupService);
+
+  /** Inside the HUD drawer: no frame of its own, and the building trees sit below it. */
+  readonly embedded = input(false);
 
   /** Buildings under construction, shown on the Buildings button (e.g. "1/3"). */
   readonly building = computed(() => {

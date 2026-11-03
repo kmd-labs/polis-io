@@ -22,7 +22,6 @@ import {
 } from 'lucide-angular';
 import {
   BrandComponent,
-  ButtonComponent,
   DropdownComponent,
   DropdownOption,
   PopupComponent,
@@ -42,11 +41,9 @@ import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
 import { ConquestChoice, FallOutcome } from './game/simulation';
 import { SiteId } from './game/data/poleis';
-import { PolisPanelComponent } from './hud/polis-panel.component';
-import { DiplomacyPanelComponent } from './hud/diplomacy-panel.component';
-import { ChronicleComponent } from './hud/chronicle.component';
 import { StartScreenComponent } from './hud/start-screen.component';
-import { BudgetPanelComponent } from './hud/budget-panel.component';
+import { HudComponent } from './hud/hud.component';
+import { HudStateService } from './hud/hud-state.service';
 
 @Component({
   selector: 'app-root',
@@ -55,17 +52,13 @@ import { BudgetPanelComponent } from './hud/budget-panel.component';
     CommonModule,
     LucideAngularModule,
     BrandComponent,
-    ButtonComponent,
     DropdownComponent,
     PopupComponent,
     SplashComponent,
     TooltipComponent,
     MapCanvasComponent,
-    PolisPanelComponent,
-    DiplomacyPanelComponent,
-    ChronicleComponent,
     StartScreenComponent,
-    BudgetPanelComponent
+    HudComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -78,6 +71,7 @@ export class AppComponent {
   readonly splash = inject(SplashService);
   readonly seo = inject(SeoService);
   readonly game = inject(GameService);
+  readonly hud = inject(HudStateService);
 
   @ViewChild(MapCanvasComponent) private map?: MapCanvasComponent;
   @ViewChild('rulesTpl', { static: true }) private rulesTpl!: TemplateRef<unknown>;
@@ -169,8 +163,6 @@ export class AppComponent {
 
   readonly icons = { Globe, BookOpen, Play, Pause, FastForward, Maximize, RotateCcw, Coins, Pickaxe, Flag, Swords, Hourglass, MapIcon, Smile };
 
-  readonly currentView = signal<MapView>('political');
-
   readonly langOptions = computed<DropdownOption<Lang>[]>(() =>
     this.i18n.langs.map(l => ({
       value: l,
@@ -180,20 +172,9 @@ export class AppComponent {
     }))
   );
 
-  readonly viewOptions = computed<DropdownOption<MapView>[]>(() => {
-    const t = this.i18n.t();
-    return [
-      { value: 'political', label: t.viewPolitical, icon: Landmark },
-      { value: 'relief', label: t.viewRelief, icon: Mountain },
-      { value: 'fertility', label: t.viewFertility, icon: Wheat }
-    ];
-  });
-
-  readonly currentViewIcon = computed(
-    () => this.viewOptions().find(o => o.value === this.currentView())?.icon ?? Landmark
-  );
-
   readonly isPopupOpen = computed(() => this.popup.config() !== null);
+  /** In game, on tablets the logotype folds to make room for the resource bar. */
+  readonly compactBrand = computed(() => this.game.status() !== 'choosing' && this.bp.tablet() && !this.bp.mobile());
   readonly year = computed(() => formatYear(this.game.year(), this.i18n.t()));
   readonly ended = computed(() => this.game.status() === 'won' || this.game.status() === 'lost');
 
@@ -233,16 +214,39 @@ export class AppComponent {
     });
   }
 
-  @HostListener('document:keydown.space', ['$event'])
-  onSpace(event: Event) {
+  /** Space pauses, 1–5 set the speed, B opens the budget, Esc folds the drawer. */
+  @HostListener('document:keydown', ['$event'])
+  onKey(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null;
-    if (target?.closest('button, input, textarea, [role="listbox"]') || this.game.status() !== 'playing') return;
-    event.preventDefault();
-    this.game.togglePause();
+    if (event.ctrlKey || event.metaKey || event.altKey || target?.closest('input, textarea, select, [contenteditable]')) return;
+    if (this.game.status() === 'choosing' || !this.game.ready()) return;
+    const playing = this.game.status() === 'playing';
+    const mobile = this.bp.mobile();
+    if (event.key === ' ') {
+      if (target?.closest('button, [role="listbox"]') || !playing || this.isPopupOpen()) return;
+      event.preventDefault();
+      this.game.togglePause();
+    } else if (/^[1-5]$/.test(event.key)) {
+      if (!playing || this.isPopupOpen()) return;
+      this.game.setSpeed(Number(event.key));
+    } else if (event.key === 'b' || event.key === 'B') {
+      if (this.isPopupOpen()) return;
+      if (mobile) this.hud.toggleSheet('budget');
+      else this.hud.toggleTab('budget');
+    } else if (event.key === 'Escape') {
+      if (this.isPopupOpen()) return;
+      if (mobile) this.hud.sheet.set(null);
+      else this.hud.drawerOpen.set(false);
+    }
   }
 
   fitMap() {
     this.map?.fit(true);
+  }
+
+  /** HUD panels opened or folded: keep the untouched map framed in what is left. */
+  reframe() {
+    this.map?.reframe();
   }
 
   restart() {

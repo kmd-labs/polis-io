@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fmt1, formatNumber, formatRate } from './format';
+import { fmt1, formatCompact, formatNumber, formatRate } from './format';
 
 describe('fmt1', () => {
   it('hides float noise', () => {
@@ -25,5 +25,12 @@ describe('formatNumber / formatRate', () => {
   it('signs rates with one decimal', () => {
     expect(formatRate(4.25, 'en')).toBe('+4.3');
     expect(formatRate(-0.8, 'en')).toBe('−0.8');
+  });
+});
+
+describe('formatCompact', () => {
+  it('shortens large numbers for narrow bars', () => {
+    expect(formatCompact(18146, 'en')).toBe('18.1K');
+    expect(formatCompact(950, 'en')).toBe('950');
   });
 });

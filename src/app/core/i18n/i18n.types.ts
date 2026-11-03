@@ -233,6 +233,32 @@ export interface Dict {
   embassyTexts: Record<AllianceReason, string>;
   embassyWars: string;
   embassyWarning: string;
+  // In-game HUD
+  topBarLabel: string;
+  perMonth: string;
+  topHoplitesHint: string;
+  topSatisfactionHint: string;
+  speedN: string;
+  drawerLabel: string;
+  drawerCollapse: string;
+  drawerExpand: string;
+  tabs: Record<'budget' | 'polis' | 'diplomacy' | 'chronicle', string>;
+  outlinerTitle: string;
+  outlinerToggle: string;
+  outWars: string;
+  outAllies: string;
+  outSieges: string;
+  outLatest: string;
+  outNoAllies: string;
+  outNoSieges: string;
+  outSiegeOurs: string;
+  outSiegeTheirs: string;
+  outAdvantageHint: string;
+  mapModes: string;
+  viewRelations: string;
+  dipListHint: string;
+  standings: Record<'war' | 'ally' | 'vassal' | 'client' | 'peace', string>;
+  chronicleEmpty: string;
   embassyAccept: string;
   embassyDecline: string;
 
