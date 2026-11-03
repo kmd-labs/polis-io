@@ -20,6 +20,7 @@ import {
   WarReport
 } from './simulation';
 import { World } from './world';
+import { BUDGET_PRESETS, FundForecast, PresetId, forecastFund } from './economy';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
 export interface PolisView {
@@ -62,6 +63,12 @@ export interface PolisView {
   overlord: number;
   client: boolean;
   besieged: number;
+  /** Income from work and hoplite pay per second, and smoothed cash reaching the funds per second. */
+  gross: number;
+  upkeep: number;
+  inflow: number;
+  /** Hoplites raised per military purchase. */
+  levy: number;
   /** Player only: hoplites are deserting for want of pay; colonization has nowhere to go. */
   unpaid: boolean;
   colonyBlocked: boolean;
@@ -304,6 +311,35 @@ export class GameService {
     if (speed) this.speed.set(speed);
   }
 
+  /** Forecast for each of the player's funds at today's income (see `forecastFund`). */
+  readonly forecasts = computed(() => {
+    const me = this.me();
+    if (!me) return null;
+    const busy = BUDGET_KEYS.filter(k => me.purchases[k] || (k === 'colonization' && me.expedition !== null));
+    const busyShare = busy.reduce((sum, k) => sum + me.budget[k], 0);
+    return Object.fromEntries(
+      BUDGET_KEYS.map(key => [
+        key,
+        forecastFund({
+          key,
+          share: me.budget[key],
+          busyShare,
+          inflow: me.inflow,
+          upkeep: me.upkeep,
+          balance: me.funds[key],
+          next: me.purchases[key] ?? null,
+          levy: me.levy
+        })
+      ])
+    ) as Record<BudgetKey, FundForecast>;
+  });
+
+  /** Sets all five shares from a preset. */
+  applyPreset(id: PresetId) {
+    this.sim.setShares(this.sim.player, BUDGET_PRESETS[id]);
+    this.publish();
+  }
+
   /** Converts a per-second simulation rate into a per-month figure for display. */
   perMonth(perSecond: number): number {
     return (perSecond * RULES.secondsPerYear) / 12;
@@ -375,6 +411,10 @@ export class GameService {
         client: p.client,
         besieged: p.besieged,
         unpaid: p.unpaid,
+        gross: p.gross,
+        upkeep: p.upkeep,
+        inflow: p.inflow,
+        levy: sim.levySize(p),
         colonyBlocked: p.idx === sim.player && this.colonyBlocked(p),
         relation: sim.player >= 0 ? sim.relation(sim.player, p.idx) : 0,
         tributeGold: Math.round(p.tributeGold),
