@@ -36,7 +36,6 @@
     gap: spacing("sm");
     min-width: 0;
     margin: 0;
-    overflow: hidden;
   }
 
   &__clock {
@@ -72,6 +71,7 @@
 }
 
 .res {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -121,6 +121,12 @@
     color: color("danger");
   }
 
+  @include respond-to("tablet") {
+    &__rate {
+      display: none;
+    }
+  }
+
   @include respond-to("mobile") {
     padding: 3px 2px;
 
@@ -130,6 +136,66 @@
 
     &__rate {
       display: none;
+    }
+  }
+}
+
+// Treasury breakdown: shown while the drachmae figure is hovered or focused.
+.income {
+  display: none;
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 30;
+  width: 270px;
+  padding: spacing("sm") spacing("md");
+  border: 1px solid color("line");
+  border-radius: radius("sm");
+  background: color("panel-bg-solid");
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  white-space: normal;
+  cursor: default;
+
+  .res--drachmae:hover &,
+  .res--drachmae:focus-visible &,
+  .res--drachmae:focus-within & {
+    display: block;
+  }
+
+  &__hint {
+    margin: 0 0 6px;
+    font-size: font-size("xxs");
+    line-height: 1.4;
+    color: color("text-desc");
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: font-size("xs");
+
+    th {
+      padding: 2px 0;
+      font-weight: font-weight("medium");
+      text-align: left;
+      color: color("text-main");
+    }
+
+    td {
+      padding: 2px 0;
+      font-family: var(--font-family-mono);
+      text-align: right;
+      color: color("text-bright");
+    }
+  }
+
+  &__total {
+    border-top: 1px solid color("line-strong");
+
+    th,
+    td {
+      padding-top: 4px;
+      font-weight: font-weight("bold");
     }
   }
 }

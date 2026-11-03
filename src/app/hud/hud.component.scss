@@ -139,6 +139,14 @@ $outliner-w: 260px;
     padding: 0 spacing("md") spacing("xs");
   }
 
+  &__subtitle {
+    @include greek.display-type(0.06em);
+    margin: spacing("lg") 0 spacing("xs");
+    font-size: font-size("sm");
+    font-weight: font-weight("bold");
+    color: color("text-bright");
+  }
+
   &__trees {
     display: block;
     margin-top: spacing("md");

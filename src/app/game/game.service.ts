@@ -21,6 +21,7 @@ import {
 } from './simulation';
 import { World } from './world';
 import { BUDGET_PRESETS, FundForecast, PresetId, forecastFund } from './economy';
+import { GameHistory, budgetChanged } from './history';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
 export interface PolisView {
@@ -167,6 +168,12 @@ export class GameService {
   readonly events = signal<GameEvent[]>([]);
   /** Notice on screen; the game is paused while it is open. Further notices wait in a queue. */
   readonly notice = signal<Notice | null>(null);
+  /** Yearly record of every polis and the player's notable moments; `historyVersion` ticks when it grows. */
+  readonly history = new GameHistory();
+  readonly historyVersion = signal(0);
+  /** Shares last written to the history, and the pending debounce for slider moves. */
+  private loggedBudget: Budget | null = null;
+  private budgetTimer = 0;
   /** Battle, war and survey reports waiting in the alerts row. */
   readonly reports = signal<ReportItem[]>([]);
 
@@ -230,12 +237,27 @@ export class GameService {
     this.selected.set(-1);
     this.preview.set(-1);
     this.paused.set(false);
+    this.history.clear();
+    this.loggedBudget = { ...this.sim.poleis[idx].budget };
     this.publish();
+  }
+
+  /** Writes a budget change to the history once the sliders have rested a second (≥5 points moved). */
+  private noteBudget() {
+    clearTimeout(this.budgetTimer);
+    this.budgetTimer = window.setTimeout(() => {
+      const me = this.sim.poleis[this.sim.player];
+      if (!me || !this.loggedBudget || !budgetChanged(this.loggedBudget, me.budget)) return;
+      this.history.addEvent({ kind: 'budget', year: this.sim.year, from: this.loggedBudget, to: { ...me.budget } });
+      this.loggedBudget = { ...me.budget };
+      this.historyVersion.update(v => v + 1);
+    }, 1000);
   }
 
   /** Moves one budget slider; the others give way so the shares still add up to 100%. */
   setBudget(key: BudgetKey, value: number) {
     this.sim.setBudget(this.sim.player, key, value);
+    this.noteBudget();
     this.publish();
   }
 
@@ -334,9 +356,16 @@ export class GameService {
     ) as Record<BudgetKey, FundForecast>;
   });
 
+  /** The player's income, line by line (per second), for the treasury tooltip. */
+  readonly incomeBreakdown = computed(() => {
+    const me = this.me();
+    return me ? this.sim.incomeBreakdown(this.sim.poleis[me.idx]) : null;
+  });
+
   /** Sets all five shares from a preset. */
   applyPreset(id: PresetId) {
     this.sim.setShares(this.sim.player, BUDGET_PRESETS[id]);
+    this.noteBudget();
     this.publish();
   }
 
@@ -349,6 +378,8 @@ export class GameService {
     this.sim.reset();
     this.notice.set(null);
     this.reports.set([]);
+    this.history.clear();
+    this.historyVersion.update(v => v + 1);
     this.queue.length = 0;
     this.lastEventId = 0;
     this.selected.set(-1);
@@ -427,6 +458,10 @@ export class GameService {
       }))
     );
     if (this.events().at(-1)?.id !== sim.events.at(-1)?.id) this.events.set([...sim.events]);
+    if (sim.status !== 'choosing' && this.history.years.at(-1) !== sim.year) {
+      this.history.record(sim);
+      this.historyVersion.update(v => v + 1);
+    }
     this.collectNotices();
   }
 
@@ -465,6 +500,12 @@ export class GameService {
     // Reports do not stop the game: they wait in the alerts row until read or stale.
     const filed: ReportItem['notice'][] = [];
     for (const e of fresh) {
+      // The player's wars and new buildings mark the history charts.
+      if ((e.kind === 'war' || e.kind === 'peace') && (e.a === sim.player || e.b === sim.player)) {
+        this.history.addEvent({ kind: e.kind, year: e.year, other: e.a === sim.player ? e.b : e.a });
+      } else if (e.kind === 'built' && e.a === sim.player && e.tag) {
+        this.history.addEvent({ kind: 'built', year: e.year, id: e.tag });
+      }
       if (e.kind === 'war' && mine.includes(e.b) && !mine.includes(e.a)) {
         const ratio = sim.warriors(sim.poleis[e.a]) / Math.max(1, sim.warriors(me));
         incoming.push({ kind: 'war', from: e.a, tone: ratio > 1.4 || sim.treasury(me) < 100 ? 'taunt' : 'challenge' });

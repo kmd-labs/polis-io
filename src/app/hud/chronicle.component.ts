@@ -4,6 +4,7 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { formatPlural, formatYear, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { GameEventKind } from '../game/simulation';
+import { ImprovementId } from '../game/data/improvements';
 
 const TEMPLATE_KEY = {
   war: 'evWar',
@@ -26,7 +27,8 @@ const TEMPLATE_KEY = {
   ransom: 'evRansom',
   festival: 'evFestival',
   farmPlanned: 'evFarmPlanned',
-  portPlanned: 'evPortPlanned'
+  portPlanned: 'evPortPlanned',
+  built: 'evBuilt'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Feed of the latest wars, treaties, colonies and conquests: a few lines in the outliner, the full record in the drawer. */
@@ -56,7 +58,7 @@ export class ChronicleComponent {
     return this.game
       .events()
       // Other poleis' settling and building are routine; only the player's own projects are news.
-      .filter(e => !['settle', 'colony', 'farm', 'port', 'allianceOffer', 'siege', 'festival', 'farmPlanned', 'portPlanned'].includes(e.kind) || (e.kind === 'siege' ? e.a === player || e.b === player : e.a === player && e.kind !== 'allianceOffer'))
+      .filter(e => !['settle', 'colony', 'farm', 'port', 'allianceOffer', 'siege', 'festival', 'farmPlanned', 'portPlanned', 'built'].includes(e.kind) || (e.kind === 'siege' ? e.a === player || e.b === player : e.a === player && e.kind !== 'allianceOffer'))
       .slice(-limit)
       .reverse()
       .map(e => ({
@@ -65,7 +67,8 @@ export class ChronicleComponent {
         text: interpolate(t[TEMPLATE_KEY[e.kind]], {
           a: name(e.a),
           b: name(e.b),
-          m: e.n ? formatPlural(e.n, t.monthsOne, t.monthsFew, t.monthsMany) : ''
+          m: e.n ? formatPlural(e.n, t.monthsOne, t.monthsFew, t.monthsMany) : '',
+          w: e.kind === 'built' && e.tag ? (t.improvements[e.tag as ImprovementId]?.name ?? '') : ''
         }),
         mine: e.a === player || e.b === player,
         hostile: ['war', 'fall', 'siege', 'client', 'annexed', 'revolt'].includes(e.kind)

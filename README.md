@@ -92,6 +92,10 @@ The in-game HUD sits on the edges of the map, grand-strategy style:
   Expansion, Mercantile, Golden age) set all five shares at once; any manual move switches to *Custom*.
 - **Left drawer** (collapsible to an icon rail): *Budget*, *Polis* (figures and building trees), *Diplomacy*
   (every city and its standing with you) and *Chronicle*.
+- **History**: every year the game records a snapshot of every polis. The *Chronicle & charts* tab plots your
+  population, income per month, territory and hoplites on one time axis, with markers where you changed the budget
+  (by 5 points or more), went to war or made peace, and completed a building. Hover the drachmae in the top bar for
+  an income breakdown (workers, culture, ports, buildings, contentment, trade/tribute/spoils, hoplite pay).
 - **Right outliner** (collapsible): wars with a strength bar, allies, sieges and the latest news.
 - **Map modes** bottom-right: political, terrain relief, soil fertility and relations; the card of a selected
   foreign city appears bottom-left.
