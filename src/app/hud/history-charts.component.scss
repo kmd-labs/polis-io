@@ -1,0 +1,17 @@
+@use "variables" as *;
+
+:host {
+  display: block;
+}
+
+.charts {
+  display: grid;
+  gap: spacing("md");
+}
+
+.legend {
+  margin: spacing("sm") 0 0;
+  font-size: font-size("xxs");
+  line-height: 1.4;
+  color: color("text-dim");
+}

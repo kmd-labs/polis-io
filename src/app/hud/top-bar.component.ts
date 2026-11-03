@@ -116,6 +116,27 @@ export class TopBarComponent {
     return keep ? all.filter(r => keep.includes(r.key)) : all;
   });
 
+  /** Income line by line, per month, for the treasury popover. */
+  readonly breakdown = computed(() => {
+    const b = this.game.incomeBreakdown();
+    if (!b) return null;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const month = (v: number) => this.game.perMonth(v);
+    const dr = (v: number) => `${v < 0 ? '−' : '+'}${fmt1(Math.abs(month(v)), lang)} dr`;
+    const pct = (v: number) => `${v < 0 ? '−' : '+'}${fmt1(Math.abs(v * 100), lang)}%`;
+    const rows = [
+      { label: interpolate(t.incWorkers, { n: formatNumber(b.workers, lang) }), value: dr(b.base) },
+      { label: t.incCulture, value: pct(b.culture) },
+      { label: t.incPorts, value: pct(b.ports) },
+      { label: t.incBuildings, value: pct(b.buildings) },
+      { label: t.incMood, value: `×${b.mood.toLocaleString(t.htmlLang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+      { label: t.incOther, value: dr(b.other) },
+      { label: t.incUpkeep, value: dr(-b.upkeep) }
+    ];
+    return { rows, total: dr(b.gross + b.other - b.upkeep) };
+  });
+
   speedLabel(speed: number): string {
     return interpolate(this.i18n.t().speedN, { n: speed });
   }

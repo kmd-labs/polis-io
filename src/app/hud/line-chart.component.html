@@ -1,0 +1,54 @@
+<figure class="chart">
+  <figcaption class="chart__head">
+    <span class="chart__title">{{ title() }}</span>
+    @if (focus(); as f) {
+      <span class="chart__value chart__value--hover">{{ f.value }} <span class="chart__year">· {{ f.year }}</span></span>
+    } @else {
+      <span class="chart__value">{{ latest() }}</span>
+    }
+  </figcaption>
+
+  <div class="chart__plot">
+    <svg
+      class="chart__svg"
+      [attr.viewBox]="'0 0 ' + w + ' ' + h"
+      preserveAspectRatio="none"
+      role="img"
+      [attr.aria-label]="title() + ': ' + latest()"
+      (pointermove)="move($event)"
+      (pointerleave)="hover.set(null)">
+      <line class="chart__frame" x1="0" [attr.y1]="h - 0.5" [attr.x2]="w" [attr.y2]="h - 0.5" />
+      <line class="chart__frame chart__frame--top" x1="0" y1="0.5" [attr.x2]="w" y2="0.5" />
+      @for (m of marks(); track $index) {
+        <line [class]="'chart__marker chart__marker--' + m.kind" [attr.x1]="m.x" y1="0" [attr.x2]="m.x" [attr.y2]="h" />
+      }
+      <path class="chart__line" [attr.d]="path()" [style.stroke]="'var(--color-' + color() + ')'" vector-effect="non-scaling-stroke" />
+      @if (focus(); as f) {
+        <line class="chart__cross" [attr.x1]="f.x" y1="0" [attr.x2]="f.x" [attr.y2]="h" vector-effect="non-scaling-stroke" />
+      }
+    </svg>
+    @if (focus(); as f) {
+      <span class="chart__dot" [style.left.%]="f.left" [style.top.px]="f.y" [style.background]="'var(--color-' + color() + ')'"></span>
+    }
+    <span class="chart__peak" aria-hidden="true">{{ peak() }}</span>
+  </div>
+  @if (focus()?.notes?.length) {
+    <p class="chart__notes">
+      @for (n of focus()!.notes; track $index) {
+        <span class="chart__note">{{ n }}</span>
+      }
+    </p>
+  }
+
+  <table class="sr-only">
+    <caption>{{ title() }}</caption>
+    <tbody>
+      @for (p of points(); track p.year) {
+        <tr>
+          <th scope="row">{{ formatYear()(p.year) }}</th>
+          <td>{{ format()(p.value) }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</figure>

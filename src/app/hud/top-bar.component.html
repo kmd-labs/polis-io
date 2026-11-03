@@ -13,7 +13,7 @@
 
   <dl class="bar__resources">
     @for (r of resources(); track r.key) {
-      <div class="res" [class]="'res res--' + r.key + (r.tone ? ' res--' + r.tone : '')" [appTooltip]="r.label + ' — ' + r.hint" tabindex="0">
+      <div class="res" [class]="'res res--' + r.key + (r.tone ? ' res--' + r.tone : '')" [appTooltip]="r.key === 'drachmae' ? null : r.label + ' — ' + r.hint" tabindex="0">
         <dt class="res__icon"><lucide-icon [img]="r.icon" [size]="13"></lucide-icon><span class="sr-only">{{ r.label }}</span></dt>
         <dd class="res__value">
           {{ r.value }}
@@ -21,6 +21,17 @@
             <span class="res__rate" [class.res__rate--neg]="r.negative">{{ r.rate }}</span>
           }
         </dd>
+        @if (r.key === 'drachmae' && breakdown(); as b) {
+          <div class="income" role="tooltip">
+            <p class="income__hint">{{ t.statDrachmaeHint }}</p>
+            <table class="income__table">
+              @for (row of b.rows; track row.label) {
+                <tr><th scope="row">{{ row.label }}</th><td>{{ row.value }}</td></tr>
+              }
+              <tr class="income__total"><th scope="row">{{ t.incTotal }}</th><td>{{ b.total }}</td></tr>
+            </table>
+          </div>
+        }
       </div>
     }
   </dl>

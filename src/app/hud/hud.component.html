@@ -14,6 +14,8 @@
       <app-diplomacy-list></app-diplomacy-list>
     }
     @case ('chronicle') {
+      <app-history-charts></app-history-charts>
+      <h3 class="drawer__subtitle">{{ t.chronicle }}</h3>
       <app-chronicle [limit]="60" [framed]="false"></app-chronicle>
     }
   }

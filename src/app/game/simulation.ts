@@ -587,7 +587,8 @@ export type GameEventKind =
   | 'ransom'
   | 'festival'
   | 'farmPlanned'
-  | 'portPlanned';
+  | 'portPlanned'
+  | 'built';
 
 export interface GameEvent {
   id: number;
@@ -868,6 +869,27 @@ export class Simulation {
   }
 
   /** Income and growth multiplier from the citizens' mood. */
+  /**
+   * Where a polis's income comes from, per second: the workers' base yield, the multipliers on it
+   * (culture, ports, buildings, contentment), other cash (sea trade, tribute, spoils) and hoplite pay.
+   */
+  incomeBreakdown(p: PolisState) {
+    const avgFertility = p.fertility / Math.max(1, p.cells);
+    const base = this.workers(p) * RULES.incomePerWorker * p.prosperity * (0.7 + 0.3 * avgFertility);
+    return {
+      workers: this.workers(p),
+      base,
+      culture: RULES.cultureBonus * p.culture,
+      ports: RULES.portBonus * p.ports,
+      buildings: p.effects.income,
+      mood: this.moodFactor(p),
+      prosperity: p.prosperity,
+      gross: p.gross,
+      other: Math.max(0, p.inflow - p.gross),
+      upkeep: p.upkeep
+    };
+  }
+
   moodFactor(p: PolisState): number {
     const lo = RULES.satisfactionLow;
     return lo + (RULES.satisfactionHigh - lo) * (p.satisfaction / 100);
@@ -1059,6 +1081,7 @@ export class Simulation {
     p.works = p.works.filter(w => this.time < w.done);
     for (const w of done) {
       p.built.add(w.id);
+      this.emit('built', p.idx, -1, undefined, w.id);
       p.prestige += IMPROVEMENT_BY_ID.get(w.id)!.effects.prestige ?? 0;
     }
     const fx: ImprovementEffects = { ...NO_EFFECTS };

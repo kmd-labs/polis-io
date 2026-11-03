@@ -26,6 +26,7 @@ import { AlertsComponent } from './alerts.component';
 import { BudgetPanelComponent } from './budget-panel.component';
 import { ChronicleComponent } from './chronicle.component';
 import { DiplomacyListComponent } from './diplomacy-list.component';
+import { HistoryChartsComponent } from './history-charts.component';
 import { DiplomacyPanelComponent } from './diplomacy-panel.component';
 import { HUD_TABS, HudStateService, HudTab } from './hud-state.service';
 import { OutlinerComponent } from './outliner.component';
@@ -52,6 +53,7 @@ import { TopBarComponent } from './top-bar.component';
     PolisPanelComponent,
     PolisScreenComponent,
     DiplomacyListComponent,
+    HistoryChartsComponent,
     DiplomacyPanelComponent,
     ChronicleComponent,
     OutlinerComponent

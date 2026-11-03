@@ -198,6 +198,7 @@ export interface Dict {
   evFestival: string;
   evFarmPlanned: string;
   evPortPlanned: string;
+  evBuilt: string;
 
   // Conquest decision
   conquestTitle: string;
@@ -262,6 +263,20 @@ export interface Dict {
   chronicleEmpty: string;
   alertsLabel: string;
   etaNow: string;
+  chartIncome: string;
+  chartBuilt: string;
+  chartWar: string;
+  chartPeace: string;
+  chartsLegend: string;
+  chartsEmpty: string;
+  incWorkers: string;
+  incCulture: string;
+  incPorts: string;
+  incBuildings: string;
+  incMood: string;
+  incOther: string;
+  incUpkeep: string;
+  incTotal: string;
   etaYears: string;
   presetsLabel: string;
   presets: Record<PresetId | 'custom', string>;
