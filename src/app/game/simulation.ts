@@ -276,9 +276,9 @@ export const RULES = {
   /** Every year of the coalition, every other city's regard for it sinks this much. */
   coalitionRelation: -2,
   /** Coalition cities look on the dominant polis as this much weaker when choosing whom to attack… */
-  coalitionAggression: 1.6,
+  coalitionAggression: 2,
   /** …think of war more often… */
-  coalitionWarChance: 0.25,
+  coalitionWarChance: 0.35,
   /** …and seek one ally against it (chance per AI decision); these pacts lapse when the coalition ends. */
   coalitionAllyChance: 0.05,
   /** Cells more than the enemy a side must have taken for a war ending in peace to count as won. */
@@ -478,7 +478,7 @@ export type FallOutcome = 'razed' | 'city' | 'client' | 'revolt' | 'ransom' | 'a
 /** What the player decides for a city whose walls they have breached. */
 export type ConquestChoice = 'raze' | 'subjugate' | 'alliance';
 /** Why a city offers the player an alliance; it shapes what the envoys say. */
-export type AllianceReason = 'victories' | 'trade' | 'commonEnemy' | 'neighbour' | 'goodwill';
+export type AllianceReason = 'victories' | 'trade' | 'commonEnemy' | 'hegemon' | 'neighbour' | 'goodwill';
 
 export interface WarReport extends WarStats {
   outcome: WarOutcome;
@@ -1305,6 +1305,7 @@ export class Simulation {
   private embassyReason(p: PolisState, me: PolisState): { reason: AllianceReason; enemy?: number } {
     const enemy = [...p.wars].find(e => me.wars.has(e));
     if (enemy !== undefined) return { reason: 'commonEnemy', enemy };
+    if (this.hegemon === me.idx) return { reason: 'hegemon' };
     if (this.time - me.lastVictoryAt < RULES.victoryMemory) return { reason: 'victories' };
     if ((p.voyages[me.idx] ?? 0) + (me.voyages[p.idx] ?? 0) >= RULES.tradeTies) return { reason: 'trade' };
     if (this.bordering(p.idx, me.idx)) return { reason: 'neighbour' };

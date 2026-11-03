@@ -105,12 +105,18 @@ The in-game HUD sits on the edges of the map, grand-strategy style:
   population, income per month, territory and hoplites on one time axis, with markers where you changed the budget
   (by 5 points or more), went to war or made peace, and completed a building. Hover the drachmae in the top bar for
   an income breakdown (workers, culture, ports, buildings, contentment, trade/tribute/spoils, hoplite pay).
+- **Decade report**: every ten years the game pauses for a review drawn from the history — change in population,
+  income and territory, battles won and lost, your hegemony places then and now, the average budget of the decade,
+  and one line from the chroniclers. It can be switched off in the report or in the *Chronicle & charts* tab.
+- **Embassies** wait in the alerts row instead of stopping the game; their envoys leave (the offer lapses) after two
+  years. Cities court the Hegemon too ("Whoever stands with the Hegemon sleeps soundly").
 - **Right outliner** (collapsible): wars with a strength bar, allies, sieges and the latest news.
 - **Map modes** bottom-right: political, terrain relief, soil fertility and relations; the card of a selected
   foreign city appears bottom-left.
 - **Alerts** under the top bar (round icons): a siege, deserting hoplites, allies at war, an idle fund, blocked
   colonization, and battle / war / survey reports waiting to be read. They never stop the game — only decisions do
-  (a declaration of war, an embassy, the fate of a conquered city, the end of the game).
+  (a declaration of war, an embassy you open, the fate of a conquered city, a new Hegemon, the decade report, the end
+  of the game).
 - On phones the drawer and the outliner become a bottom sheet behind a tab bar.
 
 Panel layout is remembered per browser. Keys: <kbd>Space</kbd> pauses, <kbd>1</kbd>–<kbd>5</kbd> set the speed,

@@ -352,6 +352,8 @@ export const EN: Dict = {
       'You and we both stand against {enemy}. {name} proposes we stand together: an alliance, each marching when the other is attacked.',
     neighbour:
       'Our fields touch yours, and good fences make good neighbours — better still, good allies. {name} offers an alliance of mutual defence.',
+    hegemon:
+      'Whoever stands with the Hegemon sleeps soundly. {name} asks for an alliance with the first city of Hellas: if anyone declares war on you, we will march at your side — and you at ours.',
     goodwill: '{name} sends gifts and greetings, and offers an alliance: if anyone declares war on you, we will march at your side — and you at ours.'
   },
   embassyWars: 'At war with',
@@ -397,6 +399,26 @@ export const EN: Dict = {
   hegScore: '{s}/9 points',
   hegChart: 'Your hegemony points',
   hegEmpty: 'The first rankings come at the end of the first year.',
+  hegemonyTab: 'Hegemony',
+  decTitle: '{from} – {to}',
+  decSubtitle: 'Ten years in review',
+  decBattles: 'Battles',
+  decBattlesValue: '{w} won · {l} lost',
+  decBudget: 'Average budget of the decade',
+  decVerdicts: {
+    silver: 'The treasury swells: trade and toil have filled the funds.',
+    people: 'The city teems with people: new hands for fields and phalanx.',
+    land: 'Our borders have grown: settlers and soldiers have pushed them outward.',
+    arms: 'A decade of victories: our hoplites are spoken of across Hellas.',
+    war: 'A hard decade of war: more battles lost than won.',
+    hard: 'Lean years: fewer people, less silver and less land than ten years ago.',
+    quiet: 'A quiet decade: little has changed, for better or worse.'
+  },
+  decOff: 'Stop these reports',
+  decAction: 'Onward',
+  decToggle: 'Show a report every ten years',
+  alertEmbassy: 'Envoys from {name} await your answer — they leave in {t}. Click to receive them.',
+  incTreasuryNote: 'The treasury is the five funds together; each fund spends itself on what it is saving for. In the hegemony rankings, First in Silver counts income, not savings.',
   hegCoalition: 'Hellas fears {name}: the other cities are drawing together against it — their goodwill sinks every year, they ally and go to war more readily.',
   hegCoalitionYou: 'Hellas fears your power: the other cities are drawing together against you. Their goodwill sinks every year until your score drops below 6.',
   alertCoalition: 'All Hellas is uniting against us: expect enemies and fewer friends while we dominate.',

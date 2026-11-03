@@ -352,6 +352,8 @@ export const PL: Dict = {
       'I wy, i my stawiamy czoła polis {enemy}. Polis {name} proponuje, byśmy stanęli razem: sojusz, w którym każdy rusza, gdy drugi zostanie zaatakowany.',
     neighbour:
       'Nasze pola stykają się z waszymi, a dobry płot czyni dobrych sąsiadów — jeszcze lepiej, dobrych sojuszników. Polis {name} proponuje sojusz wzajemnej obrony.',
+    hegemon:
+      'Kto trzyma z Hegemonem, ten śpi spokojnie. Polis {name} prosi o sojusz z pierwszym miastem Hellady: jeśli ktokolwiek wypowie wam wojnę, staniemy u waszego boku — a wy u naszego.',
     goodwill: 'Polis {name} przysyła dary i pozdrowienia oraz proponuje sojusz: jeśli ktokolwiek wypowie wam wojnę, staniemy u waszego boku — a wy u naszego.'
   },
   embassyWars: 'W stanie wojny z',
@@ -397,6 +399,26 @@ export const PL: Dict = {
   hegScore: '{s}/9 pkt',
   hegChart: 'Wasze punkty hegemonii',
   hegEmpty: 'Pierwszy ranking pojawi się na koniec pierwszego roku.',
+  hegemonyTab: 'Hegemonia',
+  decTitle: '{from} – {to}',
+  decSubtitle: 'Dziesięć lat w skrócie',
+  decBattles: 'Bitwy',
+  decBattlesValue: '{w} wygranych · {l} przegranych',
+  decBudget: 'Średni budżet dekady',
+  decVerdicts: {
+    silver: 'Skarbiec pęcznieje: handel i praca wypełniły fundusze.',
+    people: 'Miasto tętni ludźmi: nowe ręce do pól i do falangi.',
+    land: 'Nasze granice urosły: osadnicy i żołnierze przesunęli je dalej.',
+    arms: 'Dekada zwycięstw: o naszych hoplitach mówi cała Hellada.',
+    war: 'Ciężka dekada wojny: więcej bitew przegranych niż wygranych.',
+    hard: 'Chude lata: mniej ludzi, mniej srebra i mniej ziemi niż dziesięć lat temu.',
+    quiet: 'Spokojna dekada: niewiele się zmieniło, ani na lepsze, ani na gorsze.'
+  },
+  decOff: 'Wyłącz te raporty',
+  decAction: 'Naprzód',
+  decToggle: 'Pokazuj raport co dziesięć lat',
+  alertEmbassy: 'Posłowie z polis {name} czekają na odpowiedź — odjadą za {t}. Kliknij, by ich przyjąć.',
+  incTreasuryNote: 'Skarbiec to pięć funduszy razem; każdy fundusz wydaje się sam na to, na co odkłada. W rankingu hegemonii „Pierwsi w skarbie” liczy dochód, nie oszczędności.',
   hegCoalition: 'Hellada lęka się polis {name}: inne miasta jednoczą się przeciw niej — co roku maleje ich życzliwość, chętniej zawierają sojusze i wypowiadają wojny.',
   hegCoalitionYou: 'Hellada lęka się waszej potęgi: inne miasta jednoczą się przeciw wam. Ich życzliwość maleje co roku, dopóki wasz wynik nie spadnie poniżej 6.',
   alertCoalition: 'Cała Hellada jednoczy się przeciw nam: spodziewajcie się wrogów i mniejszej liczby przyjaciół, dopóki dominujemy.',
