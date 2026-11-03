@@ -94,6 +94,8 @@ export interface Dict {
   purchases: Record<Exclude<Purchase['kind'], 'improvement'>, string>;
   nextPurchase: string;
   savingOnly: string;
+  armyStatus: string;
+  expeditionUnderway: string;
   fundedBy: string;
   developTitle: string;
   developFarm: string;

@@ -38,7 +38,7 @@ export const PL: Dict = {
     },
     {
       term: 'Zasiedlanie dziczy',
-      desc: 'Wysyła na zawsze 10% twoich robotników. Powoli zajmują wolną ziemię przy granicach — a gdy wybrzeże się zapełni, zakładają kolonię za morzem. Więcej ziemi to większa pojemność, a każdy nowy piksel trwale przyspiesza przyrost ludności i dochody.'
+      desc: 'Zależy od udziału kolonizacji w budżecie: każda wyprawa kosztuje drachmy z tego funduszu i na zawsze zabiera 10% twoich robotników. Osadnicy powoli zajmują wolną ziemię przy granicach — a gdy wybrzeże się zapełni, zakładają kolonię za morzem. Więcej ziemi to większa pojemność, a każdy nowy piksel trwale przyspiesza przyrost ludności i dochody.'
     },
     {
       term: 'Militaryzm i kultura',
@@ -145,8 +145,14 @@ export const PL: Dict = {
     'Cały dochód — podatki, handel, łupy i daniny — trafia do pięciu funduszy. Każdy fundusz sam opłaca swoje przedsięwzięcia, gdy tylko uzbiera dość pieniędzy.',
   budgetRule: 'Udziały zawsze sumują się do 100%; żaden nie spadnie poniżej 5%. Żołd hoplitów pochodzi z funduszu wojskowego.',
   budgetKeys: {
-    military: { name: 'Wojsko', desc: 'Opłaca żołd hoplitów, potem wznosi budowle wojskowe i szkoli nowych hoplitów.' },
-    colonization: { name: 'Kolonizacja', desc: 'Wysyła osadników w dzicz; gdy w pobliżu zabraknie wolnej ziemi, zakłada kolonie w historycznych miejscach.' },
+    military: {
+      name: 'Wojsko',
+      desc: 'Opłaca żołd hoplitów, wznosi budowle wojskowe i szkoli hoplitów. Większy udział to większa armia (do 40% robotników) werbowana większymi partiami; po zmniejszeniu udziału nadwyżka hoplitów wraca do pracy.'
+    },
+    colonization: {
+      name: 'Kolonizacja',
+      desc: 'Jedyny sposób zasiedlania dziczy: opłaca wyprawy, które zabierają 10% robotników, by zająć nową ziemię; gdy w pobliżu zabraknie wolnej ziemi, zakłada kolonie w historycznych miejscach.'
+    },
     agriculture: { name: 'Rozwój rolnictwa', desc: 'Wznosi budowle rolnicze, potem zakłada nowe farmy.' },
     trade: { name: 'Rozwój handlu', desc: 'Wznosi budowle handlowe, potem buduje nowe porty.' },
     culture: { name: 'Rozwój kultury', desc: 'Urządza święta: zadowolenie, powoli rosnąca kultura i odrobina projekcji siły.' }
@@ -161,6 +167,8 @@ export const PL: Dict = {
   },
   nextPurchase: 'dalej: {what} ({c})',
   savingOnly: 'oszczędza',
+  armyStatus: 'armia {w} / docelowo {t} hoplitów',
+  expeditionUnderway: 'osadnicy w drodze — {p}%',
   fundedBy: 'fundusz „{budget}”: {f} / {c} dr',
   developTitle: 'Mierniczowie wyruszają',
   developFarm: 'Za {m} w twojej okolicy powstaną nowe farmy.',

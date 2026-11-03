@@ -207,6 +207,14 @@
     white-space: nowrap;
   }
 
+  &__extra {
+    display: block;
+    margin-top: 2px;
+    font-size: font-size("xxs");
+    font-style: italic;
+    color: var(--row-color);
+  }
+
   &__progress {
     display: block;
     height: 2px;

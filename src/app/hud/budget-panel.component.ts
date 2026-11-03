@@ -55,8 +55,16 @@ export class BudgetPanelComponent {
     return BUDGET_KEYS.map(key => {
       const next = me.purchases[key] ?? null;
       const fund = me.funds[key];
+      // The colonization row follows the expedition on the march; the military row the army's size.
+      const extra =
+        key === 'military'
+          ? interpolate(t.armyStatus, { w: formatNumber(me.warriors, lang), t: formatNumber(me.armyTarget, lang) })
+          : key === 'colonization' && me.expedition !== null
+            ? interpolate(t.expeditionUnderway, { p: Math.round(me.expedition * 100) })
+            : '';
       return {
         key,
+        extra,
         icon: this.keyIcons[key],
         name: t.budgetKeys[key].name,
         desc: t.budgetKeys[key].desc,

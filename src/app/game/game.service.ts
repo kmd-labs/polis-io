@@ -38,7 +38,8 @@ export interface PolisView {
   prosperity: number;
   settlers: number;
   expedition: number | null;
-  canSettle: boolean;
+  /** Hoplites the military share aims for. */
+  armyTarget: number;
   militarism: number;
   culture: number;
   farms: number;
@@ -194,11 +195,6 @@ export class GameService {
     this.publish();
   }
 
-  settle() {
-    this.sim.settle(this.sim.player);
-    this.publish();
-  }
-
   /** Moves one budget slider; the others give way so the shares still add up to 100%. */
   setBudget(key: BudgetKey, value: number) {
     this.sim.setBudget(this.sim.player, key, value);
@@ -303,7 +299,7 @@ export class GameService {
         prosperity: p.prosperity,
         settlers: sim.settlers(p),
         expedition: p.expedition ? 1 - p.expedition.settlers / p.expedition.initial : null,
-        canSettle: sim.canSettle(p),
+        armyTarget: Math.round(sim.armyTarget(p)),
         militarism: p.militarism,
         culture: p.culture,
         farms: p.farms,

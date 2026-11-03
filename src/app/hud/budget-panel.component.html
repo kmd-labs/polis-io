@@ -36,6 +36,9 @@
             <span class="row__next">{{ row.next }}</span>
           </div>
           <span class="row__progress"><span [style.width.%]="row.progress * 100"></span></span>
+          @if (row.extra) {
+            <span class="row__extra">{{ row.extra }}</span>
+          }
         </div>
       }
     </div>

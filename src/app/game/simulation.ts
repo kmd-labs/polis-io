@@ -91,14 +91,18 @@ export const RULES = {
   growthRate: 0.02,
   incomePerWorker: 0.0025,
   upkeepPerWarrior: 0.003,
-  /** "Settle the wilderness" sends this share of workers away for good. */
+  /** "Settle the wilderness" sends this share of workers away for good… */
   settleShare: 0.1,
+  /** …and only once the city has filled this share of its land's capacity. */
+  settleCrowding: 0.7,
   settlersPerCell: 12,
   /** Cells claimed per second by an expedition. */
   settleRate: 11,
   prosperityPerCell: 0.00055,
   maxProsperity: 2,
-  trainShare: 0.06,
+  /** A levy takes this share of workers, plus the military share times trainPerShare (faster recruiting). */
+  trainShare: 0.02,
+  trainPerShare: 0.08,
   trainCostPerHoplite: 1.2,
   /** Battle strength bonus per point of militarism. */
   militarismBonus: 0.04,
@@ -230,9 +234,12 @@ export const RULES = {
   festivalPrestige: 0.2,
   /** City size (people) at which buildings cost twice their base price. */
   improvementPopScale: 40000,
-  /** Hoplites the military fund keeps under arms: share of civilians plus the fund's share times this. */
-  armyBase: 0.04,
+  /** Army the military fund aims for: this many hoplites per worker per unit of military share… */
   armyPerShare: 0.5,
+  /** …never more than this share of the workers, even with the whole budget. */
+  armyCap: 0.4,
+  /** Share of the surplus garrison sent home to work per second after the military share is cut. */
+  demobilizeRate: 0.1,
   /** Countryside developments take this many months, at random, to appear. */
   developMonthsMin: 1,
   developMonthsMax: 12,
@@ -809,16 +816,29 @@ export class Simulation {
     return Math.floor(this.workers(p) * RULES.settleShare);
   }
 
+  /** Colonists only leave a city that is filling up its land. */
   canSettle(p: PolisState): boolean {
-    return p.alive && !p.expedition && this.wildCells > 0 && this.settlers(p) >= this.settlersPerCell(p);
+    return (
+      p.alive &&
+      !p.expedition &&
+      this.wildCells > 0 &&
+      this.settlers(p) >= this.settlersPerCell(p) &&
+      this.totalPopulation(p) >= this.capacity(p) * RULES.settleCrowding
+    );
   }
 
   trainBatch(p: PolisState): number {
-    return Math.max(50, Math.round(this.workers(p) * RULES.trainShare));
+    const share = p.budget.military / 100;
+    return Math.max(50, Math.round(this.workers(p) * (RULES.trainShare + RULES.trainPerShare * share)));
+  }
+
+  /** Hoplites the next levy raises: a share-sized batch, never past the army the budget aims for. */
+  levySize(p: PolisState): number {
+    return Math.max(0, Math.min(this.trainBatch(p), Math.floor(this.armyTarget(p) - this.warriors(p))));
   }
 
   trainCost(p: PolisState): number {
-    return Math.ceil(this.trainBatch(p) * RULES.trainCostPerHoplite * (1 - p.effects.train));
+    return Math.ceil(this.levySize(p) * RULES.trainCostPerHoplite * (1 - p.effects.train));
   }
 
   /** All the drachmae a polis holds: its five funds plus anything not yet allocated. */
@@ -887,7 +907,7 @@ export class Simulation {
   private train(idx: number) {
     const p = this.poleis[idx];
     if (!this.canTrain(p)) return;
-    const batch = this.trainBatch(p);
+    const batch = this.levySize(p);
     p.civilians -= batch;
     p.garrison += batch;
     this.mood(p, RULES.satisfactionTrain, true);
@@ -1459,6 +1479,7 @@ export class Simulation {
     p.drachmae = 0;
     for (const k of BUDGET_KEYS) p.funds[k] += (cash * p.budget[k]) / 100;
     p.funds.military -= upkeep * dt;
+    this.demobilize(p, dt);
     if (p.funds.military < 0) {
       // Unpaid hoplites go home.
       p.funds.military = 0;
@@ -1481,9 +1502,22 @@ export class Simulation {
 
   /** How far the army is below the size the military share calls for (0 = full, 1 = none). */
   private armyShortfall(p: PolisState): number {
+    return Math.max(0, 1 - this.warriors(p) / Math.max(1, this.armyTarget(p)));
+  }
+
+  /** Hoplites the military share calls for: up to 40% of the workers at the most generous budget. */
+  armyTarget(p: PolisState): number {
     const share = p.budget.military / 100;
-    const target = p.civilians * (RULES.armyBase + RULES.armyPerShare * share);
-    return Math.max(0, 1 - this.warriors(p) / Math.max(1, target));
+    return this.workers(p) * Math.min(RULES.armyCap, RULES.armyPerShare * share);
+  }
+
+  /** After the military share is cut, surplus hoplites of the garrison return to the fields. */
+  private demobilize(p: PolisState, dt: number) {
+    const surplus = this.warriors(p) - this.armyTarget(p);
+    if (surplus <= 0 || p.garrison <= 0) return;
+    const sent = Math.min(p.garrison, surplus) * RULES.demobilizeRate * dt;
+    p.garrison -= sent;
+    p.civilians += sent;
   }
 
   /** Drachmae a building costs: dearer by tier, and for larger cities. */
@@ -1519,12 +1553,14 @@ export class Simulation {
     };
     switch (key) {
       case 'military':
-        return this.canTrain(p) && this.armyShortfall(p) > 0 ? { kind: 'hoplites', cost: this.trainCost(p) } : null;
+        return this.canTrain(p) && this.levySize(p) >= 20 ? { kind: 'hoplites', cost: this.trainCost(p) } : null;
       case 'colonization':
         if (p.expedition) return null;
-        if (this.canSettle(p)) {
+        // While wilderness remains, save for the next expedition (it leaves once the city fills up)…
+        if (this.wildCells > 0) {
           return { kind: 'expedition', cost: Math.round(RULES.expeditionBase + this.settlers(p) * RULES.expeditionPerSettler) };
         }
+        // …and once Hellas is settled, found colonies on historical sites.
         if (!this.vassalSite(p)) return null;
         return {
           kind: 'colony',
@@ -1552,7 +1588,8 @@ export class Simulation {
         this.train(p.idx);
         break;
       case 'expedition':
-        this.settle(p.idx);
+        done = this.canSettle(p);
+        if (done) this.settle(p.idx);
         break;
       case 'colony':
         done = !!this.commission(p, 'vassal');
@@ -1572,7 +1609,7 @@ export class Simulation {
     }
     if (done) p.funds[key] -= next.cost;
     // No site to be found: look again in a little while instead of every tick.
-    else p.retryAt[key] = this.time + 5;
+    else p.retryAt[key] = this.time + (next.kind === 'expedition' ? 1 : 5);
   }
 
   private expedition(p: PolisState, dt: number) {

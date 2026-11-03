@@ -38,7 +38,7 @@ export const EN: Dict = {
     },
     {
       term: 'Settle the wilderness',
-      desc: 'Sends 10% of your workers away for good. They slowly claim free land next to your borders — or found a colony across the sea once your coast is full. More land raises your carrying capacity, and every new pixel permanently speeds up population growth and income.'
+      desc: 'Driven by the colonization share of your budget: each expedition costs drachmae from that fund and takes 10% of your workers away for good. The settlers slowly claim free land next to your borders — or found a colony across the sea once your coast is full. More land raises your carrying capacity, and every new pixel permanently speeds up population growth and income.'
     },
     {
       term: 'Militarism & culture',
@@ -145,8 +145,14 @@ export const EN: Dict = {
     'All income — taxes, trade, spoils and tribute — is split between five funds. Each fund pays for its own projects automatically as soon as it has saved enough.',
   budgetRule: 'Shares always add up to 100%; none can go below 5%. Hoplite upkeep comes out of the military fund.',
   budgetKeys: {
-    military: { name: 'Military', desc: 'Pays the hoplites’ upkeep, then raises the military buildings and trains new hoplites.' },
-    colonization: { name: 'Colonization', desc: 'Sends settlers into the wilderness; once there is no free land near, founds colonies on historical sites.' },
+    military: {
+      name: 'Military',
+      desc: 'Pays the hoplites’ upkeep, raises the military buildings and trains hoplites. A bigger share means a larger army (up to 40% of the workers) recruited in bigger levies; cut it and surplus hoplites go back to work.'
+    },
+    colonization: {
+      name: 'Colonization',
+      desc: 'The only way to settle the wilderness: pays for expeditions that take 10% of your workers to claim new land; once there is no free land near, founds colonies on historical sites.'
+    },
     agriculture: { name: 'Agriculture', desc: 'Raises the agricultural buildings, then lays out new farms.' },
     trade: { name: 'Trade', desc: 'Raises the trade buildings, then builds new ports.' },
     culture: { name: 'Culture', desc: 'Holds festivals: satisfaction, slowly rising culture and a little power projection.' }
@@ -161,6 +167,8 @@ export const EN: Dict = {
   },
   nextPurchase: 'next: {what} ({c})',
   savingOnly: 'saving',
+  armyStatus: 'army {w} / {t} hoplites aimed for',
+  expeditionUnderway: 'settlers on the march — {p}%',
   fundedBy: '{budget} fund: {f} / {c} dr',
   developTitle: 'Surveyors set out',
   developFarm: 'New farms will be laid out in your countryside in {m}.',

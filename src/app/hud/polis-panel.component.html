@@ -63,24 +63,7 @@
     </dl>
 
     <div class="actions">
-      <div class="action">
-        <app-button
-          variant="preset"
-          extraClass="action__btn"
-          [active]="me.expedition !== null"
-          [disabled]="!me.canSettle"
-          [titleText]="settleHint()"
-          (btnClick)="game.settle()">
-          <lucide-icon [img]="icons.Sprout" [size]="14"></lucide-icon>
-          <span>{{ settleLabel() }}</span>
-        </app-button>
-        @if (me.expedition !== null) {
-          <span class="progress" aria-hidden="true">
-            <span class="progress__bar" [style.width.%]="me.expedition * 100"></span>
-          </span>
-        }
-      </div>
-      <div class="action">
+      <div class="action action--wide">
         <app-button
           variant="play"
           extraClass="action__btn action__btn--buildings"

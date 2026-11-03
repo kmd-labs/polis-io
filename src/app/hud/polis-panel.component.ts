@@ -3,7 +3,6 @@ import { PopupService } from '@kmd/design-system';
 import {
   LucideAngularModule,
   Anchor,
-  Building2,
   Coins,
   Crown,
   Flag,
@@ -12,9 +11,7 @@ import {
   MapIcon,
   Pickaxe,
   Sailboat,
-  Shield,
   Smile,
-  Sprout,
   Swords,
   TrendingUp,
   Users,
@@ -39,7 +36,7 @@ export class PolisPanelComponent {
   readonly i18n = inject(I18nService);
   readonly game = inject(GameService);
 
-  readonly icons = { Anchor, Building2, Coins, Crown, Flag, Handshake, Landmark, Smile, MapIcon, Pickaxe, Sailboat, Shield, Sprout, Swords, TrendingUp, Users, Wheat };
+  readonly icons = { Anchor, Coins, Crown, Flag, Handshake, Landmark, Smile, MapIcon, Pickaxe, Sailboat, Swords, TrendingUp, Users, Wheat };
 
   private readonly popup = inject(PopupService);
 
@@ -104,21 +101,6 @@ export class PolisPanelComponent {
     return me.tributeGold || me.tributeWorkers
       ? `${hint} ${interpolate(t.tributeHint, { g: this.num(me.tributeGold), w: this.num(me.tributeWorkers) })}`
       : hint;
-  });
-
-  readonly settleLabel = computed(() => {
-    const t = this.i18n.t();
-    const me = this.game.me();
-    if (me?.expedition != null) return interpolate(t.settling, { p: Math.round(me.expedition * 100) });
-    return t.settle;
-  });
-
-  readonly settleHint = computed(() => {
-    const t = this.i18n.t();
-    const me = this.game.me();
-    if (!me) return '';
-    if (!me.canSettle && me.expedition == null && this.game.sim.wildCells === 0) return t.settleNoLand;
-    return interpolate(t.settleHint, { n: this.num(me.settlers) });
   });
 
   num(value: number): string {
