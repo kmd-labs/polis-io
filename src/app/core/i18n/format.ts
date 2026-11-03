@@ -42,3 +42,8 @@ export function formatPlural(n: number, one: string, few: string, many: string):
 export function formatYears(n: number, t: Dict): string {
   return formatPlural(n, t.yearsOne, t.yearsFew, t.yearsMany);
 }
+
+/** A number with at most one decimal place (power projection, culture…), never float noise. */
+export function fmt1(value: number, lang: Lang): string {
+  return value.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 1 });
+}

@@ -785,7 +785,7 @@ export class MapRenderer {
 
   private drawCapitals(ctx: CanvasRenderingContext2D, cam: Camera, opt: RenderOptions, width: number, height: number) {
     const sim = this.sim;
-    const placed: Rect[] = [];
+    const placed: Rect[] = (this.labelRects = []);
     const px = this.pixelSize(cam, 0.6);
     const size = 13 * px;
     const margin = 40;
@@ -873,6 +873,9 @@ export class MapRenderer {
 
   // ─── Armies & battles ─────────────────────────────────────────────────────
 
+  /** City labels placed this frame; army counters steer clear of them. */
+  private labelRects: Rect[] = [];
+
   private drawArmies(ctx: CanvasRenderingContext2D, cam: Camera, now: number) {
     const sim = this.sim;
     const me = sim.poleis[sim.player];
@@ -938,8 +941,16 @@ export class MapRenderer {
         const text = String(Math.round(a.strength));
         ctx.font = `600 10px ${this.mono}`;
         const w = ctx.measureText(text).width + 8;
-        const bx = sx + r + 2;
-        const by = sy - 7;
+        // Above the shield by default; elsewhere if that would cover a city's name.
+        const spots: Rect[] = [
+          { x: sx - w / 2, y: sy - r - 17, w, h: 14 },
+          { x: sx - w / 2, y: sy + r + 3, w, h: 14 },
+          { x: sx + r + 2, y: sy - 7, w, h: 14 },
+          { x: sx - r - 2 - w, y: sy - 7, w, h: 14 }
+        ];
+        const spot = spots.find(q => !this.labelRects.some(l => overlaps(q, l))) ?? spots[0];
+        const bx = spot.x;
+        const by = spot.y;
         ctx.fillStyle = this.css['panel-bg-heavy'];
         ctx.strokeStyle = this.css['line'];
         ctx.lineWidth = 1;

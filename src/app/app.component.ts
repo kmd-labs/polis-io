@@ -36,7 +36,7 @@ import {
 } from '@kmd/design-system';
 import { I18nService } from './core/i18n/i18n.service';
 import { Lang } from './core/i18n/i18n.types';
-import { formatNumber, formatPlural, formatYear, formatYears, interpolate } from './core/i18n/format';
+import { fmt1, formatNumber, formatPlural, formatYear, formatYears, interpolate } from './core/i18n/format';
 import { GameService } from './game/game.service';
 import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
@@ -128,7 +128,7 @@ export class AppComponent {
         {
           icon: this.icons.Flag,
           label: t.statPrestige,
-          value: interpolate(t.reportPrestigeValue, { n: num(n.prestige), t: num(n.totalPrestige) })
+          value: interpolate(t.reportPrestigeValue, { n: fmt1(n.prestige, lang), t: fmt1(n.totalPrestige, lang) })
         },
         {
           icon: this.icons.Swords,
@@ -147,8 +147,10 @@ export class AppComponent {
       const t = this.i18n.t();
       return {
         sender: interpolate(t.letterGeneric.sender, { name }),
-        text: interpolate(t.embassyText, { name }),
-        color: this.game.sim.poleis[n.from].def.color
+        text: interpolate(t.embassyTexts[n.reason], { name, enemy: this.game.name(n.enemy) }),
+        color: this.game.sim.poleis[n.from].def.color,
+        // Accepting means joining every war the city is fighting.
+        wars: [...this.game.sim.poleis[n.from].wars].map(i => ({ name: this.game.name(i), color: this.game.sim.poleis[i].def.color }))
       };
     }
     if (n?.kind !== 'war') return null;
@@ -160,7 +162,8 @@ export class AppComponent {
     return {
       sender: interpolate(voice.sender, { name }),
       text: letter.tone === 'taunt' ? voice.taunt : voice.challenge,
-      color: def.color
+      color: def.color,
+      wars: [] as { name: string; color: string }[]
     };
   });
 

@@ -120,7 +120,12 @@
 
   &__view {
     position: relative;
-    z-index: 2;
+    z-index: 3;
+
+    ::ng-deep .dropdown__menu {
+      z-index: 40;
+    }
+
     width: 180px;
   }
 
@@ -284,6 +289,53 @@
     letter-spacing: 0.05em;
     color: color("warning-800");
     text-align: right;
+  }
+}
+
+.ally-wars {
+  display: flex;
+  flex-direction: column;
+  gap: spacing("xxs");
+  margin-top: spacing("md");
+  padding: spacing("sm") spacing("md");
+  border: 1px solid color("btn-active-red-border");
+  border-radius: radius("sm");
+  background: color("danger-soft");
+
+  &__label {
+    font-family: var(--font-family-display);
+    font-size: font-size("xs");
+    font-weight: font-weight("semibold");
+    letter-spacing: 0.04em;
+    color: color("danger-700");
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: radius("pill");
+    background: color("panel-bg-solid");
+    font-size: font-size("xs");
+    color: color("text-bright");
+  }
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  &__warning {
+    font-size: font-size("xs");
+    color: color("text-desc");
   }
 }
 

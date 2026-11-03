@@ -17,6 +17,7 @@
           [id]="'polis-card-' + c.idx"
           [class.card--selected]="active"
           [attr.aria-pressed]="active"
+          [attr.aria-label]="c.name + ', ' + c.region"
           (click)="game.select(c.idx)"
           (pointerenter)="game.preview.set(c.idx)"
           (pointerleave)="game.preview.set(-1)"

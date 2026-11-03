@@ -1,6 +1,6 @@
 import { PolisId, SiteId } from '../../game/data/poleis';
 import { ImprovementId, ImprovementTree } from '../../game/data/improvements';
-import { BudgetKey, Purchase } from '../../game/simulation';
+import { AllianceReason, BudgetKey, Purchase } from '../../game/simulation';
 
 export type Lang = 'en' | 'pl';
 
@@ -230,7 +230,9 @@ export interface Dict {
   // Embassy (alliance offer)
   embassyTitle: string;
   embassySubtitle: string;
-  embassyText: string;
+  embassyTexts: Record<AllianceReason, string>;
+  embassyWars: string;
+  embassyWarning: string;
   embassyAccept: string;
   embassyDecline: string;
 

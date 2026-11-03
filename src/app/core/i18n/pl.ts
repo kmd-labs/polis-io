@@ -326,8 +326,19 @@ export const PL: Dict = {
   // Embassy (alliance offer)
   embassyTitle: 'Poselstwo z polis {name}',
   embassySubtitle: 'U twoich bram czekają posłowie z gałązkami oliwnymi.',
-  embassyText:
-    'Cała Hellada mówi o waszych zwycięstwach. Polis {name} proponuje wam sojusz: jeśli ktokolwiek wypowie wam wojnę, staniemy u waszego boku — a wy u naszego.',
+  embassyTexts: {
+    victories:
+      'Cała Hellada mówi o waszych zwycięstwach. Polis {name} proponuje wam sojusz: jeśli ktokolwiek wypowie wam wojnę, staniemy u waszego boku — a wy u naszego.',
+    trade:
+      'Nasze statki dobrze znają wasze porty, a nasi kupcy bogacą się na waszej oliwie. Polis {name} chce związać nasze miasta czymś więcej niż handel: sojuszem wzajemnej obrony.',
+    commonEnemy:
+      'I wy, i my stawiamy czoła polis {enemy}. Polis {name} proponuje, byśmy stanęli razem: sojusz, w którym każdy rusza, gdy drugi zostanie zaatakowany.',
+    neighbour:
+      'Nasze pola stykają się z waszymi, a dobry płot czyni dobrych sąsiadów — jeszcze lepiej, dobrych sojuszników. Polis {name} proponuje sojusz wzajemnej obrony.',
+    goodwill: 'Polis {name} przysyła dary i pozdrowienia oraz proponuje sojusz: jeśli ktokolwiek wypowie wam wojnę, staniemy u waszego boku — a wy u naszego.'
+  },
+  embassyWars: 'W stanie wojny z',
+  embassyWarning: 'Przyjęcie sojuszu oznacza natychmiastowe przystąpienie do tych wojen.',
   embassyAccept: 'Przyjmij sojusz',
   embassyDecline: 'Odeślij posłów',
 

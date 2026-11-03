@@ -13,7 +13,7 @@
         <app-trait-pips kind="militarism" [label]="t.statMilitarism" [value]="me.militarism" [hint]="t.statMilitarismHint"></app-trait-pips>
         <app-trait-pips kind="culture" [label]="t.statCulture" [value]="me.culture" [hint]="t.statCultureHint"></app-trait-pips>
         <span class="prestige" [appTooltip]="t.statPrestigeHint">
-          <lucide-icon [img]="icons.Flag" [size]="11"></lucide-icon>{{ t.statPrestige }} <b>{{ me.prestige }}</b>
+          <lucide-icon [img]="icons.Flag" [size]="11"></lucide-icon>{{ t.statPrestige }} <b>{{ one(me.prestige) }}</b>
         </span>
       </div>
     </header>

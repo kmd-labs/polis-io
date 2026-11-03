@@ -19,7 +19,7 @@ import {
 } from 'lucide-angular';
 import { ButtonComponent, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
-import { formatNumber, formatRate, interpolate } from '../core/i18n/format';
+import { fmt1, formatNumber, formatRate, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { TraitPipsComponent } from './trait-pips.component';
 import { PolisScreenComponent } from './polis-screen.component';
@@ -73,6 +73,10 @@ export class PolisPanelComponent {
       onClose: () => this.game.paused.set(wasPaused),
       actions: [{ label: computed(() => this.i18n.t().close), variant: 'default' }]
     });
+  }
+
+  one(value: number): string {
+    return fmt1(value, this.i18n.lang());
   }
 
   round(value: number): number {

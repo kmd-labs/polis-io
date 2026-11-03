@@ -139,6 +139,12 @@ export const RULES = {
   prestigeTradePull: 0.15,
   /** Per AI decision and per point of the player's power projection: chance to offer an alliance. */
   allianceOfferChance: 0.004,
+  /** At most one embassy reaches the player in this many seconds (5 years). */
+  embassyCooldown: 20,
+  /** Recent victories (within this many seconds) are what impresses envoys. */
+  victoryMemory: 40,
+  /** Voyages between two cities that make their envoys speak of trade. */
+  tradeTies: 3,
   /** Satisfaction (0–100): starting value and what moves it. */
   satisfactionStart: 70,
   /** Recovered per second while the citizens are left in peace… */
@@ -360,6 +366,12 @@ export interface PolisState {
   captured: boolean;
   /** Diplomatic reputation with every other polis, by index (−100…+100). */
   relations: number[];
+  /** Battles won and lost, for the history and the hegemony rankings. */
+  battlesWon: number;
+  battlesLost: number;
+  lastVictoryAt: number;
+  /** Trade voyages completed to (or received from) each other polis, by index. */
+  voyages: number[];
   /** Tribute received from client states so far. */
   tributeGold: number;
   tributeWorkers: number;
@@ -402,6 +414,8 @@ export type WarOutcome = 'conquest' | 'peace';
 export type FallOutcome = 'razed' | 'city' | 'client' | 'revolt' | 'ransom' | 'alliance';
 /** What the player decides for a city whose walls they have breached. */
 export type ConquestChoice = 'raze' | 'subjugate' | 'alliance';
+/** Why a city offers the player an alliance; it shapes what the envoys say. */
+export type AllianceReason = 'victories' | 'trade' | 'commonEnemy' | 'neighbour' | 'goodwill';
 
 export interface WarReport extends WarStats {
   outcome: WarOutcome;
@@ -536,8 +550,10 @@ export interface GameEvent {
   a: number;
   b: number;
   year: number;
-  /** Extra figure for the chronicle, e.g. months until planned works are ready. */
+  /** Extra figure for the chronicle, e.g. months until planned works are ready, or a third polis. */
   n?: number;
+  /** Extra tag, e.g. the reason behind an alliance offer. */
+  tag?: string;
 }
 
 export type GameStatus = 'choosing' | 'playing' | 'won' | 'lost';
@@ -568,6 +584,8 @@ export class Simulation {
   /** Pairs of poleis whose land touches (key: lower * 4096 + higher), refreshed every second. */
   private borders = new Set<number>();
   private nextDiplomacy = 0;
+  /** No embassy reaches the player before this time. */
+  private nextEmbassy = 0;
   private nextTidy = 0;
   claims: Claim[] = [];
   events: GameEvent[] = [];
@@ -666,6 +684,10 @@ export class Simulation {
       client: false,
       captured: false,
       relations: [],
+      battlesWon: 0,
+      battlesLost: 0,
+      lastVictoryAt: -Infinity,
+      voyages: [],
       remnant: null,
       besieged: 0,
       tributeGold: 0,
@@ -756,6 +778,7 @@ export class Simulation {
     this.conquests = [];
     this.borders = new Set();
     this.nextDiplomacy = 0;
+    this.nextEmbassy = 0;
     this.nextTidy = 0;
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
@@ -1080,6 +1103,16 @@ export class Simulation {
         this.shiftRelation(a.idx, b.idx, delta * dt);
       }
     }
+  }
+
+  /** What moves a city to seek the player's friendship: a shared enemy, victories, trade or a border. */
+  private embassyReason(p: PolisState, me: PolisState): { reason: AllianceReason; enemy?: number } {
+    const enemy = [...p.wars].find(e => me.wars.has(e));
+    if (enemy !== undefined) return { reason: 'commonEnemy', enemy };
+    if (this.time - me.lastVictoryAt < RULES.victoryMemory) return { reason: 'victories' };
+    if ((p.voyages[me.idx] ?? 0) + (me.voyages[p.idx] ?? 0) >= RULES.tradeTies) return { reason: 'trade' };
+    if (this.bordering(p.idx, me.idx)) return { reason: 'neighbour' };
+    return { reason: 'goodwill' };
   }
 
   /** The player turned an embassy away; the city will not ask again for a while. */
@@ -1737,11 +1770,12 @@ export class Simulation {
       if (target >= 0) this.declareWar(p.idx, target);
     }
 
-    // Impressed by the player's victories, a city may send an embassy offering an alliance.
+    // Impressed by the player's renown, a city may send an embassy offering an alliance.
     const me = this.poleis[this.player];
     if (
       me?.alive &&
       me.prestige > 0 &&
+      this.time >= this.nextEmbassy &&
       this.time >= p.embassyAt &&
       !p.allies.has(me.idx) &&
       !p.wars.has(me.idx) &&
@@ -1750,7 +1784,9 @@ export class Simulation {
       this.rand() < RULES.allianceOfferChance * me.prestige * (1 + this.relation(p.idx, me.idx) / 50)
     ) {
       p.embassyAt = this.time + 120;
-      this.emit('allianceOffer', p.idx, me.idx);
+      this.nextEmbassy = this.time + RULES.embassyCooldown;
+      const { reason, enemy } = this.embassyReason(p, me);
+      this.emit('allianceOffer', p.idx, me.idx, enemy, reason);
     }
 
     const playerBloc = this.player >= 0 ? this.bloc(this.player) : [];
@@ -1877,6 +1913,7 @@ export class Simulation {
     const dest = this.poleis[s.dest];
     if (!dest.alive || owner.wars.has(dest.idx)) return;
     const amount = this.tradeValue(owner);
+    owner.voyages[dest.idx] = (owner.voyages[dest.idx] ?? 0) + 1;
     owner.drachmae += amount;
     owner.tradeEarned += amount;
     this.mood(owner, amount * RULES.satisfactionPerTrade);
@@ -2369,6 +2406,7 @@ export class Simulation {
 
   /** The losing side's grief and, for the player, the war tally. */
   private defeat(loser: number, winner: number, ownLosses: number, enemyLosses: number) {
+    this.poleis[loser].battlesLost++;
     this.mood(this.poleis[loser], RULES.satisfactionBattleLost);
     if (loser !== this.player) return;
     const war = this.playerWars.get(winner);
@@ -2386,6 +2424,8 @@ export class Simulation {
     w.drachmae += gold;
     w.slaves += slaves;
     w.prestige += RULES.prestigePerVictory;
+    w.battlesWon++;
+    w.lastVictoryAt = this.time;
     this.mood(w, RULES.satisfactionBattleWon);
     if (winner !== this.player) return;
     const war = this.playerWars.get(loser);
@@ -2793,8 +2833,8 @@ export class Simulation {
     if (!rivals || cells >= this.world.greekCells.length * RULES.victoryShare) this.status = 'won';
   }
 
-  private emit(kind: GameEventKind, a: number, b = -1, n?: number) {
-    this.events.push({ id: this.nextId++, kind, a, b, year: this.year, n });
+  private emit(kind: GameEventKind, a: number, b = -1, n?: number, tag?: string) {
+    this.events.push({ id: this.nextId++, kind, a, b, year: this.year, n, tag });
     if (this.events.length > 40) this.events.shift();
   }
 }

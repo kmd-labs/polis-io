@@ -57,7 +57,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   private flight: Camera | null = null;
   private width = 0;
   private height = 0;
+  /** Smallest zoom: the map covers the whole viewport, so no empty band ever shows. */
   private fitScale = 1;
+  /** Zoom at which the whole map fits the free area; fly-to zooms are relative to it. */
+  private containScale = 1;
   private userMoved = false;
   private hover = -1;
   private frame = 0;
@@ -83,6 +86,16 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       const idx = this.game.selected();
       if (this.game.status() !== 'choosing' || idx < 0 || !this.game.ready()) return;
       untracked(() => this.flyTo(idx));
+    });
+
+    // Once the game begins, centre the player's capital in whatever part of the map the HUD leaves free.
+    let previous = this.game.status();
+    effect(() => {
+      const status = this.game.status();
+      const began = previous === 'choosing' && status === 'playing';
+      previous = status;
+      if (!began) return;
+      untracked(() => requestAnimationFrame(() => this.flyTo(this.game.sim.player)));
     });
   }
 
@@ -118,18 +131,18 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     window.removeEventListener('pointercancel', this.onPointerUp);
   }
 
-  /** Frames the whole map in the part of the screen not covered by HUD panels. */
+  /** Fills the viewport with the map (cover), centred on the part of the screen not covered by HUD panels. */
   fit(animate = false) {
     if (!this.game.ready()) return;
+    this.measure();
     const { cols, rows } = this.game.world;
     const a = this.freeArea();
-    const scale = Math.max(0.5, Math.min((a.right - a.left) / cols, (a.bottom - a.top) / rows));
-    this.fitScale = scale;
-    const target = {
+    const scale = this.fitScale;
+    const target = this.clamp({
       scale,
       ox: (a.left + a.right - cols * scale) / 2,
       oy: (a.top + a.bottom - rows * scale) / 2
-    };
+    });
     this.userMoved = false;
     if (animate) {
       this.flight = target;
@@ -143,14 +156,45 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   flyTo(idx: number) {
     const p = this.game.sim.poleis[idx];
     if (!p) return;
+    this.measure();
     const a = this.freeArea();
-    const scale = Math.min(MAX_SCALE, Math.max(this.cam.scale, this.fitScale * FOCUS_ZOOM));
-    this.flight = {
+    const { cols, rows } = this.game.world;
+    const midX = (a.left + a.right) / 2;
+    const midY = (a.top + a.bottom) / 2;
+    // Zoom in at least far enough that the map edge does not stop the polis from reaching the centre.
+    const reach = Math.max(
+      midX / p.cx,
+      (this.width - midX) / (cols - p.cx),
+      midY / p.cy,
+      (this.height - midY) / (rows - p.cy)
+    );
+    const scale = Math.min(MAX_SCALE, Math.max(this.cam.scale, this.fitScale, this.containScale * FOCUS_ZOOM, reach));
+    this.flight = this.clamp({
       scale,
       ox: (a.left + a.right) / 2 - p.cx * scale,
       oy: (a.top + a.bottom) / 2 - p.cy * scale
-    };
+    });
     this.userMoved = true;
+  }
+
+  /** Recomputes the cover and contain zooms for the current viewport and HUD. */
+  private measure() {
+    const { cols, rows } = this.game.world;
+    const a = this.freeArea();
+    this.fitScale = Math.max(this.width / cols, this.height / rows, 0.5);
+    this.containScale = Math.max(0.5, Math.min((a.right - a.left) / cols, (a.bottom - a.top) / rows));
+  }
+
+  /** Keeps the map edge from ever being dragged inside the viewport. */
+  private clamp(cam: Camera): Camera {
+    if (!this.game.ready()) return cam;
+    const { cols, rows } = this.game.world;
+    const scale = Math.max(this.fitScale, cam.scale);
+    return {
+      scale,
+      ox: Math.min(0, Math.max(this.width - cols * scale, cam.ox)),
+      oy: Math.min(0, Math.max(this.height - rows * scale, cam.oy))
+    };
   }
 
   /** Viewport minus the header strip, the bottom dock and the start screen panel. */
@@ -162,6 +206,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     if (panel) {
       const r = panel.getBoundingClientRect();
       if (r.top > this.height * 0.3) area.bottom = Math.min(area.bottom, r.top - 8);
+      // A full-width bar (the collapsed budget on phones) covers the top, not the left.
+      else if (r.width > this.width * 0.6) area.top = Math.max(area.top, r.bottom + 8);
       else area.left = Math.max(area.left, r.right + 12);
     }
     if (area.bottom - area.top < 160) area.bottom = area.top + 160;
@@ -172,19 +218,35 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const canvas = this.canvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
+    // Keep whatever map point sat in the middle of the screen there.
+    const midX = (this.width / 2 - this.cam.ox) / this.cam.scale;
+    const midY = (this.height / 2 - this.cam.oy) / this.cam.scale;
     this.width = rect.width;
     this.height = rect.height;
     canvas.width = Math.round(rect.width * dpr);
     canvas.height = Math.round(rect.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (!this.userMoved) this.fit();
+    if (!this.game.ready()) return this.paint(performance.now());
+    if (!this.userMoved) {
+      this.fit();
+    } else {
+      this.measure();
+      this.cam = this.clamp({ scale: this.cam.scale, ox: this.width / 2 - midX * this.cam.scale, oy: this.height / 2 - midY * this.cam.scale });
+      if (this.flight) this.flight = this.clamp(this.flight);
+    }
+    // Resizing the canvas wiped it; repaint now rather than on the next (possibly throttled) frame.
+    this.paint(performance.now());
   }
 
   private draw(now: number) {
     const dt = this.lastFrame ? Math.min(0.1, (now - this.lastFrame) / 1000) : 0;
     this.lastFrame = now;
     this.animateCamera(dt);
+    this.paint(now);
+    this.frame = requestAnimationFrame(ts => this.draw(ts));
+  }
 
+  private paint(now: number) {
     if (this.renderer) {
       const t = this.i18n.t();
       const labels: MapLabel[] = [{ lon: 22.35, lat: 40.085, text: t.peakOlympus, kind: 'peak' }];
@@ -208,7 +270,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       this.ctx.fillStyle = this.theme.getTokenColor('bg-deep', '#f5f7fb');
       this.ctx.fillRect(0, 0, this.width, this.height);
     }
-    this.frame = requestAnimationFrame(ts => this.draw(ts));
   }
 
   /** Exponential ease toward the flight target, interpolating zoom in log space. */
@@ -223,7 +284,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const cy = this.height / 2;
     const mapX = (cx - this.cam.ox) / this.cam.scale + ((cx - f.ox) / f.scale - (cx - this.cam.ox) / this.cam.scale) * k;
     const mapY = (cy - this.cam.oy) / this.cam.scale + ((cy - f.oy) / f.scale - (cy - this.cam.oy) / this.cam.scale) * k;
-    this.cam = { scale, ox: cx - mapX * scale, oy: cy - mapY * scale };
+    this.cam = this.clamp({ scale, ox: cx - mapX * scale, oy: cy - mapY * scale });
     if (Math.abs(scale - f.scale) / f.scale < 0.002 && Math.abs(this.cam.ox - f.ox) < 0.5 && Math.abs(this.cam.oy - f.oy) < 0.5) {
       this.cam = f;
       this.flight = null;
@@ -236,11 +297,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const { cols, rows } = this.game.world;
     const a = this.freeArea();
     const scale = this.fitScale * (1.04 + 0.04 * Math.sin(performance.now() / 9000));
-    this.cam = {
+    this.cam = this.clamp({
       scale,
       ox: (a.left + a.right - cols * scale) / 2,
       oy: (a.top + a.bottom - rows * scale) / 2
-    };
+    });
   }
 
   // ─── Interaction ──────────────────────────────────────────────────────────
@@ -255,12 +316,14 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
 
   private zoomAt(clientX: number, clientY: number, scale: number) {
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
-    const next = Math.max(this.fitScale * 0.8, Math.min(MAX_SCALE, scale));
+    const next = Math.max(this.fitScale, Math.min(MAX_SCALE, scale));
     const px = clientX - rect.left;
     const py = clientY - rect.top;
-    this.cam.ox = px - ((px - this.cam.ox) / this.cam.scale) * next;
-    this.cam.oy = py - ((py - this.cam.oy) / this.cam.scale) * next;
-    this.cam.scale = next;
+    this.cam = this.clamp({
+      scale: next,
+      ox: px - ((px - this.cam.ox) / this.cam.scale) * next,
+      oy: py - ((py - this.cam.oy) / this.cam.scale) * next
+    });
     this.userMoved = true;
     this.flight = null;
   }
@@ -300,8 +363,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       this.dragged = true;
       this.flight = null;
       this.hideTooltip();
-      this.cam.ox = s.ox + (cx - s.x);
-      this.cam.oy = s.oy + (cy - s.y);
+      this.cam = this.clamp({ scale: this.cam.scale, ox: s.ox + (cx - s.x), oy: s.oy + (cy - s.y) });
       this.userMoved = true;
       if (pts.length > 1 && s.dist > 0) {
         const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);

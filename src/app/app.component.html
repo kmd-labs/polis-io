@@ -133,6 +133,17 @@
         <blockquote class="letter__text">{{ letter.text }}</blockquote>
         <figcaption class="letter__sender">— {{ letter.sender }}</figcaption>
       </figure>
+      @if (letter.wars.length) {
+        <div class="ally-wars" role="note">
+          <span class="ally-wars__label">{{ t.embassyWars }}</span>
+          <span class="ally-wars__chips">
+            @for (w of letter.wars; track w.name) {
+              <span class="ally-wars__chip"><span class="ally-wars__dot" [style.background]="'var(--color-' + w.color + ')'"></span>{{ w.name }}</span>
+            }
+          </span>
+          <span class="ally-wars__warning">{{ t.embassyWarning }}</span>
+        </div>
+      }
     }
   </ng-template>
 

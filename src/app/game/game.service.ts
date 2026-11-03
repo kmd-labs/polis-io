@@ -5,6 +5,7 @@ import { polisName } from '../core/i18n/format';
 import { loadMapData } from './map-loader';
 import { IMPROVEMENTS, ImprovementId, ImprovementTree, improvementCost } from './data/improvements';
 import {
+  AllianceReason,
   BUDGET_KEYS,
   Budget,
   BudgetKey,
@@ -101,7 +102,7 @@ export type Notice =
       enemyLosses: number;
       ownLosses: number;
     }
-  | { kind: 'alliance'; from: number }
+  | { kind: 'alliance'; from: number; reason: AllianceReason; enemy: number }
   | ({ kind: 'warEnd' } & WarReport)
   | { kind: 'conquest'; from: number }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
@@ -367,7 +368,7 @@ export class GameService {
         const ratio = sim.warriors(sim.poleis[e.a]) / Math.max(1, sim.warriors(me));
         incoming.push({ kind: 'war', from: e.a, tone: ratio > 1.4 || sim.treasury(me) < 100 ? 'taunt' : 'challenge' });
       } else if (e.kind === 'allianceOffer' && e.b === sim.player) {
-        incoming.push({ kind: 'alliance', from: e.a });
+        incoming.push({ kind: 'alliance', from: e.a, reason: (e.tag as AllianceReason) ?? 'goodwill', enemy: e.n ?? -1 });
       }
     }
     // Several battles won in one breath make a single report.

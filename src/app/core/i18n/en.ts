@@ -326,8 +326,19 @@ export const EN: Dict = {
   // Embassy (alliance offer)
   embassyTitle: 'An embassy from {name}',
   embassySubtitle: 'Envoys bearing olive branches wait at your gates.',
-  embassyText:
-    'All of Hellas speaks of your victories. {name} offers you an alliance: if anyone declares war on you, we will march at your side — and you at ours.',
+  embassyTexts: {
+    victories:
+      'All of Hellas speaks of your victories. {name} offers you an alliance: if anyone declares war on you, we will march at your side — and you at ours.',
+    trade:
+      'Our ships know your harbours well, and our merchants grow rich on your oil. {name} would bind our cities with more than trade: an alliance, each defending the other.',
+    commonEnemy:
+      'You and we both stand against {enemy}. {name} proposes we stand together: an alliance, each marching when the other is attacked.',
+    neighbour:
+      'Our fields touch yours, and good fences make good neighbours — better still, good allies. {name} offers an alliance of mutual defence.',
+    goodwill: '{name} sends gifts and greetings, and offers an alliance: if anyone declares war on you, we will march at your side — and you at ours.'
+  },
+  embassyWars: 'At war with',
+  embassyWarning: 'Accepting the alliance means joining these wars at once.',
   embassyAccept: 'Accept the alliance',
   embassyDecline: 'Send them away',
 
