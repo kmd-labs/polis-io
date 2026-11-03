@@ -46,6 +46,10 @@ export interface PolisView {
   improvements: ImprovementView[];
   vassals: number[];
   overlord: number;
+  client: boolean;
+  besieged: number;
+  tributeGold: number;
+  tributeWorkers: number;
   developCost: number;
   canDevelop: boolean;
   wars: number[];
@@ -305,6 +309,10 @@ export class GameService {
         mood: sim.moodFactor(p),
         improvements: p.idx === sim.player ? this.improvementsOf(p.idx) : [],
         vassals: sim.vassalsOf(p.idx),
+        client: p.client,
+        besieged: p.besieged,
+        tributeGold: Math.round(p.tributeGold),
+        tributeWorkers: Math.round(p.tributeWorkers),
         overlord: p.overlord,
         developCost: sim.developCost(p),
         canDevelop: sim.canDevelop(p),

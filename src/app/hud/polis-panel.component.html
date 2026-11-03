@@ -22,6 +22,12 @@
       </div>
     </header>
 
+    @if (me.besieged) {
+      <div class="siege-alert" role="alert" [appTooltip]="t.underSiegeHint">
+        <lucide-icon [img]="icons.Swords" [size]="13"></lucide-icon>{{ t.underSiege }}
+      </div>
+    }
+
     <div class="mood" [class]="'mood mood--' + moodLevel()" [appTooltip]="moodHint()">
       <span class="mood__label">
         <lucide-icon [img]="icons.Smile" [size]="12"></lucide-icon>{{ t.satisfaction }}

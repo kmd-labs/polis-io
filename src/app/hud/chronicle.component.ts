@@ -17,7 +17,11 @@ const TEMPLATE_KEY = {
   port: 'evPort',
   vassal: 'evVassal',
   alliance: 'evAlliance',
-  allianceOffer: 'evAllianceOffer'
+  allianceOffer: 'evAllianceOffer',
+  siege: 'evSiege',
+  client: 'evClient',
+  annexed: 'evAnnexed',
+  secession: 'evSecession'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Floating feed of the latest wars, treaties, colonies and conquests (top-right, under the view switcher). */
@@ -43,7 +47,7 @@ export class ChronicleComponent {
     return this.game
       .events()
       // Other poleis' settling and building are routine; only the player's own projects are news.
-      .filter(e => !['settle', 'colony', 'farm', 'port', 'allianceOffer'].includes(e.kind) || (e.a === player && e.kind !== 'allianceOffer'))
+      .filter(e => !['settle', 'colony', 'farm', 'port', 'allianceOffer', 'siege'].includes(e.kind) || (e.kind === 'siege' ? e.a === player || e.b === player : e.a === player && e.kind !== 'allianceOffer'))
       .slice(-limit)
       .reverse()
       .map(e => ({
@@ -51,7 +55,7 @@ export class ChronicleComponent {
         year: formatYear(e.year, t),
         text: interpolate(t[TEMPLATE_KEY[e.kind]], { a: name(e.a), b: name(e.b) }),
         mine: e.a === player || e.b === player,
-        hostile: e.kind === 'war' || e.kind === 'fall'
+        hostile: ['war', 'fall', 'siege', 'client', 'annexed'].includes(e.kind)
       }));
   });
 }

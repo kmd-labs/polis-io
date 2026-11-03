@@ -11,6 +11,9 @@ import { MinHeap } from './heap';
 import { hash01 } from './rng';
 import { Terrain, World } from './world';
 
+/** Palette tokens for poleis that break away during a fall (unused by the founding cities). */
+const SECESSION_COLORS = ['success-700', 'info-600', 'danger-700', 'purple-400', 'primary-500', 'info-800', 'neutral-800'];
+
 /** Cell owner codes; values >= 0 are polis indices. */
 export const SEA = -3;
 export const FOREIGN = -2;
@@ -108,6 +111,31 @@ export const RULES = {
   /** Income and growth run at this multiplier at 0% satisfaction, and its mirror at 100%. */
   satisfactionLow: 0.7,
   satisfactionHigh: 1.3,
+  /** Seconds an army camps before the walls before it storms them. */
+  siegeDuration: 10,
+  /** Share of a besieging army lost to disease and desertion per second. */
+  siegeAttrition: 0.015,
+  /** Share of a besieged garrison lost to hunger per second. */
+  siegeStarvation: 0.005,
+  /** Satisfaction lost per second for every army camped before the walls. */
+  siegeMood: 0.3,
+  /** Population growth multiplier while besieged. */
+  siegeGrowth: 0.3,
+  /** Relative weights of what becomes of a fallen polis (razing is adjusted by age, see fallOutcome). */
+  fallCity: 30,
+  fallClient: 40,
+  fallRazed: 30,
+  /** A founding polis of 600 BC is this much harder to raze. */
+  foundingResilience: 0.5,
+  /** A vassal founded less than this many seconds ago is easier to raze, up to +40 weight. */
+  youthSpan: 240,
+  /** Chance that a new polis breaks away from a falling one. */
+  secessionChance: 0.25,
+  /** Share of a client state's income paid to its overlord, and of its civilians sent as workers per second. */
+  tributeShare: 0.3,
+  tributeWorkers: 0.003,
+  /** Travel budget (cells) of the land a client state keeps around its capital. */
+  clientReach: 12,
   /** Cells per second. */
   armySpeedLand: 6.5,
   armySpeedSea: 4.2,
@@ -196,6 +224,17 @@ export interface PolisState {
   satisfaction: number;
   /** Satisfaction only recovers on its own after this time. */
   calmFrom: number;
+  /** Founding time; young poleis are easier to raze. */
+  founded: number;
+  /** Paying tribute to its overlord after being conquered. */
+  client: boolean;
+  /** What remains on the map after the fall: a city within the victor's borders. */
+  remnant: 'city' | null;
+  /** Armies camped before its walls (recounted every tick). */
+  besieged: number;
+  /** Tribute received from client states so far. */
+  tributeGold: number;
+  tributeWorkers: number;
   /** Completed buildings of the Polis screen and their summed nationwide bonuses. */
   built: Set<ImprovementId>;
   effects: ImprovementEffects;
@@ -225,9 +264,12 @@ export interface WarStats {
 }
 
 export type WarOutcome = 'conquest' | 'peace';
+export type FallOutcome = 'razed' | 'city' | 'client';
 
 export interface WarReport extends WarStats {
   outcome: WarOutcome;
+  /** What became of the enemy when the war ended in its fall. */
+  fate: FallOutcome | null;
   years: number;
   /** Satisfaction change brought by the end of the war. */
   satisfaction: number;
@@ -279,6 +321,10 @@ export interface Army {
   dwell: number;
   battle: number;
   dead: boolean;
+  /** Polis being besieged, or -1. */
+  siege: number;
+  siegeStart: number;
+  siegeEnd: number;
 }
 
 export interface Battle {
@@ -309,7 +355,11 @@ export type GameEventKind =
   | 'port'
   | 'vassal'
   | 'alliance'
-  | 'allianceOffer';
+  | 'allianceOffer'
+  | 'siege'
+  | 'client'
+  | 'annexed'
+  | 'secession';
 
 export interface GameEvent {
   id: number;
@@ -356,6 +406,7 @@ export class Simulation {
   /** Greek land cell of every vassal site, resolved once. */
   private readonly siteCells: { id: SiteId; lon: number; lat: number; cell: number }[];
   private usedSites = new Set<SiteId>();
+  private secessions = 0;
   /** Coarse sea grid for route planning, and routes already found between coarse harbour cells. */
   private readonly seaGrid: Uint8Array;
   private readonly seaCols: number;
@@ -431,6 +482,12 @@ export class Simulation {
       embassyAt: this.time + 60,
       satisfaction: RULES.satisfactionStart,
       calmFrom: 0,
+      founded: this.time,
+      client: false,
+      remnant: null,
+      besieged: 0,
+      tributeGold: 0,
+      tributeWorkers: 0,
       built: new Set<ImprovementId>(),
       effects: { ...NO_EFFECTS },
       works: []
@@ -770,7 +827,7 @@ export class Simulation {
   }
 
   /** Closes the tally of one of the player's wars and queues its report. */
-  private endPlayerWar(enemy: number, outcome: WarOutcome) {
+  private endPlayerWar(enemy: number, outcome: WarOutcome, fate: FallOutcome | null = null) {
     const stats = this.playerWars.get(enemy);
     if (!stats || this.status !== 'playing') return;
     this.playerWars.delete(enemy);
@@ -786,6 +843,7 @@ export class Simulation {
     this.warReports.push({
       ...stats,
       outcome,
+      fate,
       years: Math.max(1, Math.round((this.time - stats.start) / RULES.secondsPerYear)),
       satisfaction
     });
@@ -975,7 +1033,8 @@ export class Simulation {
   private tick(dt: number) {
     this.time += dt;
 
-    for (const p of this.poleis) p.farms = p.ports = 0;
+    for (const p of this.poleis) p.farms = p.ports = p.besieged = 0;
+    for (const a of this.armies) if (!a.dead && a.siege >= 0) this.poleis[a.siege].besieged++;
     for (const b of this.buildings) {
       const o = this.owner[b.cell];
       if (o < 0) continue;
@@ -1018,6 +1077,11 @@ export class Simulation {
   private contentment(p: PolisState, dt: number) {
     let rate = RULES.satisfactionPerPrestige * p.prestige + p.effects.regen;
     if (this.time >= p.calmFrom) rate += RULES.satisfactionRecovery;
+    // Enemy camps before the walls: hunger, fear and idle hands.
+    if (p.besieged) {
+      rate -= RULES.siegeMood * p.besieged;
+      p.garrison *= 1 - RULES.siegeStarvation * p.besieged * dt;
+    }
     this.mood(p, rate * dt);
   }
 
@@ -1025,7 +1089,8 @@ export class Simulation {
     const capacity = this.capacity(p);
     const total = this.totalPopulation(p);
     const mood = this.moodFactor(p);
-    const rate = RULES.growthRate * p.prosperity * (1 + p.effects.growth) * mood;
+    const siege = p.besieged ? RULES.siegeGrowth : 1;
+    const rate = RULES.growthRate * p.prosperity * (1 + p.effects.growth) * mood * siege;
     let growth = rate * p.civilians * (1 - total / capacity);
     growth = Math.max(growth, -0.03 * p.civilians);
     p.civilians = Math.max(0, p.civilians + growth * dt);
@@ -1038,6 +1103,18 @@ export class Simulation {
       this.workers(p) * RULES.incomePerWorker * p.prosperity * (0.7 + 0.3 * avgFertility) * culture * trade * bonus -
       this.warriors(p) * RULES.upkeepPerWarrior;
     p.drachmae += p.income * dt;
+    // A client state sends part of its income and a stream of labourers to its overlord.
+    const lord = p.client && p.overlord >= 0 ? this.poleis[p.overlord] : null;
+    if (lord?.alive) {
+      const gold = Math.max(0, p.income) * RULES.tributeShare * dt;
+      const workers = p.civilians * RULES.tributeWorkers * dt;
+      p.drachmae -= gold;
+      p.civilians -= workers;
+      lord.drachmae += gold;
+      lord.slaves += workers;
+      lord.tributeGold += gold;
+      lord.tributeWorkers += workers;
+    }
     if (p.drachmae < 0) {
       // Unpaid hoplites go home.
       p.drachmae = 0;
@@ -1400,7 +1477,10 @@ export class Simulation {
       target: -1,
       dwell: 0,
       battle: 0,
-      dead: false
+      dead: false,
+      siege: -1,
+      siegeStart: 0,
+      siegeEnd: 0
     });
   }
 
@@ -1418,6 +1498,7 @@ export class Simulation {
         a.dead = true;
         continue;
       }
+      if (a.siege >= 0 && this.besiege(a, dt)) continue;
       if (!p.wars.size) {
         // Peace: march home and rejoin the garrison.
         if (this.walk(a, p.cx, p.cy, dt)) {
@@ -1440,13 +1521,37 @@ export class Simulation {
       a.dwell = 0;
       const victim = this.poleis[this.owner[a.target]];
       if (a.target === victim.capital && victim.garrison >= 1) {
-        this.startBattle(a, null, victim.idx);
+        // Camp before the walls; the assault comes later.
+        if (!this.armies.some(o => o.siege === victim.idx && o.owner === a.owner && !o.dead)) {
+          this.emit('siege', a.owner, victim.idx);
+        }
+        a.siege = victim.idx;
+        a.siegeStart = this.time;
+        a.siegeEnd = this.time + RULES.siegeDuration;
         continue;
       }
       this.captureAround(a, tx, ty);
       a.strength *= 0.99;
       a.target = this.adjacentEnemyCell(a);
     }
+  }
+
+  /**
+   * One tick of a siege. The army wastes away before the walls until the assault; returns false
+   * once the siege is over (lifted or stormed) so the army moves on.
+   */
+  private besiege(a: Army, dt: number): boolean {
+    const q = this.poleis[a.siege];
+    if (!q.alive || !this.poleis[a.owner].wars.has(q.idx)) {
+      a.siege = -1;
+      return false;
+    }
+    a.strength *= 1 - RULES.siegeAttrition * dt;
+    if (this.time < a.siegeEnd) return true;
+    a.siege = -1;
+    if (q.garrison >= 1) this.startBattle(a, null, q.idx);
+    else this.conquer(q.idx, a.owner);
+    return true;
   }
 
   /** Seizes every enemy cell within the capture radius, sparing defended capitals. */
@@ -1712,38 +1817,135 @@ export class Simulation {
     if (l.cells === 0) this.conquer(loser, winner);
   }
 
+  /** What becomes of a fallen polis: founding cities endure, young colonies are easily razed. */
+  private fallOutcome(l: PolisState): FallOutcome {
+    let razed: number = RULES.fallRazed;
+    if (l.def.kind === 'major') {
+      razed *= RULES.foundingResilience;
+    } else {
+      const youth = 1 - Math.min(1, (this.time - l.founded) / RULES.youthSpan);
+      razed += 40 * youth;
+    }
+    let roll = this.rand() * (RULES.fallCity + RULES.fallClient + razed);
+    if ((roll -= RULES.fallCity) < 0) return 'city';
+    if ((roll -= RULES.fallClient) < 0) return 'client';
+    return 'razed';
+  }
+
   private conquer(loser: number, winner: number) {
     const l = this.poleis[loser];
     const w = this.poleis[winner];
     if (!l.alive) return;
-    const war = winner === this.player ? this.playerWars.get(loser) : undefined;
-    if (war) war.cellsGained += l.cells;
-    for (const c of this.world.greekCells) {
-      if (this.owner[c] === loser) this.setOwner(c, winner, true);
-    }
-    w.civilians += l.civilians * 0.5;
-    w.slaves += l.slaves * 0.5;
-    l.civilians = 0;
-    l.slaves = 0;
-    l.garrison = 0;
-    l.expedition = null;
-    l.alive = false;
-    l.conqueror = winner;
+    // The player's own fall always ends the game.
+    const fate = loser === this.player ? 'city' : this.fallOutcome(l);
+    const cellsBefore = l.cells;
+
     for (const a of this.armies) if (a.owner === loser) a.dead = true;
+    l.expedition = null;
+    const atWarWithPlayer = l.wars.has(this.player);
     for (const e of l.wars) {
       this.poleis[e].wars.delete(loser);
       this.poleis[e].warStart.delete(loser);
     }
-    // A war of the player's ends with the fall of the enemy, whoever dealt the last blow.
-    if (l.wars.has(this.player)) this.endPlayerWar(loser, 'conquest');
     l.wars.clear();
-    // Vassals of a fallen city go their own way; its treaties die with it.
     for (const v of this.poleis) {
-      if (v.overlord === loser) v.overlord = -1;
+      // Vassals and client states of the fallen city regain their freedom.
+      if (v.overlord === loser) {
+        v.overlord = -1;
+        v.client = false;
+      }
       v.allies.delete(loser);
     }
     l.allies.clear();
-    this.emit('fall', loser, winner);
+
+    if (this.rand() < RULES.secessionChance) this.secede(l);
+
+    if (fate === 'client') {
+      // Keep the heartland around the capital; the rest goes to the victor.
+      const keep = new Set<number>();
+      const heap = new MinHeap();
+      const cost = new Map<number, number>([[l.capital, 0]]);
+      heap.push(l.capital, 0);
+      const ww = this.world;
+      while (heap.size) {
+        const k = heap.peekKey();
+        const c = heap.pop();
+        if (keep.has(c) || k > (cost.get(c) ?? Infinity)) continue;
+        keep.add(c);
+        const x = c % ww.cols;
+        for (const n of ww.neighbours4(x, (c - x) / ww.cols)) {
+          const next = k + 1;
+          if (this.owner[n] !== loser || next > RULES.clientReach || next >= (cost.get(n) ?? Infinity)) continue;
+          cost.set(n, next);
+          heap.push(n, next);
+        }
+      }
+      const share = keep.size / Math.max(1, l.cells);
+      for (const c of this.world.greekCells) {
+        if (this.owner[c] === loser && !keep.has(c)) this.setOwner(c, winner, true);
+      }
+      w.civilians += l.civilians * (1 - share) * 0.5;
+      l.civilians *= share;
+      l.slaves = 0;
+      l.garrison = l.civilians * RULES.startGarrison;
+      l.overlord = winner;
+      l.client = true;
+      l.satisfaction = Math.min(l.satisfaction, 40);
+      this.emit('client', loser, winner);
+    } else {
+      for (const c of this.world.greekCells) {
+        if (this.owner[c] === loser) this.setOwner(c, winner, true);
+      }
+      w.civilians += l.civilians * 0.5;
+      w.slaves += l.slaves * 0.5;
+      l.civilians = 0;
+      l.slaves = 0;
+      l.garrison = 0;
+      l.alive = false;
+      l.conqueror = winner;
+      l.remnant = fate === 'city' ? 'city' : null;
+      this.emit(fate === 'city' ? 'annexed' : 'fall', loser, winner);
+    }
+
+    const war = winner === this.player ? this.playerWars.get(loser) : undefined;
+    if (war) war.cellsGained += cellsBefore - l.cells;
+    // A war of the player's ends with the fall of the enemy, whoever dealt the last blow.
+    if (atWarWithPlayer) this.endPlayerWar(loser, 'conquest', fate);
+  }
+
+  /** In the chaos of a fall, an outlying town declares itself an independent polis. */
+  private secede(l: PolisState) {
+    if (l.cells < 60) return;
+    const capitals = new Set(this.poleis.map(q => q.capital));
+    const site = this.siteCells.find(
+      s => !this.usedSites.has(s.id) && !capitals.has(s.cell) && this.owner[s.cell] === l.idx
+    );
+    if (!site) return;
+    this.usedSites.add(site.id);
+    const idx = this.poleis.length;
+    const color = SECESSION_COLORS[this.secessions++ % SECESSION_COLORS.length];
+    const nova = this.createPolis(
+      {
+        kind: 'site',
+        id: site.id,
+        lon: site.lon,
+        lat: site.lat,
+        color,
+        militarism: Math.min(5, l.militarism + 1),
+        culture: l.culture
+      },
+      idx,
+      site.cell,
+      -1
+    );
+    this.poleis.push(nova);
+    const before = l.cells;
+    this.floodClaim([{ cell: site.cell, idx }], RULES.vassalReach + 2, c => this.owner[c] === l.idx && c !== l.capital);
+    const share = (before - l.cells) / Math.max(1, before);
+    nova.civilians = l.civilians * share;
+    l.civilians -= nova.civilians;
+    nova.garrison = Math.round(nova.civilians * RULES.startGarrison * 2);
+    this.emit('secession', l.idx, idx);
   }
 
   private checkEnd() {

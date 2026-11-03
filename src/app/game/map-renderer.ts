@@ -1,6 +1,7 @@
 import { ThemeService } from '@kmd/design-system';
 import { drawFightCloud, FightCloudStyle } from './fight-cloud';
 import { hash01, mulberry32 } from './rng';
+import { SpriteAtlas, SpritePalette } from './sprites';
 import { RULES, Simulation } from './simulation';
 import { Terrain } from './world';
 
@@ -100,6 +101,7 @@ export class MapRenderer {
   private wavePatterns: CanvasPattern[] = [];
 
   private readonly clouds: Cloud[];
+  private readonly sprites = new SpriteAtlas();
   private outline: Path2D | null = null;
   private outlineKey = '';
 
@@ -142,7 +144,7 @@ export class MapRenderer {
       'bg-deep', 'neutral-0', 'neutral-100', 'neutral-200', 'neutral-300', 'neutral-400', 'neutral-500',
       'neutral-600', 'success-100', 'success-200', 'success-600', 'warning-100', 'warning-200', 'warning-300',
       'info-50', 'info-100', 'info-200', 'info-300', 'info-400', 'info-700', 'primary-200', 'primary-300', 'primary-400',
-      'primary-800', 'neutral-700', 'neutral-900', 'warning-50', 'warning-800', 'success-500', 'accent', 'text-bright', 'text-main',
+      'primary-800', 'neutral-700', 'neutral-900', 'warning-50', 'warning-700', 'warning-800', 'success-500', 'accent', 'text-bright', 'text-main',
       'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong'
     ];
     for (const t of tokens) {
@@ -164,6 +166,7 @@ export class MapRenderer {
       getComputedStyle(document.documentElement).getPropertyValue('--font-family-display').trim() || this.font;
     this.mono = getComputedStyle(document.documentElement).getPropertyValue('--font-family-mono').trim() || 'monospace';
     this.buildSeaLayers();
+    this.sprites.clear();
     this.baseView = null;
     this.paintedKey = '';
   }
@@ -200,6 +203,7 @@ export class MapRenderer {
     this.drawEdgeFade(ctx, cam);
     this.drawGrade(ctx, width, height);
     this.drawLabels(ctx, cam, opt, width, height);
+    this.drawSieges(ctx, cam, width, height);
     this.drawCapitals(ctx, cam, opt, width, height);
     this.drawArmies(ctx, cam, now);
     this.drawTradeFx(ctx, cam, opt);
@@ -659,55 +663,83 @@ export class MapRenderer {
     ctx.restore();
   }
 
-  /** Farms as little ploughed fields, ports as anchors. */
+  /** Colours shared by every pixel sprite; 'C' (owner colour) is added per sprite. */
+  private spritePalette(owner: string): SpritePalette {
+    return {
+      K: this.css['neutral-800'],
+      M: this.css['neutral-0'],
+      S: this.css['neutral-400'],
+      D: this.css['neutral-600'],
+      R: this.css['warning-700'],
+      Y: this.css['warning-300'],
+      G: this.css['success-500'],
+      N: this.css['info-700'],
+      C: owner
+    };
+  }
+
+  /** Whole-number sprite pixel size: one screen pixel on the overview, chunkier as you zoom in. */
+  private pixelSize(cam: Camera, factor: number): number {
+    if (cam.scale < 1.6) return 1;
+    return Math.max(2, Math.min(4, Math.round(cam.scale * factor)));
+  }
+
+  /** Farms as a barn by a striped field, ports as an anchor plaque — both pixel art. */
   private drawBuildings(ctx: CanvasRenderingContext2D, cam: Camera, width: number, height: number) {
     const sim = this.sim;
     const { cols } = sim.world;
-    const s = Math.max(7, Math.min(18, cam.scale * 3.2));
-    const ink = this.css['text-bright'];
-    ctx.save();
-    ctx.lineCap = 'round';
+    const px = this.pixelSize(cam, 0.45);
+    const palette = this.spritePalette(this.css['neutral-500']);
     for (const b of sim.buildings) {
       if (sim.owner[b.cell] < 0) continue;
       const x = cam.ox + ((b.cell % cols) + 0.5) * cam.scale;
       const y = cam.oy + (Math.floor(b.cell / cols) + 0.5) * cam.scale;
-      if (x < -s || y < -s || x > width + s || y > height + s) continue;
-      const pop = Math.min(1, (sim.time - b.t) / 0.3);
-      const r = (s / 2) * (0.4 + 0.6 * pop);
-      ctx.lineWidth = Math.max(1, s / 10);
-      ctx.strokeStyle = ink;
-      if (b.kind === 'farm') {
-        ctx.fillStyle = this.css['warning-200'];
-        ctx.beginPath();
-        ctx.roundRect(x - r, y - r, r * 2, r * 2, r * 0.3);
-        ctx.fill();
-        ctx.stroke();
-        ctx.strokeStyle = this.css['success-600'];
-        ctx.beginPath();
-        for (let k = -1; k <= 1; k++) {
-          ctx.moveTo(x - r * 0.55 + k * r * 0.5, y + r * 0.55);
-          ctx.lineTo(x + r * 0.05 + k * r * 0.5, y - r * 0.55);
-        }
-        ctx.stroke();
-      } else {
-        ctx.fillStyle = this.css['neutral-0'];
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.strokeStyle = this.css['info-700'];
-        ctx.beginPath();
-        ctx.arc(x, y - r * 0.5, r * 0.18, 0, Math.PI * 2);
-        ctx.moveTo(x, y - r * 0.32);
-        ctx.lineTo(x, y + r * 0.6);
-        ctx.moveTo(x - r * 0.35, y - r * 0.1);
-        ctx.lineTo(x + r * 0.35, y - r * 0.1);
-        ctx.moveTo(x - r * 0.55, y + r * 0.2);
-        ctx.quadraticCurveTo(x, y + r * 0.85, x + r * 0.55, y + r * 0.2);
-        ctx.stroke();
+      if (x < -40 || y < -40 || x > width + 40 || y > height + 40) continue;
+      this.sprites.draw(ctx, b.kind, palette, x, y, px);
+    }
+  }
+
+  /** Camps of the besieging armies around the walls, with a ring counting down to the assault. */
+  private drawSieges(ctx: CanvasRenderingContext2D, cam: Camera, width: number, height: number) {
+    const sim = this.sim;
+    const px = this.pixelSize(cam, 0.45);
+    ctx.save();
+    for (const a of sim.armies) {
+      if (a.dead || a.siege < 0) continue;
+      const q = sim.poleis[a.siege];
+      const cx = cam.ox + q.cx * cam.scale;
+      const cy = cam.oy + q.cy * cam.scale;
+      if (cx < -60 || cy < -60 || cx > width + 60 || cy > height + 60) continue;
+      const color = this.colorOf(a.owner);
+      const palette = this.spritePalette(color);
+      const [ox, oy] = this.campOffset(a.id, cam);
+      for (const [dx, dy] of [[0, 0], [-8 * px, 4 * px], [8 * px, 4 * px]]) {
+        this.sprites.draw(ctx, 'tent', palette, cx + ox + dx, cy + oy + dy, px);
       }
+      // Ring around the walls: dashed while besieged, filling up towards the assault.
+      const r = 6.5 * this.pixelSize(cam, 0.6) + 6;
+      const progress = Math.min(1, (sim.time - a.siegeStart) / Math.max(0.001, a.siegeEnd - a.siegeStart));
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'butt';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+      ctx.stroke();
     }
     ctx.restore();
+  }
+
+  /** Where an army pitches its camp around a besieged capital: clear of the temple, stable per army. */
+  private campOffset(id: number, cam: Camera): [number, number] {
+    const angle = id * 2.399;
+    const r = 6.5 * this.pixelSize(cam, 0.6) + 8 * this.pixelSize(cam, 0.45) + 14;
+    return [Math.cos(angle) * r, Math.sin(angle) * r * 0.85];
   }
 
   // ─── Labels & capitals ────────────────────────────────────────────────────
@@ -741,36 +773,59 @@ export class MapRenderer {
   }
 
   private drawCapitals(ctx: CanvasRenderingContext2D, cam: Camera, opt: RenderOptions, width: number, height: number) {
+    const sim = this.sim;
     const placed: Rect[] = [];
-    const size = Math.max(10, Math.min(22, cam.scale * 5));
+    const px = this.pixelSize(cam, 0.6);
+    const size = 13 * px;
     const margin = 40;
-    const order = this.sim.poleis
-      .filter(p => {
-        const sx = cam.ox + p.cx * cam.scale;
-        const sy = cam.oy + p.cy * cam.scale;
-        return p.alive && sx > -margin && sy > -margin && sx < width + margin && sy < height + margin;
-      })
-      .sort((a, b) => Number(b.idx === this.sim.player) - Number(a.idx === this.sim.player) || b.cells - a.cells);
+    const onScreen = (p: { cx: number; cy: number }) => {
+      const sx = cam.ox + p.cx * cam.scale;
+      const sy = cam.oy + p.cy * cam.scale;
+      return sx > -margin && sy > -margin && sx < width + margin && sy < height + margin;
+    };
+    const order = sim.poleis
+      .filter(p => p.alive && onScreen(p))
+      .sort((a, b) => Number(b.idx === sim.player) - Number(a.idx === sim.player) || b.cells - a.cells);
+    // Fallen poleis that live on as cities inside the victor's borders.
+    const remnants = sim.poleis.filter(p => !p.alive && p.remnant === 'city' && onScreen(p));
 
     ctx.save();
+    for (const p of remnants) {
+      const owner = sim.owner[p.capital];
+      const color = owner >= 0 ? this.colorOf(owner) : this.css['neutral-400'];
+      this.sprites.draw(ctx, 'town', this.spritePalette(color), cam.ox + p.cx * cam.scale, cam.oy + p.cy * cam.scale, px);
+    }
     for (const p of order) {
       const sx = cam.ox + p.cx * cam.scale;
       const sy = cam.oy + p.cy * cam.scale;
-      const focus = p.idx === opt.hover || p.idx === opt.selected;
-      const scale = (focus ? 1.15 : 1) * (p.overlord >= 0 ? 0.75 : 1);
-      this.drawTemple(ctx, sx, sy, size * scale, this.colorOf(p.idx), p.idx === this.sim.player);
+      const isMe = p.idx === sim.player;
+      if (isMe || p.idx === opt.hover || p.idx === opt.selected) {
+        // Pixel halo: a square glow behind the temple.
+        ctx.fillStyle = isMe ? this.css['accent'] : this.colorOf(p.idx);
+        ctx.globalAlpha = 0.28;
+        const halo = size + 6 * px;
+        ctx.fillRect(Math.round(sx - halo / 2), Math.round(sy - halo / 2), halo, halo);
+        ctx.globalAlpha = 1;
+      }
+      // Founding cities raise a temple; younger poleis are humbler towns.
+      const sprite = p.def.kind === 'major' ? 'temple' : 'town';
+      this.sprites.draw(ctx, sprite, this.spritePalette(this.colorOf(p.idx)), sx, sy, px);
       placed.push({ x: sx - size / 2, y: sy - size / 2, w: size, h: size });
     }
 
-    ctx.font = `700 11px ${this.display}`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
-    for (const p of order) {
-      const isMe = p.idx === this.sim.player;
-      const focus = isMe || p.idx === opt.hover || p.idx === opt.selected;
+    const labels = [
+      ...order.map(p => ({ p, remnant: false })),
+      ...remnants.map(p => ({ p, remnant: true }))
+    ];
+    for (const { p, remnant } of labels) {
+      const isMe = p.idx === sim.player;
+      const focus = !remnant && (isMe || p.idx === opt.hover || p.idx === opt.selected);
       const label = opt.names[p.idx];
-      const w = ctx.measureText(label).width + 20;
-      const h = 18;
+      ctx.font = remnant ? `600 10px ${this.display}` : `700 11px ${this.display}`;
+      const w = ctx.measureText(label).width + (remnant ? 12 : 20);
+      const h = remnant ? 15 : 18;
       const sx = cam.ox + p.cx * cam.scale;
       const sy = cam.oy + p.cy * cam.scale;
       const gap = size / 2 + 4;
@@ -787,48 +842,22 @@ export class MapRenderer {
       ctx.fillStyle = focus ? this.css['panel-bg-heavy'] : this.css['panel-bg'];
       ctx.strokeStyle = isMe || focus ? (isMe ? this.css['accent'] : this.colorOf(p.idx)) : this.css['line-strong'];
       ctx.lineWidth = isMe || focus ? 1.5 : 1;
+      ctx.globalAlpha = remnant ? 0.85 : 1;
       ctx.beginPath();
       ctx.roundRect(spot.x, spot.y, spot.w, spot.h, h / 2);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = this.colorOf(p.idx);
-      ctx.beginPath();
-      ctx.arc(spot.x + 9, spot.y + h / 2, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = this.css['text-bright'];
-      ctx.fillText(label, spot.x + spot.w / 2 + 3, spot.y + h / 2 + 0.5);
-    }
-    ctx.restore();
-  }
-
-  /** Tiny Doric temple: stylobate, three columns and a pediment. */
-  private drawTemple(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, color: string, isMe: boolean) {
-    const ink = this.css['text-bright'];
-    if (isMe) {
-      ctx.fillStyle = this.css['accent'];
-      ctx.globalAlpha = 0.25;
-      ctx.beginPath();
-      ctx.arc(x, y, s * 0.95, 0, Math.PI * 2);
-      ctx.fill();
+      if (!remnant) {
+        ctx.fillStyle = this.colorOf(p.idx);
+        ctx.beginPath();
+        ctx.arc(spot.x + 9, spot.y + h / 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = remnant ? this.css['text-dim'] : this.css['text-bright'];
+      ctx.fillText(label, spot.x + spot.w / 2 + (remnant ? 0 : 3), spot.y + h / 2 + 0.5);
       ctx.globalAlpha = 1;
     }
-    const l = x - s / 2;
-    const t = y - s / 2;
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = Math.max(1, s / 12);
-    ctx.beginPath();
-    ctx.moveTo(l, t + s * 0.36);
-    ctx.lineTo(x, t);
-    ctx.lineTo(l + s, t + s * 0.36);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = this.css['neutral-0'];
-    ctx.fillRect(l + s * 0.08, t + s * 0.42, s * 0.84, s * 0.4);
-    ctx.fillStyle = ink;
-    for (let k = 0; k < 3; k++) ctx.fillRect(l + s * (0.18 + k * 0.28), t + s * 0.42, Math.max(1, s * 0.1), s * 0.4);
-    ctx.fillRect(l, t + s * 0.84, s, s * 0.14);
+    ctx.restore();
   }
 
   // ─── Armies & battles ─────────────────────────────────────────────────────
@@ -840,8 +869,14 @@ export class MapRenderer {
     ctx.save();
     for (const a of sim.armies) {
       if (a.battle || a.dead) continue;
-      const sx = cam.ox + a.x * cam.scale;
-      const sy = cam.oy + a.y * cam.scale + Math.sin(now / 140 + a.id) * 0.8;
+      let sx = cam.ox + a.x * cam.scale;
+      let sy = cam.oy + a.y * cam.scale + Math.sin(now / 140 + a.id) * 0.8;
+      if (a.siege >= 0) {
+        const q = sim.poleis[a.siege];
+        const [ox, oy] = this.campOffset(a.id, cam);
+        sx = cam.ox + q.cx * cam.scale + ox;
+        sy = cam.oy + q.cy * cam.scale + oy - 14;
+      }
       const cell = sim.world.cellAt(a.x, a.y);
       const atSea = cell < 0 || sim.world.terrain[cell] === Terrain.Sea;
       const isMe = a.owner === sim.player;

@@ -93,7 +93,11 @@ export class PolisPanelComponent {
     if (!me) return '';
     const lang = this.i18n.lang();
     const fmt = (v: number) => v.toLocaleString(lang, { maximumFractionDigits: 1 });
-    return interpolate(this.i18n.t().buildingsHint, { v: fmt(me.tradeValue), t: fmt(me.tradeEarned) });
+    const t = this.i18n.t();
+    const hint = interpolate(t.buildingsHint, { v: fmt(me.tradeValue), t: fmt(me.tradeEarned) });
+    return me.tributeGold || me.tributeWorkers
+      ? `${hint} ${interpolate(t.tributeHint, { g: this.num(me.tributeGold), w: this.num(me.tributeWorkers) })}`
+      : hint;
   });
 
   readonly developHint = computed(() => {

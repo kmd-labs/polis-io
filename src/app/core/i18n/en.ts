@@ -77,6 +77,10 @@ export const EN: Dict = {
       desc: 'Declare war on a polis and your armies roam on their own, seizing enemy pixels one by one. Hostile territory is striped. Storming an enemy capital means beating its garrison — and annexing the whole polis.'
     },
     {
+      term: 'Sieges and the fall of a polis',
+      desc: 'An army reaching an enemy capital camps before its walls for about two and a half years before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
+    },
+    {
       term: 'Battle',
       desc: 'When two hostile armies meet, they vanish into a brawl cloud. Only one army walks out; the larger one usually wins, but not always.'
     },
@@ -178,7 +182,9 @@ export const EN: Dict = {
 
   // War report
   warEndTitle: 'The war with {name} is over',
-  warEndConquest: '{name} has fallen',
+  warEndConquest: '{name} has been razed',
+  warEndCity: '{name} survives as a city within the victor’s borders',
+  warEndClient: '{name} has become a client state',
   warEndPeace: 'Peace has been sworn',
   warDuration: 'Duration',
   yearsOne: '{n} year',
@@ -195,6 +201,10 @@ export const EN: Dict = {
   buildingsHint:
     'Farms, ports and vassal poleis created by development, allies, and merchant ships at sea. Each voyage to a friendly harbour earns {v} drachmae ({t} from trade so far); the receiving city gets 30% of that too.',
   vassalOf: 'Vassal of {b}',
+  clientOf: 'Client state of {b}',
+  underSiege: 'Under siege!',
+  underSiegeHint: 'Enemy armies are camped before the walls: satisfaction falls, the population barely grows and the garrison goes hungry until the assault.',
+  tributeHint: 'Client states have paid {g} drachmae and sent {w} workers so far.',
 
   // Diplomacy panel
   warsTitle: 'Wars',
@@ -217,11 +227,15 @@ export const EN: Dict = {
   evPeaceRefused: '{b} rejected peace with {a}',
   evSettle: 'Settlers of {a} set out into the wilderness',
   evColony: '{a} founded a colony across the sea',
-  evFall: '{a} fell to {b}',
+  evFall: '{a} was razed by {b}',
   evFarm: '{a} laid out new farms',
   evPort: '{a} built a harbour',
   evVassal: '{a} founded {b}, a vassal polis',
   evAlliance: '{a} and {b} formed an alliance',
+  evSiege: '{a} laid siege to {b}',
+  evClient: '{a} became a client state of {b}',
+  evAnnexed: '{a} now lies within the borders of {b}',
+  evSecession: '{b} broke away from {a}',
   evAllianceOffer: '{a} sent envoys to {b}',
 
   // Battle report

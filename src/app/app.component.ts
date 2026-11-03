@@ -211,7 +211,7 @@ export class AppComponent {
       untracked(() => {
         if (n.kind === 'war') this.openLetter(n.from);
         else if (n.kind === 'alliance') this.openEmbassy(n.from);
-        else if (n.kind === 'warEnd') this.openWarEnd(n.enemy, n.outcome);
+        else if (n.kind === 'warEnd') this.openWarEnd(n.enemy, n.outcome, n.fate);
         else this.openReport(n.near);
       });
     });
@@ -294,13 +294,18 @@ export class AppComponent {
     });
   }
 
-  private openWarEnd(enemy: number, outcome: 'conquest' | 'peace') {
+  private openWarEnd(enemy: number, outcome: 'conquest' | 'peace', fate: 'razed' | 'city' | 'client' | null) {
     const name = () => this.game.name(enemy);
     this.popup.open({
       id: 'war-end',
       title: computed(() => interpolate(this.i18n.t().warEndTitle, { name: name() })),
       subtitle: computed(() =>
-        outcome === 'conquest' ? interpolate(this.i18n.t().warEndConquest, { name: name() }) : this.i18n.t().warEndPeace
+        outcome === 'peace'
+          ? this.i18n.t().warEndPeace
+          : interpolate(
+              fate === 'city' ? this.i18n.t().warEndCity : fate === 'client' ? this.i18n.t().warEndClient : this.i18n.t().warEndConquest,
+              { name: name() }
+            )
       ),
       template: this.reportTpl,
       size: 'sm',

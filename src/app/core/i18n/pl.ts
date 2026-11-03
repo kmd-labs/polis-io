@@ -77,6 +77,10 @@ export const PL: Dict = {
       desc: 'Wypowiedz wojnę polis, a twoje armie same ruszą w pole, zagarniając wrogie piksele jeden po drugim. Wrogie terytorium jest prążkowane. Zdobycie stolicy wroga wymaga pokonania jej garnizonu — i oznacza aneksję całej polis.'
     },
     {
+      term: 'Oblężenia i upadek polis',
+      desc: 'Armia, która dotrze do stolicy wroga, obozuje pod jej murami przez mniej więcej dwa i pół roku, zanim przypuści szturm. W tym czasie oblężonemu miastu spada zadowolenie, ludność prawie nie przybywa, a garnizon głoduje — ale oblegający też topnieją. Upadła polis rzadko znika z mapy: może przetrwać jako miasto w granicach zwycięzcy albo zostać państwem klienckim, które płaci daninę w drachmach i robotnikach. Polis założycielskie trudno zrównać z ziemią, młode kolonie — łatwo. Czasem w chaosie oderwie się zupełnie nowa polis.'
+    },
+    {
       term: 'Bitwa',
       desc: 'Gdy spotkają się dwie wrogie armie, znikają w chmurze bójki. Wychodzi z niej tylko jedna; zwykle silniejsza, ale nie zawsze.'
     },
@@ -178,7 +182,9 @@ export const PL: Dict = {
 
   // War report
   warEndTitle: 'Wojna z polis {name} dobiegła końca',
-  warEndConquest: 'Polis {name} upadła',
+  warEndConquest: 'Polis {name} została zrównana z ziemią',
+  warEndCity: 'Polis {name} przetrwała jako miasto w granicach zwycięzcy',
+  warEndClient: 'Polis {name} stała się państwem klienckim',
   warEndPeace: 'Zaprzysiężono pokój',
   warDuration: 'Czas trwania',
   yearsOne: '{n} rok',
@@ -195,6 +201,10 @@ export const PL: Dict = {
   buildingsHint:
     'Farmy, porty i polis-wasale powstałe dzięki rozwojowi, sojusznicy oraz statki kupieckie na morzu. Każdy rejs do przyjaznego portu daje {v} drachmy (z handlu dotąd {t}); miasto docelowe dostaje dodatkowo 30% tej kwoty.',
   vassalOf: 'Wasal polis {b}',
+  clientOf: 'Państwo klienckie polis {b}',
+  underSiege: 'Oblężenie!',
+  underSiegeHint: 'Wrogie armie obozują pod murami: zadowolenie spada, ludność prawie nie przybywa, a garnizon głoduje aż do szturmu.',
+  tributeHint: 'Państwa klienckie zapłaciły dotąd {g} drachm i przysłały {w} robotników.',
 
   // Diplomacy panel
   warsTitle: 'Wojny',
@@ -217,11 +227,15 @@ export const PL: Dict = {
   evPeaceRefused: 'Polis {b} odrzuca pokój z polis {a}',
   evSettle: 'Osadnicy z polis {a} ruszają w dzicz',
   evColony: 'Polis {a} zakłada kolonię za morzem',
-  evFall: 'Polis {a} upada, podbita przez polis {b}',
+  evFall: 'Polis {a} zostaje zrównana z ziemią przez polis {b}',
   evFarm: 'Polis {a} zakłada nowe farmy',
   evPort: 'Polis {a} buduje port',
   evVassal: 'Polis {a} zakłada polis {b} — swojego wasala',
   evAlliance: 'Polis {a} i polis {b} zawierają sojusz',
+  evSiege: 'Polis {a} oblega polis {b}',
+  evClient: 'Polis {a} staje się państwem klienckim polis {b}',
+  evAnnexed: 'Polis {a} trwa odtąd w granicach polis {b}',
+  evSecession: 'Polis {b} oderwała się od polis {a}',
   evAllianceOffer: 'Polis {a} wysyła posłów do polis {b}',
 
   // Battle report

@@ -119,6 +119,8 @@ export interface Dict {
   // War report
   warEndTitle: string;
   warEndConquest: string;
+  warEndCity: string;
+  warEndClient: string;
   warEndPeace: string;
   warDuration: string;
   yearsOne: string;
@@ -134,6 +136,10 @@ export interface Dict {
   warEndAction: string;
   buildingsHint: string;
   vassalOf: string;
+  clientOf: string;
+  underSiege: string;
+  underSiegeHint: string;
+  tributeHint: string;
 
   // Diplomacy panel
   warsTitle: string;
@@ -161,6 +167,10 @@ export interface Dict {
   evPort: string;
   evVassal: string;
   evAlliance: string;
+  evSiege: string;
+  evClient: string;
+  evAnnexed: string;
+  evSecession: string;
   evAllianceOffer: string;
 
   // Battle report

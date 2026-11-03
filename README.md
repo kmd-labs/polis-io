@@ -32,6 +32,11 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   settling, building and levies; it rises in quiet times, with trade, victories and power projection.
 - **War reports**: when one of your wars ends (peace or the enemy's fall) the game pauses with its balance —
   duration, battles, land won and lost, the fallen, spoils and the effect on satisfaction.
+- **Sieges**: an army reaching an enemy capital camps before its walls for about 2.5 years before storming
+  them; the besieged city loses satisfaction, barely grows and starves its garrison, while the besiegers waste away.
+- **The fall of a polis** rarely wipes it out: it may live on as a city within the victor's borders, or become a
+  client state paying tribute in drachmae and workers. Founding cities are hard to raze, young colonies easy;
+  sometimes a new polis breaks away in the chaos.
 - **Victories**: every battle your army or garrison wins pauses the game with a report — a little gold
   (spoils), 15% of the beaten army taken captive as workers, and +1 power projection.
 - **Power projection**: makes your polis look stronger to would-be attackers, brings embassies offering a
@@ -44,7 +49,7 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Win** by holding half of the Greek land or by being the last polis standing. You lose if your capital falls.
 
 The HUD is styled after classical Greece — parchment and marble panels, terracotta rules, meander friezes and
-Cinzel capitals for titles. It shows total population, workers (able-bodied civilians) and warriors, plus treasury,
+Cinzel capitals for titles, and pixel-art temples, towns, farms, ports and siege camps on the map. It shows total population, workers (able-bodied civilians) and warriors, plus treasury,
 territory share and prosperity. Population follows Archaic densities: a few thousand to ten thousand people
 per city at the start, 25–35 people/km² on settled lowland, and roughly 2–3 million across a fully settled Hellas. <kbd>Space</kbd> pauses; the wheel or a pinch zooms; dragging pans.
 

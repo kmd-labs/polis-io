@@ -107,6 +107,29 @@
   }
 }
 
+.siege-alert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: radius("sm");
+  border: 1px solid color("btn-active-red-border");
+  background: color("danger-soft");
+  font-family: var(--font-family-display);
+  font-size: font-size("xs");
+  font-weight: font-weight("bold");
+  letter-spacing: 0.06em;
+  color: color("danger-700");
+  cursor: default;
+  animation: siegePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes siegePulse {
+  50% {
+    background: color("btn-active-red");
+  }
+}
+
 .mood {
   display: grid;
   grid-template-columns: auto 1fr auto;

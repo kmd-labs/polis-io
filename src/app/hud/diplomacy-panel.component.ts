@@ -51,7 +51,8 @@ export class DiplomacyPanelComponent {
 
   readonly vassalOf = computed(() => {
     const target = this.game.target();
-    return target && target.overlord >= 0 ? interpolate(this.i18n.t().vassalOf, { b: this.name(target.overlord) }) : '';
+    if (!target || target.overlord < 0) return '';
+    return interpolate(target.client ? this.i18n.t().clientOf : this.i18n.t().vassalOf, { b: this.name(target.overlord) });
   });
 
   name(idx: number): string {
