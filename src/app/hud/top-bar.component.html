@@ -1,0 +1,70 @@
+@let t = i18n.t();
+@let me = game.me();
+
+<div class="bar glass-panel" role="region" [attr.aria-label]="t.topBarLabel">
+  @if (me && !bp.mobile()) {
+    <span class="bar__polis">
+      <app-polis-flag [def]="game.sim.poleis[me.idx].def" [size]="18" [label]="name()"></app-polis-flag>
+      @if (!bp.tablet()) {
+        <span class="bar__name">{{ name() }}</span>
+      }
+    </span>
+  }
+
+  <dl class="bar__resources">
+    @for (r of resources(); track r.key) {
+      <div class="res" [class]="'res res--' + r.key + (r.tone ? ' res--' + r.tone : '')" [appTooltip]="r.label + ' — ' + r.hint" tabindex="0">
+        <dt class="res__icon"><lucide-icon [img]="r.icon" [size]="13"></lucide-icon><span class="sr-only">{{ r.label }}</span></dt>
+        <dd class="res__value">
+          {{ r.value }}
+          @if (r.rate) {
+            <span class="res__rate" [class.res__rate--neg]="r.negative">{{ r.rate }}</span>
+          }
+        </dd>
+      </div>
+    }
+  </dl>
+
+  <div class="bar__clock">
+    <span class="bar__date" aria-live="off">{{ year() }}</span>
+    @if (ended()) {
+      <app-button variant="play" [hot]="true" [active]="true" (btnClick)="restart.emit()">
+        <lucide-icon [img]="icons.RotateCcw" [size]="13"></lucide-icon>
+        <span>{{ t.playAgain }}</span>
+      </app-button>
+    } @else {
+      <app-button
+        variant="play"
+        [iconOnly]="true"
+        [active]="!game.paused()"
+        [disabled]="game.status() !== 'playing'"
+        [ariaLabel]="(game.paused() ? t.play : t.pause) + ' (Space)'"
+        [titleText]="(game.paused() ? t.play : t.pause) + ' (Space)'"
+        (btnClick)="game.togglePause()">
+        <lucide-icon [img]="game.paused() ? icons.Play : icons.Pause" [size]="13"></lucide-icon>
+      </app-button>
+      @if (bp.mobile()) {
+        <button type="button" class="speed-cycle" [attr.aria-label]="t.speed" (click)="game.cycleSpeed()">{{ game.speed() }}×</button>
+      } @else {
+        <div class="speeds" role="radiogroup" [attr.aria-label]="t.speed">
+          @for (s of speeds; track s.speed) {
+            <button
+              type="button"
+              role="radio"
+              class="speeds__pip"
+              [class.speeds__pip--on]="s.speed <= game.speed()"
+              [attr.aria-checked]="s.speed === game.speed()"
+              [attr.aria-label]="speedLabel(s.speed) + ' (' + s.key + ')'"
+              [appTooltip]="speedLabel(s.speed) + ' · ' + s.key"
+              (click)="game.speed.set(s.speed)"></button>
+          }
+        </div>
+      }
+    }
+    @if (!bp.mobile()) {
+      <app-button variant="ghost" [iconOnly]="true" [ariaLabel]="t.glossary" [titleText]="t.glossary" (btnClick)="help.emit()">
+        <lucide-icon [img]="icons.BookOpen" [size]="14"></lucide-icon>
+      </app-button>
+    }
+  </div>
+</div>

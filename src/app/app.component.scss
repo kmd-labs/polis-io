@@ -150,94 +150,6 @@
   inset: 0;
 }
 
-.dock-wrap {
-  position: fixed;
-  bottom: var(--dock-offset-bottom);
-  left: var(--dock-offset-x);
-  right: var(--dock-offset-x);
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 20;
-}
-
-.dock {
-  display: flex;
-  align-items: stretch;
-  gap: var(--dock-gap);
-  max-width: 100%;
-
-  > * {
-    pointer-events: auto;
-  }
-
-  &__polis {
-    flex: 0 1 auto;
-  }
-
-  &__diplomacy {
-    flex: 0 1 300px;
-  }
-
-  &__time {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: spacing("xs");
-    padding: spacing("md") spacing("lg");
-  }
-
-  &__year {
-    font-family: var(--font-family-mono);
-    font-size: font-size("lg");
-    font-weight: font-weight("semibold");
-    color: color("text-bright");
-    white-space: nowrap;
-  }
-
-  &__controls {
-    display: flex;
-    align-items: center;
-    gap: spacing("xxs");
-  }
-
-  ::ng-deep .dock__speed {
-    font-family: var(--font-family-mono);
-    min-width: 58px;
-  }
-
-  @include respond-to("tablet") {
-    flex-wrap: wrap;
-    justify-content: center;
-
-    &__time {
-      flex-direction: row;
-      align-items: center;
-      padding: spacing("xs") spacing("md");
-    }
-  }
-
-  @include respond-to("mobile") {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    width: 100%;
-    gap: spacing("xs");
-
-    &__diplomacy {
-      flex: none;
-    }
-
-    &__time {
-      justify-content: space-between;
-      order: -1;
-    }
-
-    &__year {
-      font-size: font-size("md");
-    }
-  }
-}
-
 .letter {
   position: relative;
   margin: 0;
@@ -445,8 +357,20 @@
   }
 }
 
-@include respond-to("mobile") {
-  .header__chronicle {
-    display: none;
+// In game on tablets the logotype keeps only the mark; the call-to-action slides out on hover or focus.
+.header__left--compact ::ng-deep {
+  .header__brand-expand {
+    max-width: 0;
+    margin-left: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  }
+
+  .header__brand:hover .header__brand-expand,
+  .header__brand:focus-within .header__brand-expand {
+    max-width: 240px;
+    margin-left: 6px;
+    opacity: 1;
   }
 }

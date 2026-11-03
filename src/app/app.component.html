@@ -5,115 +5,49 @@
 
   <!-- Fullscreen Visualization Stage -->
   <section class="stage" [attr.aria-label]="t.stageAriaLabel">
-    <app-map-canvas [view]="currentView()"></app-map-canvas>
+    <app-map-canvas [view]="hud.mapMode()"></app-map-canvas>
   </section>
 
-  <!-- Top HUD: Left Logotype + Language, Right View Switcher -->
-  <header class="header" [class.header--popup-open]="isPopupOpen()">
-    <div class="header__left">
-      <app-brand
-        [appName]="t.appName"
-        [lang]="i18n.lang()"
-        (btnClick)="about.open({ lang: i18n.lang() })">
-      </app-brand>
+  <!-- Top-left: logotype and language (inside the HUD's top row once the game is on) -->
+  <ng-template #brandTpl>
+    <app-brand
+      [appName]="t.appName"
+      [lang]="i18n.lang()"
+      (btnClick)="about.open({ lang: i18n.lang() })">
+    </app-brand>
 
-      <div class="header__settings glass-panel" role="group" [attr.aria-label]="t.changeLanguage">
-        <app-dropdown
-          variant="ghost"
-          [icon]="bp.mobile() ? null : icons.Globe"
-          [options]="langOptions()"
-          [value]="i18n.lang()"
-          [ariaLabel]="t.changeLanguage"
-          (valueChange)="i18n.setLang($event)">
-        </app-dropdown>
-      </div>
+    <div class="header__settings glass-panel" role="group" [attr.aria-label]="t.changeLanguage">
+      <app-dropdown
+        variant="ghost"
+        [icon]="bp.mobile() ? null : icons.Globe"
+        [options]="langOptions()"
+        [value]="i18n.lang()"
+        [ariaLabel]="t.changeLanguage"
+        (valueChange)="i18n.setLang($event)">
+      </app-dropdown>
     </div>
+  </ng-template>
 
-    <div class="header__right">
-      <div class="header__view glass-panel">
-        <app-dropdown
-          variant="ghost"
-          align="right"
-          [fullWidth]="true"
-          [options]="viewOptions()"
-          [value]="currentView()"
-          [icon]="currentViewIcon()"
-          [ariaLabel]="t.chooseView"
-          (valueChange)="currentView.set($event)">
-        </app-dropdown>
+  @if (game.ready() && game.status() !== 'choosing') {
+    <app-hud
+      (help)="openGlossary()"
+      (restart)="restart()"
+      (fit)="fitMap()"
+      (layoutChange)="reframe()">
+      <div hudBrand class="header__left" [class.header__left--compact]="compactBrand()">
+        <ng-container [ngTemplateOutlet]="brandTpl"></ng-container>
       </div>
-      <app-chronicle class="header__chronicle"></app-chronicle>
-    </div>
-  </header>
+    </app-hud>
+  } @else {
+    <header class="header" [class.header--popup-open]="isPopupOpen()">
+      <div class="header__left">
+        <ng-container [ngTemplateOutlet]="brandTpl"></ng-container>
+      </div>
+    </header>
+  }
 
   @if (game.ready() && game.status() === 'choosing') {
     <app-start-screen></app-start-screen>
-  }
-
-  @if (game.ready() && game.status() !== 'choosing') {
-    <app-budget-panel></app-budget-panel>
-  }
-
-  <!-- Bottom Dock: polis economy, diplomacy, time controls & rules -->
-  @if (game.ready() && game.status() !== 'choosing') {
-  <footer class="dock-wrap">
-    <div class="dock">
-      <app-polis-panel class="dock__polis"></app-polis-panel>
-      <app-diplomacy-panel class="dock__diplomacy"></app-diplomacy-panel>
-
-      <section class="dock__time glass-panel">
-        <span class="dock__year" [attr.aria-live]="'off'">{{ year() }}</span>
-        <div class="dock__controls">
-          @if (ended()) {
-            <app-button variant="play" [hot]="true" [active]="true" (btnClick)="restart()">
-              <lucide-icon [img]="icons.RotateCcw" [size]="14"></lucide-icon>
-              <span>{{ t.playAgain }}</span>
-            </app-button>
-          } @else {
-            <app-button
-              variant="play"
-              [iconOnly]="true"
-              [active]="!game.paused()"
-              [disabled]="game.status() !== 'playing'"
-              [ariaLabel]="game.paused() ? t.play : t.pause"
-              [titleText]="game.paused() ? t.play : t.pause"
-              (btnClick)="game.togglePause()">
-              <lucide-icon [img]="game.paused() ? icons.Play : icons.Pause" [size]="15"></lucide-icon>
-            </app-button>
-            <app-button
-              variant="toggle"
-              extraClass="dock__speed"
-              [active]="game.speed() > 1"
-              [disabled]="game.status() !== 'playing'"
-              [ariaLabel]="t.speed"
-              [titleText]="t.speed"
-              (btnClick)="game.cycleSpeed()">
-              <lucide-icon [img]="icons.FastForward" [size]="14"></lucide-icon>
-              <span>{{ game.speed() }}×</span>
-            </app-button>
-          }
-          <app-button
-            variant="ghost"
-            [iconOnly]="true"
-            [ariaLabel]="t.fitMap"
-            [titleText]="t.fitMap"
-            (btnClick)="fitMap()">
-            <lucide-icon [img]="icons.Maximize" [size]="15"></lucide-icon>
-          </app-button>
-          <app-button
-            variant="ghost"
-            [iconOnly]="bp.mobile()"
-            [ariaLabel]="t.glossary"
-            (btnClick)="openGlossary()">
-            <lucide-icon [img]="icons.BookOpen" [size]="15"></lucide-icon>
-            @if (!bp.mobile()) {
-              <span>{{ t.glossary }}</span>
-            }
-          </app-button>
-        </div>
-      </section>
-    </div>
-  </footer>
   }
 
   <ng-template #rulesTpl>

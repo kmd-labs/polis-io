@@ -1,6 +1,7 @@
 @let t = i18n.t();
 
-<section class="budget glass-panel" [attr.aria-label]="t.budget">
+<section class="budget" [class.glass-panel]="!embedded()" [class.budget--embedded]="embedded()" [attr.aria-label]="t.budget">
+  @if (!embedded()) {
   <button type="button" class="budget__head" [attr.aria-expanded]="open()" [appTooltip]="t.budgetHint" (click)="toggle()">
     <lucide-icon class="budget__icon" [img]="icons.Coins" [size]="15"></lucide-icon>
     <span class="budget__title">{{ t.budget }}</span>
@@ -11,6 +12,7 @@
     }
     <lucide-icon class="budget__chevron" [class.budget__chevron--open]="open()" [img]="icons.ChevronDown" [size]="14"></lucide-icon>
   </button>
+  }
 
   @if (open()) {
     <div class="budget__rows">

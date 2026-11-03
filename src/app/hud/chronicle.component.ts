@@ -1,6 +1,5 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { LucideAngularModule, ScrollText } from 'lucide-angular';
-import { BreakpointService } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { formatPlural, formatYear, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
@@ -30,7 +29,7 @@ const TEMPLATE_KEY = {
   portPlanned: 'evPortPlanned'
 } as const satisfies Record<GameEventKind, string>;
 
-/** Floating feed of the latest wars, treaties, colonies and conquests (top-right, under the view switcher). */
+/** Feed of the latest wars, treaties, colonies and conquests: a few lines in the outliner, the full record in the drawer. */
 @Component({
   selector: 'app-chronicle',
   standalone: true,
@@ -41,7 +40,11 @@ const TEMPLATE_KEY = {
 export class ChronicleComponent {
   readonly i18n = inject(I18nService);
   private readonly game = inject(GameService);
-  private readonly bp = inject(BreakpointService);
+
+  /** How many of the latest entries to show. */
+  readonly limit = input(5);
+  /** Draw its own glass panel and heading, or sit bare inside another panel. */
+  readonly framed = input(true);
 
   readonly scrollIcon = ScrollText;
 
@@ -49,7 +52,7 @@ export class ChronicleComponent {
     const t = this.i18n.t();
     const player = this.game.player();
     const name = (idx: number) => (idx >= 0 ? this.game.name(idx) : '');
-    const limit = this.bp.mobile() ? 2 : 5;
+    const limit = this.limit();
     return this.game
       .events()
       // Other poleis' settling and building are routine; only the player's own projects are news.

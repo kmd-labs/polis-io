@@ -12,7 +12,7 @@ export interface Camera {
   oy: number;
 }
 
-export type MapView = 'political' | 'relief' | 'fertility';
+export type MapView = 'political' | 'relief' | 'fertility' | 'relations';
 
 /** Cartographic label (a mountain peak) placed by longitude / latitude. */
 export interface MapLabel {
@@ -145,7 +145,7 @@ export class MapRenderer {
       'neutral-600', 'success-100', 'success-200', 'success-600', 'warning-100', 'warning-200', 'warning-300',
       'info-50', 'info-100', 'info-200', 'info-300', 'info-400', 'info-700', 'primary-200', 'primary-300', 'primary-400',
       'primary-800', 'neutral-700', 'neutral-900', 'warning-50', 'warning-700', 'warning-800', 'success-500', 'accent', 'text-bright', 'text-main',
-      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong'
+      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong', 'danger-400', 'danger-700', 'success-400', 'success-700'
     ];
     for (const t of tokens) {
       this.css[t] = this.theme.getTokenColor(t, '#888888');
@@ -292,7 +292,9 @@ export class MapRenderer {
     if (this.baseView !== opt.view) this.buildBase(opt.view);
     const me = sim.poleis[sim.player];
     const wars = me ? [...me.wars].join(',') : '';
-    const key = `${sim.resets}|${opt.view}|${opt.hover}|${opt.selected}|${sim.player}|${wars}`;
+    // In the relations view, a city repaints when its standing with the player moves a step.
+    const standing = opt.view === 'relations' && me ? sim.poleis.map(p => Math.round(sim.relation(p.idx, me.idx) / 10)).join(',') + [...me.allies].join(',') : '';
+    const key = `${sim.resets}|${opt.view}|${opt.hover}|${opt.selected}|${sim.player}|${wars}|${standing}`;
     const dirty = sim.takeDirty();
 
     if (key !== this.paintedKey) {
@@ -345,6 +347,10 @@ export class MapRenderer {
     if (border) {
       const k = Math.min(1, 0.8 + 0.2 * s);
       col = [tint[0] * k, tint[1] * k, tint[2] * k];
+    } else if (opt.view === 'relations') {
+      const k = 0.7 + 0.3 * s;
+      const m = mix(this.relationTint(o), this.rgb['neutral-0'], focus ? 0.2 : 0.38);
+      col = [m[0] * k, m[1] * k, m[2] * k];
     } else if (opt.view === 'political') {
       const me = sim.poleis[sim.player];
       const hostile = !!me && me.wars.has(o) && (x + y) % 6 === 0;
@@ -360,6 +366,18 @@ export class MapRenderer {
     data[p] = col[0];
     data[p + 1] = col[1];
     data[p + 2] = col[2];
+  }
+
+  /** Relations view: the player gold, enemies deep red, allies and vassals green, the rest by reputation. */
+  private relationTint(o: number): Rgb {
+    const sim = this.sim;
+    const c = this.rgb;
+    const me = sim.poleis[sim.player];
+    if (!me || o === me.idx) return c['accent'];
+    if (me.wars.has(o)) return c['danger-700'];
+    if (me.allies.has(o) || sim.poleis[o].overlord === me.idx) return c['success-700'];
+    const r = Math.max(-100, Math.min(100, sim.relation(o, me.idx)));
+    return r < 0 ? mix(c['neutral-300'], c['danger-400'], Math.min(1, -r / 60)) : mix(c['neutral-300'], c['success-400'], Math.min(1, r / 60));
   }
 
   // ─── Sea ──────────────────────────────────────────────────────────────────

@@ -27,9 +27,9 @@
     0 10px 32px var(--color-shadow-panel);
 }
 
-// Meander frieze along the top of the dock panels and the chronicle.
-.dock .glass-panel,
-.chronicle {
+// Meander frieze along the top of the city card and the framed chronicle.
+app-diplomacy-panel .glass-panel,
+.chronicle.glass-panel {
   position: relative;
 
   &::before {

@@ -1,0 +1,95 @@
+@let t = i18n.t();
+
+<section class="outliner glass-panel" [attr.aria-label]="t.outlinerTitle">
+  <div class="group">
+    <button type="button" class="group__head" [attr.aria-expanded]="!folded('wars')" (click)="hud.toggleGroup('wars')">
+      <lucide-icon class="group__icon" [img]="icons.Swords" [size]="13"></lucide-icon>
+      <span class="group__title">{{ t.outWars }}</span>
+      @if (wars().length) {
+        <span class="group__count group__count--hot">{{ wars().length }}</span>
+      }
+      <lucide-icon class="group__chevron" [class.group__chevron--open]="!folded('wars')" [img]="icons.ChevronDown" [size]="13"></lucide-icon>
+    </button>
+    @if (!folded('wars')) {
+      @if (wars().length) {
+        <ul class="group__list">
+          @for (w of wars(); track w.idx) {
+            <li>
+              <button type="button" class="item" (click)="game.focus(w.idx)">
+                <app-polis-flag [def]="w.def" [size]="14"></app-polis-flag>
+                <span class="item__name">{{ w.name }}</span>
+                <span class="advantage" [appTooltip]="w.hint" [attr.aria-label]="w.hint" role="img">
+                  <span class="advantage__ours" [style.width.%]="w.advantage * 100"></span>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="group__empty">{{ t.noWars }}</p>
+      }
+    }
+  </div>
+
+  <div class="group">
+    <button type="button" class="group__head" [attr.aria-expanded]="!folded('allies')" (click)="hud.toggleGroup('allies')">
+      <lucide-icon class="group__icon" [img]="icons.Handshake" [size]="13"></lucide-icon>
+      <span class="group__title">{{ t.outAllies }}</span>
+      @if (allies().length) {
+        <span class="group__count">{{ allies().length }}</span>
+      }
+      <lucide-icon class="group__chevron" [class.group__chevron--open]="!folded('allies')" [img]="icons.ChevronDown" [size]="13"></lucide-icon>
+    </button>
+    @if (!folded('allies')) {
+      @if (allies().length) {
+        <ul class="group__list">
+          @for (a of allies(); track a.idx) {
+            <li>
+              <button type="button" class="item" (click)="game.focus(a.idx)">
+                <app-polis-flag [def]="a.def" [size]="14"></app-polis-flag>
+                <span class="item__name">{{ a.name }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="group__empty">{{ t.outNoAllies }}</p>
+      }
+    }
+  </div>
+
+  <div class="group">
+    <button type="button" class="group__head" [attr.aria-expanded]="!folded('sieges')" (click)="hud.toggleGroup('sieges')">
+      <lucide-icon class="group__icon" [img]="icons.Tent" [size]="13"></lucide-icon>
+      <span class="group__title">{{ t.outSieges }}</span>
+      @if (sieges().length) {
+        <span class="group__count group__count--hot">{{ sieges().length }}</span>
+      }
+      <lucide-icon class="group__chevron" [class.group__chevron--open]="!folded('sieges')" [img]="icons.ChevronDown" [size]="13"></lucide-icon>
+    </button>
+    @if (!folded('sieges')) {
+      @if (sieges().length) {
+        <ul class="group__list">
+          @for (s of sieges(); track s.key) {
+            <li>
+              <button type="button" class="item item--text" [class.item--ours]="s.ours" (click)="game.focus(s.city)">{{ s.text }}</button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="group__empty">{{ t.outNoSieges }}</p>
+      }
+    }
+  </div>
+
+  <div class="group">
+    <button type="button" class="group__head" [attr.aria-expanded]="!folded('chronicle')" (click)="hud.toggleGroup('chronicle')">
+      <lucide-icon class="group__icon" [img]="icons.ScrollText" [size]="13"></lucide-icon>
+      <span class="group__title">{{ t.outLatest }}</span>
+      <lucide-icon class="group__chevron" [class.group__chevron--open]="!folded('chronicle')" [img]="icons.ChevronDown" [size]="13"></lucide-icon>
+    </button>
+    @if (!folded('chronicle')) {
+      <app-chronicle [limit]="3" [framed]="false"></app-chronicle>
+    }
+  </div>
+</section>
