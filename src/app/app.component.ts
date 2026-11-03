@@ -36,11 +36,12 @@ import {
 } from '@kmd/design-system';
 import { I18nService } from './core/i18n/i18n.service';
 import { Lang } from './core/i18n/i18n.types';
-import { formatNumber, formatYear, formatYears, interpolate } from './core/i18n/format';
+import { formatNumber, formatPlural, formatYear, formatYears, interpolate } from './core/i18n/format';
 import { GameService } from './game/game.service';
 import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
 import { ConquestChoice, FallOutcome } from './game/simulation';
+import { SiteId } from './game/data/poleis';
 import { PolisPanelComponent } from './hud/polis-panel.component';
 import { DiplomacyPanelComponent } from './hud/diplomacy-panel.component';
 import { ChronicleComponent } from './hud/chronicle.component';
@@ -215,6 +216,7 @@ export class AppComponent {
         else if (n.kind === 'alliance') this.openEmbassy(n.from);
         else if (n.kind === 'warEnd') this.openWarEnd(n.enemy, n.outcome, n.fate);
         else if (n.kind === 'conquest') this.openConquest(n.from);
+        else if (n.kind === 'develop') this.openDevelopment(n.work, n.months, n.site);
         else this.openReport(n.near);
       });
     });
@@ -294,6 +296,24 @@ export class AppComponent {
           onClick: () => this.game.acceptAlliance(from)
         }
       ]
+    });
+  }
+
+  /** The surveyors' report: what will rise in the countryside, and in how many months. */
+  private openDevelopment(work: 'farm' | 'port' | 'vassal', months: number, site: SiteId | null) {
+    const text = () => {
+      const t = this.i18n.t();
+      const m = formatPlural(months, t.monthsOne, t.monthsFew, t.monthsMany);
+      const template = work === 'farm' ? t.developFarm : work === 'port' ? t.developPort : t.developVassal;
+      return interpolate(template, { m, site: site ? t.siteNames[site] : '' });
+    };
+    this.popup.open({
+      id: 'develop',
+      title: computed(() => this.i18n.t().developTitle),
+      description: computed(text),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => this.i18n.t().developAction), variant: 'play', hot: true }]
     });
   }
 

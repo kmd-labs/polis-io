@@ -89,6 +89,14 @@ export interface Dict {
   trainHint: string;
   develop: string;
   developHint: string;
+  developTitle: string;
+  developFarm: string;
+  developPort: string;
+  developVassal: string;
+  developAction: string;
+  monthsOne: string;
+  monthsFew: string;
+  monthsMany: string;
   statMilitarism: string;
   statCulture: string;
   statMilitarismHint: string;

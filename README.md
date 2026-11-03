@@ -19,35 +19,13 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Train hoplites**: arms a batch of workers for drachmae. Hoplites cost upkeep.
 - **Militarism & culture** (1–5, from each city's historical reputation): militarism slightly strengthens
   armies and garrison in battle (+4% per point); culture raises income (+8% per point).
-- **Develop the polis**: spend drachmae on a farm (the land feeds 2,500 more people) or a port (+12% income).
-  One time in ten a small vassal polis is founded on a nearby historical site (Tegea, Delphi, Abdera…);
-  vassals wear their overlord's colour and join all of its wars and treaties.
-- **Sea trade**: coastal poleis send small merchant ships along sea routes to the harbours of coastal poleis
-  they are not at war with. Each completed voyage earns the owner 1 drachma, raised by culture (+8% per point),
-  and the receiving city 30% of that; every port lets one more ship sail at a time.
-- **Polis buildings**: the Buildings button in your panel opens three trees — agriculture, trade and military —
-  of six buildings each (granary → sanctuary of Demeter, agora → treasury at Delphi, gymnasium → temple of Ares).
-  Each takes a year, costs drachmae and satisfaction, and grants a nationwide bonus.
-- **Satisfaction** (0–100%) scales income and growth from ×0.7 to ×1.3. It falls with lost battles and land,
-  settling, building and levies; it rises in quiet times, with trade, victories and power projection.
-- **War reports**: when one of your wars ends (peace or the enemy's fall) the game pauses with its balance —
-  duration, battles, land won and lost, the fallen, spoils and the effect on satisfaction.
-- **Sieges**: an army reaching an enemy capital camps before its walls for about 2.5 years before storming
-  them; the besieged city loses satisfaction, barely grows and starves its garrison, while the besiegers waste away.
-- **The fall of a polis** rarely wipes it out: it may live on as a city within the victor's borders, or become a
-  client state paying tribute in drachmae and workers. Founding cities are hard to raze, young colonies easy;
-  sometimes a new polis breaks away in the chaos.
-- **Conquest**: when your army storms an enemy capital the game pauses and you decide its fate, which ends the
-  war — raze it (80%: gold and slaves, 20%: a revolt revives it), subjugate it (60%: a client state, 40%: a large
-  ransom and it stays free) or force an alliance (always, with a little gold).
-- **Diplomatic reputation**: every pair of poleis has a reputation from −100 to +100 drifting around neutral; wars,
-  shared borders and big armies sour it, culture, power projection and contented citizens slowly sweeten it.
-  It shapes AI wars, peace terms, alliance offers and trade. Neighbours fight more often (except the islands
-  Samos, Naxos, Corcyra and Chios).
-- **Victories**: every battle your army or garrison wins pauses the game with a report — a little gold
-  (spoils), 15% of the beaten army taken captive as workers, and +1 power projection.
-- **Power projection**: makes your polis look stronger to would-be attackers, brings embassies offering a
-  defensive alliance (allies join any war declared on you, and you on them), and draws merchant ships to your harbours.
+- **Develop the countryside**: spend drachmae and, 1–12 months later (surveyors tell you what and when),
+  a farm (the land feeds 2,500 more people) or a port (+12% income) appears — more often on low ground near
+  the sea, rarely right under the walls. One time in ten a small vassal polis is founded on a historical site
+  (Tegea, Delphi, Abdera…); vassals wear their overlord's colour and join all of its wars and treaties.
+- **Armies in the field**: battles draw in nearby armies of both sides (up to four a side); an army facing an
+  enemy 2.5× its size falls back, losing stragglers, and may scatter into two; 20% of overrun land — up to
+  half far from home — is simply left as wilderness.
 - **War letters**: when a rival declares war on you, the game pauses and a short letter arrives in the voice
   of that city (Solon of Athens, Chilon of Sparta, Periander of Corinth…) — scornful if they think you weak.
 - **Declare war**: click another polis, then *Declare war*. Small armies march out on their own and

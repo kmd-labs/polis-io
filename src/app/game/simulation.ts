@@ -152,6 +152,24 @@ export const RULES = {
   relationDeclareWar: -30,
   relationPeace: 5,
   relationAlliance: 30,
+  /** Chance that ground taken by an army is left as wilderness, near home and far from it. */
+  wildernessNear: 0.2,
+  wildernessFar: 0.5,
+  /** Distance (cells) from the victor's capital at which the far chance applies. */
+  wildernessRange: 150,
+  /** An army flees a hostile force this many times stronger within this radius (cells)… */
+  retreatRatio: 2.5,
+  retreatRadius: 9,
+  /** …losing this share of its men per second while it runs… */
+  retreatAttrition: 0.012,
+  /** …and sometimes scatters into two smaller armies. */
+  splitChance: 0.3,
+  /** Armies this close (cells) to a raging battle join their side, up to this many per side. */
+  joinRange: 6,
+  maxArmiesPerSide: 4,
+  /** Countryside developments take this many months, at random, to appear. */
+  developMonthsMin: 1,
+  developMonthsMax: 12,
   /** Island poleis that do not feel the pull of border wars. */
   islandPoleis: ['samos', 'naxos', 'korkyra', 'chios'] as readonly string[],
   /** A bordering rival looks this much weaker to an ambitious neighbour. */
@@ -347,6 +365,12 @@ export interface Army {
   dwell: number;
   battle: number;
   dead: boolean;
+  /** Running from a much stronger enemy. */
+  fleeing: boolean;
+  /** Already scattered once; it will not split again. */
+  split: boolean;
+  /** Angle (radians) a scattered half veers off its line of flight. */
+  fleeAngle: number;
   /** Polis being besieged, or -1. */
   siege: number;
   siegeStart: number;
@@ -357,12 +381,32 @@ export interface Battle {
   id: number;
   x: number;
   y: number;
-  attacker: Army;
-  /** null when the attacker storms a capital defended by its garrison. */
-  defender: Army | null;
-  defenderIdx: number;
+  /** Armies on each side; others nearby may join while the dust flies. */
+  attackers: Army[];
+  defenders: Army[];
+  /** Polis whose garrison defends its walls (an assault after a siege), or -1. */
+  garrison: number;
+  /** Leading polis of each side (colours and spoils). */
+  sideA: number;
+  sideB: number;
   start: number;
   end: number;
+}
+
+/** A farm, port or vassal town ordered by "Develop the countryside", appearing when ready. */
+export interface PendingDevelopment {
+  owner: number;
+  kind: DevelopmentOutcome;
+  cell: number;
+  site: SiteId | null;
+  ready: number;
+}
+
+/** What the surveyors announce when the countryside is developed. */
+export interface DevelopmentPlan {
+  kind: DevelopmentOutcome;
+  months: number;
+  site: SiteId | null;
 }
 
 export interface Claim {
@@ -410,6 +454,7 @@ export class Simulation {
   armies: Army[] = [];
   battles: Battle[] = [];
   buildings: Building[] = [];
+  pendingDevelopments: PendingDevelopment[] = [];
   ships: Ship[] = [];
   tradeFx: TradeFx[] = [];
   /** Battles the player has won since the UI last took them. */
@@ -596,6 +641,7 @@ export class Simulation {
     this.resets++;
 
     this.buildings = [];
+    this.pendingDevelopments = [];
     this.ships = [];
     this.tradeFx = [];
     this.reports = [];
@@ -993,11 +1039,11 @@ export class Simulation {
     if (a === this.player) this.endPlayerWar(b, 'peace');
     if (b === this.player) this.endPlayerWar(a, 'peace');
     for (const battle of this.battles) {
-      const owners = [battle.attacker.owner, battle.defenderIdx];
-      if (owners.includes(a) && owners.includes(b)) {
+      const sideA = new Set([battle.sideA, ...battle.attackers.map(x => x.owner)]);
+      const sideB = new Set([battle.sideB, ...battle.defenders.map(x => x.owner)]);
+      if ((sideA.has(a) && sideB.has(b)) || (sideA.has(b) && sideB.has(a))) {
         battle.end = -1;
-        battle.attacker.battle = 0;
-        if (battle.defender) battle.defender.battle = 0;
+        for (const army of [...battle.attackers, ...battle.defenders]) army.battle = 0;
       }
     }
     this.battles = this.battles.filter(x => x.end >= 0);
@@ -1009,23 +1055,57 @@ export class Simulation {
   // ─── Development ──────────────────────────────────────────────────────────
 
   /**
-   * Spends drachmae on the polis: usually a farm (more people) or a port (more trade), and in one
-   * case out of ten a small vassal polis on a nearby historical site.
+   * Develops the countryside: surveyors pick a site — usually low ground near the sea, away from the
+   * walls — for a farm, a port or (one time in ten) a vassal town, which appears 1–12 months later.
    */
-  develop(idx: number): DevelopmentOutcome | null {
+  develop(idx: number): DevelopmentPlan | null {
     const p = this.poleis[idx];
     if (!this.canDevelop(p)) return null;
     p.drachmae -= this.developCost(p);
     p.developments++;
 
     const roll = this.rand();
-    if (roll < RULES.vassalChance && this.foundVassal(p)) return 'vassal';
-    const port = roll >= RULES.farmChance ? this.portSite(p) : -1;
-    if (port >= 0) return this.build(p, port, 'port');
-    const farm = this.farmSite(p);
-    if (farm >= 0) return this.build(p, farm, 'farm');
-    const fallback = this.portSite(p);
-    return fallback >= 0 ? this.build(p, fallback, 'port') : null;
+    let plan: Omit<PendingDevelopment, 'owner' | 'ready'> | null = null;
+    if (roll < RULES.vassalChance) {
+      const site = this.vassalSite(p);
+      if (site) plan = { kind: 'vassal', cell: site.cell, site: site.id };
+    }
+    if (!plan && roll >= RULES.farmChance) {
+      const port = this.portSite(p);
+      if (port >= 0) plan = { kind: 'port', cell: port, site: null };
+    }
+    if (!plan) {
+      const farm = this.farmSite(p);
+      if (farm >= 0) plan = { kind: 'farm', cell: farm, site: null };
+    }
+    if (!plan) {
+      const port = this.portSite(p);
+      if (port >= 0) plan = { kind: 'port', cell: port, site: null };
+    }
+    if (!plan) return null;
+    if (plan.site) this.usedSites.add(plan.site);
+    const span = RULES.developMonthsMax - RULES.developMonthsMin + 1;
+    const months = RULES.developMonthsMin + Math.floor(this.rand() * span);
+    this.pendingDevelopments.push({ ...plan, owner: idx, ready: this.time + (months * RULES.secondsPerYear) / 12 });
+    return { kind: plan.kind, months, site: plan.site };
+  }
+
+  /** Completes developments whose time has come, if their site is still in the right hands. */
+  private finishDevelopments() {
+    const due = this.pendingDevelopments.filter(d => this.time >= d.ready);
+    if (!due.length) return;
+    this.pendingDevelopments = this.pendingDevelopments.filter(d => this.time < d.ready);
+    for (const d of due) {
+      const p = this.poleis[d.owner];
+      if (!p.alive) continue;
+      if (d.kind === 'vassal') {
+        const site = this.siteCells.find(s => s.id === d.site);
+        const o = site ? this.owner[site.cell] : -9;
+        if (site && (o === WILD || o === p.idx)) this.foundVassal(p, site);
+      } else if (this.owner[d.cell] === p.idx) {
+        this.build(p, d.cell, d.kind);
+      }
+    }
   }
 
   private build(p: PolisState, cell: number, kind: BuildingKind): BuildingKind {
@@ -1035,6 +1115,32 @@ export class Simulation {
     else p.ports++;
     this.emit(kind, p.idx);
     return kind;
+  }
+
+  /** Whether the sea lies within `radius` cells. */
+  private nearSea(cell: number, radius: number): boolean {
+    const w = this.world;
+    const x0 = cell % w.cols;
+    const y0 = (cell - x0) / w.cols;
+    for (let y = y0 - radius; y <= y0 + radius; y++) {
+      for (let x = x0 - radius; x <= x0 + radius; x++) {
+        if (w.inBounds(x, y) && w.terrain[w.index(x, y)] === Terrain.Sea) return true;
+      }
+    }
+    return false;
+  }
+
+  /** Distance (cells) from a polis's capital. */
+  private distanceFrom(p: PolisState, cell: number): number {
+    const x = cell % this.world.cols;
+    return Math.hypot(x + 0.5 - p.cx, (cell - x) / this.world.cols + 0.5 - p.cy);
+  }
+
+  private nearPending(cell: number, radius: number): boolean {
+    return this.pendingDevelopments.some(d => {
+      const cols = this.world.cols;
+      return Math.hypot((d.cell % cols) - (cell % cols), Math.floor(d.cell / cols) - Math.floor(cell / cols)) < radius;
+    });
   }
 
   private nearBuilding(cell: number, radius: number, kind?: BuildingKind): boolean {
@@ -1048,52 +1154,64 @@ export class Simulation {
     });
   }
 
-  /** Fertile lowland away from the walls and from other farms. */
+  /** Draws one candidate with probability proportional to its weight, or -1 if there is none. */
+  private weightedPick(candidates: number[], weight: (cell: number) => number): number {
+    const weights = candidates.map(weight);
+    let roll = this.rand() * weights.reduce((sum, v) => sum + v, 0);
+    for (let i = 0; i < candidates.length; i++) {
+      if ((roll -= weights[i]) <= 0) return candidates[i];
+    }
+    return candidates.length ? candidates[candidates.length - 1] : -1;
+  }
+
+  /** Fertile land, more often low and near the sea, rarely right under the walls; never crowding other works. */
   private farmSite(p: PolisState): number {
     const w = this.world;
-    let best = -1;
-    let bestScore = -Infinity;
-    for (const c of w.greekCells) {
-      if (this.owner[c] !== p.idx || c === p.capital) continue;
-      const score = w.fertility[c] - Math.max(0, w.elevation[c]) / 1500 + this.rand() * 0.25;
-      if (score > bestScore && !this.nearBuilding(c, 4)) {
-        bestScore = score;
-        best = c;
-      }
-    }
-    return best;
+    const candidates = w.greekCells.filter(
+      c => this.owner[c] === p.idx && c !== p.capital && !this.nearBuilding(c, 4) && !this.nearPending(c, 4)
+    );
+    return this.weightedPick([...candidates], c => {
+      const lowland = Math.exp(-Math.max(0, w.elevation[c]) / 600);
+      const coast = this.nearSea(c, 2) ? 2.5 : 1;
+      const walls = this.distanceFrom(p, c) < 10 ? 0.05 : 1;
+      return w.fertility[c] * lowland * coast * walls;
+    });
   }
 
-  /** A stretch of coast near the capital without a harbour yet. */
+  /** A low stretch of coast without a harbour yet, a little way from the city. */
   private portSite(p: PolisState): number {
     const w = this.world;
-    let best = -1;
-    let bestScore = -Infinity;
-    for (const c of w.greekCells) {
-      if (this.owner[c] !== p.idx || c === p.capital) continue;
+    const candidates = w.greekCells.filter(c => {
+      if (this.owner[c] !== p.idx || c === p.capital) return false;
       const x = c % w.cols;
-      const y = (c - x) / w.cols;
-      if (!w.neighbours4(x, y).some(n => w.terrain[n] === Terrain.Sea)) continue;
-      const score = -Math.hypot(x + 0.5 - p.cx, y + 0.5 - p.cy) * 0.01 + this.rand() * 0.3;
-      if (score > bestScore && !this.nearBuilding(c, 6, 'port') && !this.nearBuilding(c, 2)) {
-        bestScore = score;
-        best = c;
-      }
-    }
-    return best;
+      if (!w.neighbours4(x, (c - x) / w.cols).some(n => w.terrain[n] === Terrain.Sea)) return false;
+      return !this.nearBuilding(c, 6, 'port') && !this.nearBuilding(c, 2) && !this.nearPending(c, 4);
+    });
+    return this.weightedPick([...candidates], c => {
+      const d = this.distanceFrom(p, c);
+      const lowland = Math.exp(-Math.max(0, w.elevation[c]) / 400);
+      return lowland * (d < 10 ? 0.05 : 1) * Math.exp(-Math.abs(d - 25) / 60);
+    });
   }
 
-  /** Founds a vassal on the nearest free historical site; returns false when none is reachable. */
-  private foundVassal(p: PolisState): boolean {
+  /** A free historical site for a daughter city: coastal lowland, not crowding the mother city. */
+  private vassalSite(p: PolisState) {
     const capitals = new Set(this.poleis.map(q => q.capital));
-    const site = this.siteCells
+    return this.siteCells
       .filter(s => !this.usedSites.has(s.id) && !capitals.has(s.cell))
       .filter(s => this.owner[s.cell] === WILD || this.owner[s.cell] === p.idx)
-      .map(s => ({ ...s, d: Math.hypot((s.cell % this.world.cols) + 0.5 - p.cx, Math.floor(s.cell / this.world.cols) + 0.5 - p.cy) }))
-      .filter(s => s.d < 220)
-      .sort((a, b) => a.d - b.d)[0];
-    if (!site) return false;
+      .map(s => {
+        const d = this.distanceFrom(p, s.cell);
+        const score =
+          d * 0.02 + Math.max(0, this.world.elevation[s.cell]) / 400 - (this.nearSea(s.cell, 3) ? 0.6 : 0) + this.rand() * 0.3;
+        return { ...s, d, score };
+      })
+      .filter(s => s.d >= 12 && s.d < 220)
+      .sort((a, b) => a.score - b.score)[0];
+  }
 
+  /** Founds a vassal town on a surveyed historical site. */
+  private foundVassal(p: PolisState, site: { id: SiteId; lon: number; lat: number; cell: number }): boolean {
     this.usedSites.add(site.id);
     const idx = this.poleis.length;
     const v = this.createPolis(
@@ -1137,6 +1255,7 @@ export class Simulation {
   private tick(dt: number) {
     this.time += dt;
 
+    this.finishDevelopments();
     for (const p of this.poleis) p.farms = p.ports = p.besieged = 0;
     for (const a of this.armies) if (!a.dead && a.siege >= 0) this.poleis[a.siege].besieged++;
     for (const b of this.buildings) {
@@ -1596,6 +1715,9 @@ export class Simulation {
       dwell: 0,
       battle: 0,
       dead: false,
+      fleeing: false,
+      split: false,
+      fleeAngle: 0,
       siege: -1,
       siegeStart: 0,
       siegeEnd: 0
@@ -1616,6 +1738,12 @@ export class Simulation {
         a.dead = true;
         continue;
       }
+      const threat = p.wars.size ? this.threatTo(a) : null;
+      if (threat) {
+        this.flee(a, threat, dt);
+        continue;
+      }
+      a.fleeing = false;
       if (a.siege >= 0 && this.besiege(a, dt)) continue;
       if (!p.wars.size) {
         // Peace: march home and rejoin the garrison.
@@ -1652,6 +1780,37 @@ export class Simulation {
       a.strength *= 0.99;
       a.target = this.adjacentEnemyCell(a);
     }
+  }
+
+  /** A hostile army within reach that dwarfs this one, if any. */
+  private threatTo(a: Army): Army | null {
+    const p = this.poleis[a.owner];
+    let worst: Army | null = null;
+    for (const o of this.armies) {
+      if (o.dead || !p.wars.has(o.owner) || o.strength < a.strength * RULES.retreatRatio) continue;
+      if (Math.hypot(o.x - a.x, o.y - a.y) > RULES.retreatRadius) continue;
+      if (!worst || o.strength > worst.strength) worst = o;
+    }
+    return worst;
+  }
+
+  /** Falls back from a far stronger enemy, bleeding stragglers; a large army may scatter in two. */
+  private flee(a: Army, threat: Army, dt: number) {
+    if (!a.fleeing) {
+      a.fleeing = true;
+      a.siege = -1;
+      a.target = -1;
+      a.dwell = 0;
+      if (!a.split && a.strength > 120 && this.rand() < RULES.splitChance) {
+        a.strength /= 2;
+        a.fleeAngle = -0.7;
+        a.split = true;
+        this.armies.push({ ...a, id: this.nextId++, fleeAngle: 0.7, x: a.x + 0.4, y: a.y + 0.4 });
+      }
+    }
+    const away = Math.atan2(a.y - threat.y, a.x - threat.x) + a.fleeAngle;
+    this.walk(a, a.x + Math.cos(away) * 4, a.y + Math.sin(away) * 4, dt);
+    a.strength *= 1 - RULES.retreatAttrition * dt;
   }
 
   /**
@@ -1769,6 +1928,26 @@ export class Simulation {
         }
       }
     }
+    // Armies marching past a brawl pile in on the side of their friends.
+    for (const a of list) {
+      if (a.dead || a.battle || a.fleeing) continue;
+      const p = this.poleis[a.owner];
+      for (const b of this.battles) {
+        if (Math.hypot(a.x - b.x, a.y - b.y) > RULES.joinRange) continue;
+        const sideA = [b.sideA, ...b.attackers.map(x => x.owner)];
+        const sideB = [b.sideB, ...b.defenders.map(x => x.owner)];
+        const hatesA = sideA.some(o => p.wars.has(o));
+        const hatesB = sideB.some(o => p.wars.has(o));
+        const side = hatesB && !hatesA ? b.attackers : hatesA && !hatesB ? b.defenders : null;
+        if (!side || side.length >= RULES.maxArmiesPerSide) continue;
+        side.push(a);
+        a.battle = b.id;
+        a.siege = -1;
+        // Newcomers prolong the fight a little, never indefinitely.
+        b.end = Math.min(b.start + RULES.battleDuration * 2, Math.max(b.end, this.time + 0.8));
+        break;
+      }
+    }
   }
 
   private startBattle(attacker: Army, defender: Army | null, defenderIdx: number) {
@@ -1782,14 +1961,20 @@ export class Simulation {
       id,
       x: (attacker.x + dx) / 2,
       y: (attacker.y + dy) / 2,
-      attacker,
-      defender,
-      defenderIdx,
+      attackers: [attacker],
+      defenders: defender ? [defender] : [],
+      garrison: defender ? -1 : defenderIdx,
+      sideA: attacker.owner,
+      sideB: defenderIdx,
       start: this.time,
       end: this.time + RULES.battleDuration * (0.8 + this.rand() * 0.4)
     });
   }
 
+  /**
+   * Settles a battle between two sides of any number of armies (plus a garrison behind its walls).
+   * The losing side is destroyed; the winners lose men in proportion and share the spoils.
+   */
   private resolveBattles() {
     const pending: Battle[] = [];
     for (const b of this.battles) {
@@ -1797,41 +1982,68 @@ export class Simulation {
         pending.push(b);
         continue;
       }
-      const att = b.attacker;
-      const def = b.defender;
-      const q = this.poleis[b.defenderIdx];
-      att.battle = 0;
-      if (def) def.battle = 0;
-      if (att.dead || (def && def.dead) || !q.alive) continue;
+      for (const army of [...b.attackers, ...b.defenders]) army.battle = 0;
+      const atts = b.attackers.filter(x => !x.dead);
+      const defs = b.defenders.filter(x => !x.dead);
+      const q = b.garrison >= 0 ? this.poleis[b.garrison] : null;
+      const walls = q?.alive && q.garrison >= 1 ? q : null;
+      if (!atts.length) continue;
+      if (!defs.length && !walls) {
+        if (q?.alive) this.conquer(q.idx, atts[0].owner);
+        continue;
+      }
 
       // Militarism tips the scales slightly; walls favour a defending garrison.
-      const ma = this.battleMultiplier(att.owner);
-      const md = this.battleMultiplier(q.idx) * (def ? 1 : RULES.wallsBonus * (1 + q.effects.walls));
-      const sa = att.strength * ma;
-      const sd = (def ? def.strength : q.garrison) * md;
+      const power = (list: Army[]) => list.reduce((sum, x) => sum + x.strength * this.battleMultiplier(x.owner), 0);
+      const garrisonPower = walls
+        ? walls.garrison * this.battleMultiplier(walls.idx) * RULES.wallsBonus * (1 + walls.effects.walls)
+        : 0;
+      const sa = power(atts);
+      const sd = power(defs) + garrisonPower;
       const pa = Math.pow(sa, 1.2) / (Math.pow(sa, 1.2) + Math.pow(sd, 1.2));
-      const attackerWins = this.rand() < pa;
-      const [win, lose, winMult] = attackerWins ? [sa, sd, ma] : [sd, sa, md];
-      const survivors = Math.max(2, (win - lose * (0.35 + this.rand() * 0.3)) / winMult);
+      const attackersWin = this.rand() < pa;
+      const [win, lose] = attackersWin ? [sa, sd] : [sd, sa];
+      const keep = Math.max(0.05, (win - lose * (0.35 + this.rand() * 0.3)) / win);
 
-      const before = { att: att.strength, def: def ? def.strength : q.garrison };
-      if (attackerWins) {
-        att.strength = survivors;
-        this.spoils(att.owner, q.idx, before.def, before.att - survivors, b);
-        if (def) {
-          def.dead = true;
-        } else {
-          q.garrison = 0;
-          this.conquer(q.idx, att.owner);
-        }
-      } else {
-        att.dead = true;
-        this.spoils(q.idx, att.owner, before.att, before.def - survivors, b);
-        if (def) def.strength = survivors;
-        else q.garrison = survivors;
+      // Men on each side by polis, before the blows.
+      const tally = (list: Army[], garrison: PolisState | null) => {
+        const men = new Map<number, number>();
+        for (const x of list) men.set(x.owner, (men.get(x.owner) ?? 0) + x.strength);
+        if (garrison) men.set(garrison.idx, (men.get(garrison.idx) ?? 0) + garrison.garrison);
+        return men;
+      };
+      const winners = attackersWin ? tally(atts, null) : tally(defs, walls);
+      const losers = attackersWin ? tally(defs, walls) : tally(atts, null);
+      const winMen = [...winners.values()].reduce((s2, v) => s2 + v, 0);
+      const loseMen = [...losers.values()].reduce((s2, v) => s2 + v, 0);
+      const lead = (men: Map<number, number>) => [...men.entries()].sort((x, y) => y[1] - x[1])[0][0];
+      const mainWinner = lead(winners);
+      const mainLoser = lead(losers);
+
+      for (const x of attackersWin ? atts : defs) x.strength = Math.max(2, x.strength * keep);
+      for (const x of attackersWin ? defs : atts) x.dead = true;
+      if (walls) walls.garrison = attackersWin ? 0 : walls.garrison * keep;
+
+      for (const [owner, men] of winners) {
+        const share = men / Math.max(1, winMen);
+        this.spoils(owner, mainLoser, loseMen * share, men * (1 - keep), b);
       }
+      for (const [owner, men] of losers) this.defeat(owner, mainWinner, men, (winMen * (1 - keep) * men) / Math.max(1, loseMen));
+
+      if (attackersWin && q?.alive) this.conquer(q.idx, mainWinner);
     }
     this.battles = pending;
+  }
+
+  /** The losing side's grief and, for the player, the war tally. */
+  private defeat(loser: number, winner: number, ownLosses: number, enemyLosses: number) {
+    this.mood(this.poleis[loser], RULES.satisfactionBattleLost);
+    if (loser !== this.player) return;
+    const war = this.playerWars.get(winner);
+    if (!war) return;
+    war.battlesLost++;
+    war.ownLosses += ownLosses;
+    war.enemyLosses += Math.max(0, enemyLosses);
   }
 
   /** Gold, captives and renown for the victor; the player's victories are reported to the UI. */
@@ -1843,15 +2055,6 @@ export class Simulation {
     w.slaves += slaves;
     w.prestige += RULES.prestigePerVictory;
     this.mood(w, RULES.satisfactionBattleWon);
-    this.mood(this.poleis[loser], RULES.satisfactionBattleLost);
-    if (loser === this.player) {
-      const war = this.playerWars.get(winner);
-      if (war) {
-        war.battlesLost++;
-        war.ownLosses += enemyLosses;
-        war.enemyLosses += Math.max(0, ownLosses);
-      }
-    }
     if (winner !== this.player) return;
     const war = this.playerWars.get(loser);
     if (war) {
@@ -1910,6 +2113,21 @@ export class Simulation {
     this.version++;
   }
 
+  /** Returns a cell to the wilderness. */
+  private release(cell: number) {
+    const prev = this.owner[cell];
+    if (prev < 0) return;
+    const p = this.poleis[prev];
+    p.cells--;
+    p.fertility -= this.world.fertility[cell];
+    p.version++;
+    this.owner[cell] = WILD;
+    this.wildCells++;
+    this.claims.push({ cell, t: this.time });
+    this.dirty.push(cell);
+    this.version++;
+  }
+
   /** Cells that changed owner since the last call (for incremental repaints). */
   takeDirty(): number[] {
     const out = this.dirty;
@@ -1922,16 +2140,24 @@ export class Simulation {
     const l = this.poleis[loser];
     const share = l.civilians / Math.max(1, l.cells);
     l.civilians -= share * 0.6;
-    w.civilians += share * 0.3;
     this.mood(l, RULES.satisfactionPerCellLost);
-    if (winner === this.player) {
-      const war = this.playerWars.get(loser);
-      if (war) war.cellsGained++;
-    } else if (loser === this.player) {
+    if (loser === this.player) {
       const war = this.playerWars.get(winner);
       if (war) war.cellsLost++;
     }
-    this.setOwner(cell, winner, true);
+    // Far from home, scorched fields are often simply abandoned to the wild.
+    const far = Math.min(1, this.distanceFrom(w, cell) / RULES.wildernessRange);
+    const wild = RULES.wildernessNear + (RULES.wildernessFar - RULES.wildernessNear) * far;
+    if (this.rand() < wild) {
+      this.release(cell);
+    } else {
+      w.civilians += share * 0.3;
+      if (winner === this.player) {
+        const war = this.playerWars.get(loser);
+        if (war) war.cellsGained++;
+      }
+      this.setOwner(cell, winner, true);
+    }
     if (l.cells === 0) this.conquer(loser, winner);
   }
 

@@ -697,6 +697,17 @@ export class MapRenderer {
       if (x < -40 || y < -40 || x > width + 40 || y > height + 40) continue;
       this.sprites.draw(ctx, b.kind, palette, x, y, px);
     }
+    // Works still under way: a faint, breathing outline of what is to come.
+    ctx.save();
+    ctx.globalAlpha = 0.35 + 0.15 * Math.sin(sim.time * 3);
+    for (const d of sim.pendingDevelopments) {
+      const x = cam.ox + ((d.cell % cols) + 0.5) * cam.scale;
+      const y = cam.oy + (Math.floor(d.cell / cols) + 0.5) * cam.scale;
+      if (x < -40 || y < -40 || x > width + 40 || y > height + 40) continue;
+      const sprite = d.kind === 'vassal' ? 'town' : d.kind;
+      this.sprites.draw(ctx, sprite, this.spritePalette(this.colorOf(d.owner)), x, y, px);
+    }
+    ctx.restore();
   }
 
   /** Camps of the besieging armies around the walls, with a ring counting down to the assault. */
@@ -954,12 +965,14 @@ export class MapRenderer {
         paper: this.css['neutral-0'],
         star: this.css['warning-300'],
         shaft: this.css['neutral-600'],
-        sideA: this.colorOf(b.attacker.owner),
-        sideB: this.colorOf(b.defenderIdx)
+        sideA: this.colorOf(b.sideA),
+        sideB: this.colorOf(b.sideB)
       };
       // Pop in at the start of the brawl
       const pop = Math.min(1, (this.sim.time - b.start) / 0.15);
-      drawFightCloud(ctx, cam.ox + b.x * cam.scale, cam.oy + b.y * cam.scale, r * (0.6 + 0.4 * pop), this.sim.time, b.id, style);
+      // The brawl swells as reinforcements pile in.
+      const crowd = 1 + 0.15 * Math.max(0, b.attackers.length + b.defenders.length - 2);
+      drawFightCloud(ctx, cam.ox + b.x * cam.scale, cam.oy + b.y * cam.scale, r * crowd * (0.6 + 0.4 * pop), this.sim.time, b.id, style);
     }
   }
 }

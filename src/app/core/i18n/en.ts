@@ -45,8 +45,8 @@ export const EN: Dict = {
       desc: 'Every polis has a character rated 1–5. Militarism slightly strengthens its armies and garrison in battle (+4% per point); culture raises its income (+8% per point).'
     },
     {
-      term: 'Developing the polis',
-      desc: 'Spend drachmae on development. Usually you get a farm (the land feeds 2,500 more people) or a port (more trade income). In one case out of ten, a small new polis is founded on a nearby historical site — your vassal, which fights in all your wars.'
+      term: 'Developing the countryside',
+      desc: 'Spend drachmae and, 1 to 12 months later, a farm (the land feeds 2,500 more people) or a port (+12% income) appears — usually on low ground near the sea, not right under the city walls. In one case out of ten, a small new polis is founded on a historical site — your vassal, which fights in all your wars.'
     },
     {
       term: 'Polis buildings',
@@ -90,7 +90,7 @@ export const EN: Dict = {
     },
     {
       term: 'Battle',
-      desc: 'When two hostile armies meet, they vanish into a brawl cloud. Only one army walks out; the larger one usually wins, but not always.'
+      desc: 'When two hostile armies meet, they vanish into a brawl cloud, and armies passing nearby join their friends in it. Only one side walks out; the larger usually wins, but not always. An army facing an enemy two and a half times its size falls back instead, losing stragglers, and sometimes scatters into two smaller armies. Land an army overruns is not always kept — 20% of it, and up to half far from home, is simply left as wilderness.'
     },
     {
       term: 'Victory',
@@ -137,9 +137,17 @@ export const EN: Dict = {
   settleNoLand: 'No wilderness left',
   train: 'Train hoplites',
   trainHint: 'Arm {n} workers as hoplites for {c} drachmae.',
-  develop: 'Develop the polis',
+  develop: 'Develop the countryside',
   developHint:
-    'Spend {c} drachmae: usually a farm (+2,500 people the land can feed) or a port (+12% income); one time in ten, a small vassal polis that fights at your side.',
+    'Spend {c} drachmae: in 1–12 months a farm (the land feeds 2,500 more) or a port (+12% income) appears — usually on low ground near the sea, away from the walls; one time in ten, a small vassal polis that fights at your side.',
+  developTitle: 'Surveyors set out',
+  developFarm: 'New farms will be laid out in your countryside in {m}.',
+  developPort: 'A harbour will rise on your coast in {m}.',
+  developVassal: 'Colonists will found {site}, your vassal polis, in {m}.',
+  developAction: 'Very well',
+  monthsOne: '{n} month',
+  monthsFew: '{n} months',
+  monthsMany: '{n} months',
   statMilitarism: 'Militarism',
   statCulture: 'Culture',
   statMilitarismHint: 'Slightly strengthens armies and garrison in battle (+4% per point).',

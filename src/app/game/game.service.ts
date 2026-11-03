@@ -4,7 +4,7 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { polisName } from '../core/i18n/format';
 import { loadMapData } from './map-loader';
 import { IMPROVEMENTS, ImprovementId, ImprovementTree, improvementCost } from './data/improvements';
-import { ConquestChoice, DevelopmentOutcome, GameEvent, GameStatus, Simulation, WarReport } from './simulation';
+import { ConquestChoice, DevelopmentPlan, GameEvent, GameStatus, Simulation, WarReport } from './simulation';
 import { World } from './world';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
@@ -89,7 +89,8 @@ export type Notice =
     }
   | { kind: 'alliance'; from: number }
   | ({ kind: 'warEnd' } & WarReport)
-  | { kind: 'conquest'; from: number };
+  | { kind: 'conquest'; from: number }
+  | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
 export type GameSpeed = 1 | 2 | 4;
 
@@ -190,10 +191,11 @@ export class GameService {
     this.publish();
   }
 
-  develop(): DevelopmentOutcome | null {
-    const outcome = this.sim.develop(this.sim.player);
+  /** Sends surveyors into the countryside and tells the player what will rise there, and when. */
+  develop() {
+    const plan = this.sim.develop(this.sim.player);
     this.publish();
-    return outcome;
+    if (plan) this.enqueue([{ kind: 'develop', work: plan.kind, months: plan.months, site: plan.site }]);
   }
 
   /** Localized name of any polis, including vassals founded during the game. */
@@ -391,6 +393,11 @@ export class GameService {
     }
     for (const c of conquests) incoming.push({ kind: 'conquest', from: c });
     for (const r of warReports) incoming.push({ kind: 'warEnd', ...r });
+    this.enqueue(incoming);
+  }
+
+  /** Shows the first notice (pausing the game) and queues the rest. */
+  private enqueue(incoming: Notice[]) {
     if (!incoming.length) return;
     if (!this.notice()) {
       this.pausedBeforeNotice = this.paused();

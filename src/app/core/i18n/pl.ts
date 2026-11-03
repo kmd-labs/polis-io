@@ -45,8 +45,8 @@ export const PL: Dict = {
       desc: 'Każda polis ma charakter oceniony w skali 1–5. Militaryzm nieznacznie wzmacnia jej armie i garnizon w bitwie (+4% za punkt), a kultura zwiększa dochody (+8% za punkt).'
     },
     {
-      term: 'Rozwój polis',
-      desc: 'Wydaj drachmy na rozwój. Zwykle powstaje farma (ziemia wyżywi 2500 osób więcej) albo port (większe dochody z handlu). W jednym przypadku na dziesięć w pobliskim historycznym miejscu powstaje małe nowe polis — twój wasal, który walczy we wszystkich twoich wojnach.'
+      term: 'Rozwój okolic',
+      desc: 'Wydaj drachmy, a po 1–12 miesiącach powstanie farma (ziemia wyżywi 2500 osób więcej) albo port (+12% dochodów) — zwykle na nizinie nad morzem, nie tuż pod murami miasta. W jednym przypadku na dziesięć w historycznym miejscu powstaje małe nowe polis — twój wasal, który walczy we wszystkich twoich wojnach.'
     },
     {
       term: 'Budowle polis',
@@ -90,7 +90,7 @@ export const PL: Dict = {
     },
     {
       term: 'Bitwa',
-      desc: 'Gdy spotkają się dwie wrogie armie, znikają w chmurze bójki. Wychodzi z niej tylko jedna; zwykle silniejsza, ale nie zawsze.'
+      desc: 'Gdy spotkają się dwie wrogie armie, znikają w chmurze bójki, a przechodzące obok armie dołączają do swoich. Wychodzi z niej tylko jedna strona; zwykle silniejsza, ale nie zawsze. Armia, która napotka wroga dwa i pół raza silniejszego, wycofuje się, gubiąc maruderów, a czasem rozpada się na dwie mniejsze. Ziemia zajęta przez armię nie zawsze zostaje przy zdobywcy — 20% jej, a daleko od domu nawet połowa, pustoszeje i wraca do dziczy.'
     },
     {
       term: 'Zwycięstwo',
@@ -137,9 +137,17 @@ export const PL: Dict = {
   settleNoLand: 'Brak wolnej ziemi',
   train: 'Szkol hoplitów',
   trainHint: 'Uzbrój {n} robotników jako hoplitów za {c} drachm.',
-  develop: 'Rozwijaj polis',
+  develop: 'Rozwijaj okolice',
   developHint:
-    'Wydaj {c} drachm: zwykle farma (ziemia wyżywi 2500 osób więcej) albo port (+12% dochodów); raz na dziesięć — małe polis-wasal, które walczy u twojego boku.',
+    'Wydaj {c} drachm: za 1–12 miesięcy powstanie farma (ziemia wyżywi 2500 osób więcej) albo port (+12% dochodów) — zwykle na nizinie nad morzem, z dala od murów; raz na dziesięć — małe polis-wasal, które walczy u twojego boku.',
+  developTitle: 'Mierniczowie wyruszają',
+  developFarm: 'Za {m} w twojej okolicy powstaną nowe farmy.',
+  developPort: 'Za {m} na twoim wybrzeżu stanie port.',
+  developVassal: 'Za {m} koloniści założą polis {site} — twojego wasala.',
+  developAction: 'Dobrze',
+  monthsOne: '{n} miesiąc',
+  monthsFew: '{n} miesiące',
+  monthsMany: '{n} miesięcy',
   statMilitarism: 'Militaryzm',
   statCulture: 'Kultura',
   statMilitarismHint: 'Nieznacznie wzmacnia armie i garnizon w bitwie (+4% za punkt).',
