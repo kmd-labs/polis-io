@@ -85,6 +85,10 @@ export const PL: Dict = {
       desc: 'Wypowiedz wojnę polis, a twoje armie same ruszą w pole, zagarniając wrogie piksele jeden po drugim. Wrogie terytorium jest prążkowane. Zdobycie stolicy wroga wymaga pokonania jej garnizonu — i oznacza aneksję całej polis.'
     },
     {
+      term: 'Armia główna i oddziały łupieżcze',
+      desc: 'Na wojnie polis wystawia od dwóch do pięciu armii. Armia główna (większa tarcza) bierze mniej więcej połowę wolnych hoplitów i szuka starcia z armią główną wroga; mniejsze oddziały łupią ziemie przeciwnika i uciekają przed każdą siłą zbliżoną do swojej. Armia główna słabsza od wrogiej zatrzymuje się i okopuje (pierścień palisady): w ciągu kilku lat jej siła rośnie do 150%, a każda wroga armia, która podejdzie na 30 pól, zostaje zaatakowana. Kilku hoplitów zawsze zostaje za murami.'
+    },
+    {
       term: 'Oblężenia i upadek polis',
       desc: 'Armia, która dotrze do stolicy wroga, obozuje pod jej murami przez mniej więcej dwa i pół roku, zanim przypuści szturm. W tym czasie oblężonemu miastu spada zadowolenie, ludność prawie nie przybywa, a garnizon głoduje — ale oblegający też topnieją. Upadła polis rzadko znika z mapy: może przetrwać jako miasto w granicach zwycięzcy albo zostać państwem klienckim, które płaci daninę w drachmach i robotnikach. Polis założycielskie trudno zrównać z ziemią, młode kolonie — łatwo. Czasem w chaosie oderwie się zupełnie nowa polis.'
     },
@@ -98,7 +102,7 @@ export const PL: Dict = {
     },
     {
       term: 'Bitwa',
-      desc: 'Gdy spotkają się dwie wrogie armie, znikają w chmurze bójki, a przechodzące obok armie dołączają do swoich. Wychodzi z niej tylko jedna strona; zwykle silniejsza, ale nie zawsze. Armia, która napotka wroga dwa i pół raza silniejszego, wycofuje się, gubiąc maruderów, a czasem rozpada się na dwie mniejsze. Ziemia zajęta przez armię nie zawsze zostaje przy zdobywcy — 20% jej, a daleko od domu nawet połowa, pustoszeje i wraca do dziczy.'
+      desc: 'Gdy spotkają się dwie wrogie armie, znikają w chmurze bójki, a przechodzące obok armie dołączają do swoich. Wychodzi z niej tylko jedna strona; zwykle silniejsza, ale nie zawsze. Armia, która napotka wroga dwa i pół raza silniejszego, wycofuje się, gubiąc maruderów, a czasem rozpada się na dwie mniejsze. Ziemia zajęta przez armię nie zawsze zostaje przy zdobywcy — 20% jej, a daleko od domu nawet połowa, pustoszeje i wraca do dziczy. Samotne skrawki ziemi (do czterech pikseli) odcięte od stolicy po około czterech latach również wracają do dziczy.'
     },
     {
       term: 'Zwycięstwo',

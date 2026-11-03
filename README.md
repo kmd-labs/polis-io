@@ -69,6 +69,12 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Declare war**: click another polis, then *Declare war*. Small armies march out on their own and
   seize enemy pixels one by one. When two hostile armies meet they disappear into a cartoon brawl cloud
   and only one walks out. Beating a capital's garrison annexes the whole polis.
+- **Main army and raiders**: at war a polis fields two to five armies. The main army (about half the spare hoplites,
+  drawn with a larger shield) seeks out the enemy's main army; smaller raiding parties of varied size plunder the
+  countryside and run from any force near their size. A main army weaker than its rival halts and digs in — its
+  power climbs to 150% over a few years and it engages any enemy army within 30 cells.
+- **Stray land**: scraps of four pixels or fewer cut off from their capital revert to wilderness after about four years
+  (a fresh colony seed in open wilderness is spared).
 - **Win** by holding half of the Greek land or by being the last polis standing. You lose if your capital falls.
 
 The HUD is styled after classical Greece — parchment and marble panels, terracotta rules, meander friezes and

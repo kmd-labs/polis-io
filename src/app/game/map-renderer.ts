@@ -897,10 +897,12 @@ export class MapRenderer {
   private drawArmies(ctx: CanvasRenderingContext2D, cam: Camera, now: number) {
     const sim = this.sim;
     const me = sim.poleis[sim.player];
-    const r = Math.max(5, Math.min(16, cam.scale * 2.6));
+    const base = Math.max(5, Math.min(16, cam.scale * 2.6));
     ctx.save();
     for (const a of sim.armies) {
       if (a.battle || a.dead) continue;
+      // The main host carries a larger shield than the raiding parties.
+      const r = a.role === 'main' ? base * 1.2 : base * 0.85;
       let sx = cam.ox + a.x * cam.scale;
       let sy = cam.oy + a.y * cam.scale + Math.sin(now / 140 + a.id) * 0.8;
       if (a.siege >= 0) {
@@ -930,6 +932,18 @@ export class MapRenderer {
           ctx.lineTo(ox - r * 0.3, sy + r * 1.5 + Math.sin(now / 120 + k) * 1.2);
         }
         ctx.stroke();
+      }
+
+      if (a.stance === 'hold') {
+        // Dug in: a ring of stakes that closes as the position is fortified.
+        const k = (a.fortify - 1) / (RULES.holdPowerMax - 1);
+        ctx.strokeStyle = this.css['text-bright'];
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(sx, sy, r + 5, -Math.PI / 2, -Math.PI / 2 + Math.max(0.15, k) * Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
 
       // Hoplite shield (aspis)

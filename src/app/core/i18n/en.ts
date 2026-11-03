@@ -85,6 +85,10 @@ export const EN: Dict = {
       desc: 'Declare war on a polis and your armies roam on their own, seizing enemy pixels one by one. Hostile territory is striped. Storming an enemy capital means beating its garrison — and annexing the whole polis.'
     },
     {
+      term: 'Main army and raiders',
+      desc: 'At war a polis fields two to five armies. The main army (the larger shield) takes about half the spare hoplites and seeks out the enemy’s main army; the smaller raiding parties plunder the countryside and run from any force near their size. A main army weaker than the enemy’s halts and digs in (a ring of stakes): over a few years its fighting power grows to 150%, and it falls on any enemy army that comes within 30 cells. A few hoplites always stay behind the walls.'
+    },
+    {
       term: 'Sieges and the fall of a polis',
       desc: 'An army reaching an enemy capital camps before its walls for about two and a half years before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
     },
@@ -98,7 +102,7 @@ export const EN: Dict = {
     },
     {
       term: 'Battle',
-      desc: 'When two hostile armies meet, they vanish into a brawl cloud, and armies passing nearby join their friends in it. Only one side walks out; the larger usually wins, but not always. An army facing an enemy two and a half times its size falls back instead, losing stragglers, and sometimes scatters into two smaller armies. Land an army overruns is not always kept — 20% of it, and up to half far from home, is simply left as wilderness.'
+      desc: 'When two hostile armies meet, they vanish into a brawl cloud, and armies passing nearby join their friends in it. Only one side walks out; the larger usually wins, but not always. An army facing an enemy two and a half times its size falls back instead, losing stragglers, and sometimes scatters into two smaller armies. Land an army overruns is not always kept — 20% of it, and up to half far from home, is simply left as wilderness. Stray scraps of land (four pixels or fewer) cut off from their capital go back to the wild after about four years.'
     },
     {
       term: 'Victory',
