@@ -249,6 +249,24 @@ export const RULES = {
   /** Countryside developments take this many months, at random, to appear. */
   developMonthsMin: 1,
   developMonthsMax: 12,
+  /** A stray pocket of land this small, cut off from its capital, goes back to the wild after this many seconds (4 years). */
+  strayPocket: 4,
+  strayDecay: 16,
+  /** At war a polis fields between this many armies… */
+  armiesMin: 2,
+  armiesMax: 5,
+  /** …the main army taking this share of the spare garrison, each raiding party a random share in this range. */
+  mainShare: 0.5,
+  raiderShareMin: 0.15,
+  raiderShareMax: 0.3,
+  /** Raiders run from any enemy army at least this large relative to themselves. */
+  raiderFearRatio: 0.8,
+  /** A main army outmatched by the rival main army digs in: its power climbs to this multiple… */
+  holdPowerMax: 1.5,
+  /** …gaining this much per second… */
+  holdPowerRate: 0.05,
+  /** …and it engages any enemy army that comes within this many cells. */
+  holdRadius: 30,
   /** In wartime, cut-off pockets of land this small pass to whichever side's capital is nearer… */
   enclaveSize: 8,
   /** …checked this often (seconds). */
@@ -482,7 +500,15 @@ export interface Army {
   siege: number;
   siegeStart: number;
   siegeEnd: number;
+  /** The main army seeks battle; raiders plunder the countryside and shun a fight. */
+  role: ArmyRole;
+  /** A main army outmatched by the enemy's main army halts and holds its ground. */
+  stance: 'march' | 'hold';
+  /** Battle power multiplier from digging in (1 … RULES.holdPowerMax). */
+  fortify: number;
 }
+
+export type ArmyRole = 'main' | 'raider';
 
 export interface Battle {
   id: number;
@@ -587,6 +613,8 @@ export class Simulation {
   /** No embassy reaches the player before this time. */
   private nextEmbassy = 0;
   private nextTidy = 0;
+  /** Game time each cell was first found stranded in a stray pocket (0 = it is not). */
+  private strayAt = new Float64Array(0);
   claims: Claim[] = [];
   events: GameEvent[] = [];
   time = 0;
@@ -780,6 +808,7 @@ export class Simulation {
     this.nextDiplomacy = 0;
     this.nextEmbassy = 0;
     this.nextTidy = 0;
+    this.strayAt = new Float64Array(this.world.size);
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
     this.floodClaim(
@@ -2017,11 +2046,20 @@ export class Simulation {
 
   private spawnArmy(p: PolisState) {
     let count = 0;
-    for (const a of this.armies) if (a.owner === p.idx && !a.dead) count++;
-    const cap = Math.min(5, 1 + Math.floor(this.warriors(p) / 1500)) + p.effects.armies;
+    let main = false;
+    for (const a of this.armies) {
+      if (a.owner !== p.idx || a.dead) continue;
+      count++;
+      if (a.role === 'main') main = true;
+    }
+    const cap = Math.min(RULES.armiesMax, RULES.armiesMin + Math.floor(this.warriors(p) / 1500) + p.effects.armies);
     const spare = p.garrison - RULES.garrisonFloor;
     if (count >= cap || spare < 50) return;
-    const strength = Math.round(Math.min(spare, Math.max(50, p.garrison * 0.35)));
+    // The first army out is the main host; later ones are raiding parties of varied size.
+    const share = main
+      ? RULES.raiderShareMin + this.rand() * (RULES.raiderShareMax - RULES.raiderShareMin)
+      : RULES.mainShare;
+    const strength = Math.round(Math.min(spare, Math.max(50, spare * share)));
     p.garrison -= strength;
     this.armies.push({
       id: this.nextId++,
@@ -2038,7 +2076,10 @@ export class Simulation {
       fleeAngle: 0,
       siege: -1,
       siegeStart: 0,
-      siegeEnd: 0
+      siegeEnd: 0,
+      role: main ? 'raider' : 'main',
+      stance: 'march',
+      fortify: 1
     });
   }
 
@@ -2049,6 +2090,7 @@ export class Simulation {
 
   private moveArmies(dt: number) {
     const w = this.world;
+    this.promoteMainArmies();
     for (const a of this.armies) {
       if (a.dead || a.battle) continue;
       const p = this.poleis[a.owner];
@@ -2056,7 +2098,8 @@ export class Simulation {
         a.dead = true;
         continue;
       }
-      const threat = p.wars.size ? this.threatTo(a) : null;
+      if (a.role === 'main' && p.wars.size && this.holdGround(a, dt)) continue;
+      const threat = p.wars.size && a.role === 'raider' ? this.threatTo(a) : null;
       if (threat) {
         this.flee(a, threat, dt);
         continue;
@@ -2071,8 +2114,8 @@ export class Simulation {
         }
         continue;
       }
-      // Lift the siege of a friendly city nearby, or run down a weaker enemy army.
-      const quarry = this.reliefTarget(a) ?? this.preyFor(a);
+      // The main army lifts nearby sieges, then seeks out the enemy's armies; raiders keep to plunder.
+      const quarry = a.role === 'main' ? (this.reliefTarget(a) ?? this.rivalMain(a) ?? this.preyFor(a)) : null;
       if (quarry) {
         a.dwell = 0;
         this.walk(a, quarry.x, quarry.y, dt);
@@ -2091,7 +2134,7 @@ export class Simulation {
       if (a.dwell < RULES.captureDwell) continue;
       a.dwell = 0;
       const victim = this.poleis[this.owner[a.target]];
-      if (a.target === victim.capital && victim.garrison >= 1 && a.strength < RULES.siegeMinimum) {
+      if (a.target === victim.capital && victim.garrison >= 1 && (a.strength < RULES.siegeMinimum || a.role === 'raider')) {
         // Too few to invest a city: ravage the countryside instead.
         a.target = this.adjacentEnemyCell(a);
         if (a.target === victim.capital) a.target = -1;
@@ -2111,6 +2154,77 @@ export class Simulation {
       a.strength *= 0.99;
       a.target = this.adjacentEnemyCell(a);
     }
+  }
+
+  /** A polis whose main army has fallen hands the command to its largest raiding party. */
+  private promoteMainArmies() {
+    const best = new Map<number, Army>();
+    const led = new Set<number>();
+    for (const a of this.armies) {
+      if (a.dead) continue;
+      if (a.role === 'main') led.add(a.owner);
+      else if (!best.has(a.owner) || a.strength > best.get(a.owner)!.strength) best.set(a.owner, a);
+    }
+    for (const [owner, a] of best) if (!led.has(owner)) a.role = 'main';
+  }
+
+  /** The nearest main army of a polis this one is at war with. */
+  private rivalMain(a: Army): Army | null {
+    const p = this.poleis[a.owner];
+    let best: Army | null = null;
+    let bestD = Infinity;
+    for (const o of this.armies) {
+      if (o.dead || o.role !== 'main' || !p.wars.has(o.owner)) continue;
+      const d = Math.hypot(o.x - a.x, o.y - a.y);
+      if (d < bestD) {
+        bestD = d;
+        best = o;
+      }
+    }
+    return best;
+  }
+
+  /** Fighting power of an army before luck: men × militarism and buildings × entrenchment. */
+  private armyPower(a: Army): number {
+    return a.strength * this.battleMultiplier(a.owner) * a.fortify;
+  }
+
+  /**
+   * A main army facing a stronger enemy main army halts and digs in: its power climbs towards
+   * RULES.holdPowerMax and it falls on any enemy army that comes within RULES.holdRadius.
+   * Returns true while the army is holding (it does nothing else this tick).
+   */
+  private holdGround(a: Army, dt: number): boolean {
+    const rival = this.rivalMain(a);
+    const outmatched = !!rival && a.strength * this.battleMultiplier(a.owner) < rival.strength * this.battleMultiplier(rival.owner);
+    if (!outmatched) {
+      if (a.stance === 'hold') {
+        a.stance = 'march';
+        a.fortify = 1;
+      }
+      return false;
+    }
+    if (a.stance !== 'hold') {
+      a.stance = 'hold';
+      a.siege = -1;
+      a.target = -1;
+      a.dwell = 0;
+      a.fleeing = false;
+    }
+    a.fortify = Math.min(RULES.holdPowerMax, a.fortify + RULES.holdPowerRate * dt);
+    const p = this.poleis[a.owner];
+    let intruder: Army | null = null;
+    let nearest: number = RULES.holdRadius;
+    for (const o of this.armies) {
+      if (o.dead || !p.wars.has(o.owner)) continue;
+      const d = Math.hypot(o.x - a.x, o.y - a.y);
+      if (d <= nearest) {
+        nearest = d;
+        intruder = o;
+      }
+    }
+    if (intruder) this.walk(a, intruder.x, intruder.y, dt);
+    return true;
   }
 
   /** The nearest army besieging a friendly capital close by (own city, bloc or ally), if any. */
@@ -2135,15 +2249,14 @@ export class Simulation {
   /** A nearby enemy army this one outmatches by half again in fighting power or in men. */
   private preyFor(a: Army): Army | null {
     const p = this.poleis[a.owner];
-    const power = a.strength * this.battleMultiplier(a.owner);
+    const power = this.armyPower(a);
     let best: Army | null = null;
     let bestD = Infinity;
     for (const o of this.armies) {
       if (o.dead || o.battle || !p.wars.has(o.owner)) continue;
       const d = Math.hypot(o.x - a.x, o.y - a.y);
       if (d > RULES.chaseRadius || d >= bestD) continue;
-      const stronger =
-        power >= RULES.chaseRatio * o.strength * this.battleMultiplier(o.owner) || a.strength >= RULES.chaseRatio * o.strength;
+      const stronger = power >= RULES.chaseRatio * this.armyPower(o) || a.strength >= RULES.chaseRatio * o.strength;
       if (!stronger) continue;
       bestD = d;
       best = o;
@@ -2151,12 +2264,12 @@ export class Simulation {
     return best;
   }
 
-  /** A hostile army within reach that dwarfs this one, if any. */
+  /** A hostile army within reach that a raiding party should not face (anything near its size), if any. */
   private threatTo(a: Army): Army | null {
     const p = this.poleis[a.owner];
     let worst: Army | null = null;
     for (const o of this.armies) {
-      if (o.dead || !p.wars.has(o.owner) || o.strength < a.strength * RULES.retreatRatio) continue;
+      if (o.dead || !p.wars.has(o.owner) || o.strength < a.strength * RULES.raiderFearRatio) continue;
       if (Math.hypot(o.x - a.x, o.y - a.y) > RULES.retreatRadius) continue;
       if (!worst || o.strength > worst.strength) worst = o;
     }
@@ -2170,7 +2283,8 @@ export class Simulation {
       a.siege = -1;
       a.target = -1;
       a.dwell = 0;
-      if (!a.split && a.strength > 120 && this.rand() < RULES.splitChance) {
+      const field = this.armies.filter(x => !x.dead && x.owner === a.owner).length;
+      if (!a.split && a.strength > 120 && field < RULES.armiesMax && this.rand() < RULES.splitChance) {
         a.strength /= 2;
         a.fleeAngle = -0.7;
         a.split = true;
@@ -2238,7 +2352,7 @@ export class Simulation {
   private pickArmyTarget(a: Army): number {
     const w = this.world;
     const p = this.poleis[a.owner];
-    if (a.strength >= RULES.siegeMinimum && this.rand() < 0.12) {
+    if (a.role === 'main' && a.strength >= RULES.siegeMinimum && this.rand() < 0.12) {
       let best = -1;
       let bestD = Infinity;
       for (const e of p.wars) {
@@ -2299,7 +2413,7 @@ export class Simulation {
     }
     // Armies marching past a brawl pile in on the side of their friends.
     for (const a of list) {
-      if (a.dead || a.battle || a.fleeing) continue;
+      if (a.dead || a.battle || a.fleeing || a.role === 'raider') continue;
       const p = this.poleis[a.owner];
       for (const b of this.battles) {
         if (Math.hypot(a.x - b.x, a.y - b.y) > RULES.joinRange) continue;
@@ -2363,7 +2477,7 @@ export class Simulation {
       }
 
       // Militarism tips the scales slightly; walls favour a defending garrison.
-      const power = (list: Army[]) => list.reduce((sum, x) => sum + x.strength * this.battleMultiplier(x.owner), 0);
+      const power = (list: Army[]) => list.reduce((sum, x) => sum + this.armyPower(x), 0);
       const garrisonPower = walls
         ? walls.garrison * this.battleMultiplier(walls.idx) * RULES.wallsBonus * (1 + walls.effects.walls)
         : 0;
@@ -2389,7 +2503,10 @@ export class Simulation {
       const mainWinner = lead(winners);
       const mainLoser = lead(losers);
 
-      for (const x of attackersWin ? atts : defs) x.strength = Math.max(2, x.strength * keep);
+      for (const x of attackersWin ? atts : defs) {
+        x.strength = Math.max(2, x.strength * keep);
+        x.fortify = 1;
+      }
       for (const x of attackersWin ? defs : atts) x.dead = true;
       if (walls) walls.garrison = attackersWin ? 0 : walls.garrison * keep;
 
@@ -2468,6 +2585,7 @@ export class Simulation {
   private setOwner(cell: number, idx: number, flash: boolean) {
     const prev = this.owner[cell];
     if (prev === idx) return;
+    this.strayAt[cell] = 0;
     const f = this.world.fertility[cell];
     if (prev >= 0) {
       this.poleis[prev].cells--;
@@ -2500,6 +2618,7 @@ export class Simulation {
       // Flood the whole pocket so every cell is visited once.
       const pocket: number[] = [];
       const rivals = new Set<number>();
+      let wildNext = false;
       seen[start] = 1;
       stack.push(start);
       while (stack.length) {
@@ -2515,10 +2634,14 @@ export class Simulation {
             }
           } else if (q >= 0) {
             rivals.add(q);
+          } else if (q === WILD) {
+            wildNext = true;
           }
         }
       }
       const p = this.poleis[o];
+      // A seed in open wilderness (a fresh colony) may still grow; anything else this small is stranded.
+      if (this.strayPocket(pocket, p, rivals.size > 0 || !wildNext)) continue;
       if (pocket.length > RULES.enclaveSize || !p.wars.size || pocket.includes(p.capital)) continue;
       const enemies = [...rivals].filter(q => p.wars.has(q));
       if (!enemies.length) continue;
@@ -2545,6 +2668,29 @@ export class Simulation {
       }
       if (p.cells === 0) this.conquer(o, heir);
     }
+  }
+
+  /**
+   * Ages a tiny pocket cut off from its capital; once it has been stranded for RULES.strayDecay
+   * it reverts to the wild. Returns true if released.
+   */
+  private strayPocket(pocket: number[], p: PolisState, stranded: boolean): boolean {
+    const stray = stranded && pocket.length <= RULES.strayPocket && !pocket.includes(p.capital);
+    if (!stray) {
+      for (const c of pocket) this.strayAt[c] = 0;
+      return false;
+    }
+    let since = this.time;
+    for (const c of pocket) {
+      if (!this.strayAt[c]) this.strayAt[c] = this.time;
+      since = Math.min(since, this.strayAt[c]);
+    }
+    if (this.time - since < RULES.strayDecay) return false;
+    for (const c of pocket) {
+      this.strayAt[c] = 0;
+      this.release(c);
+    }
+    return true;
   }
 
   /** Returns a cell to the wilderness. */
