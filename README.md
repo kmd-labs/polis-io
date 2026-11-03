@@ -34,7 +34,10 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   their fund commissions them — more often on low ground near the sea, rarely right under the walls.
 - **Armies in the field**: battles draw in nearby armies of both sides (up to four a side); an army facing an
   enemy 2.5× its size falls back, losing stragglers, and may scatter into two; 20% of overrun land — up to
-  half far from home — is simply left as wilderness.
+  half far from home — is simply left as wilderness. In wartime, cut-off pockets of up to 8 pixels pass to the
+  side whose capital is nearer. A polis at war keeps at least 100 hoplites at home; armies under 200 do not lay
+  siege; armies near a besieged friendly capital march to its relief, and an army with a 50% edge in power or
+  numbers hunts down nearby enemy armies.
 - **Polis buildings**: the Buildings button shows three trees — agriculture, trade and military —
   of six buildings each (granary → sanctuary of Demeter, agora → treasury at Delphi, gymnasium → temple of Ares).
   Each is bought by its tree's budget fund, takes a year, costs satisfaction, and grants a nationwide bonus.

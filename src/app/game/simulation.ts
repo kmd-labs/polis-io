@@ -243,6 +243,19 @@ export const RULES = {
   /** Countryside developments take this many months, at random, to appear. */
   developMonthsMin: 1,
   developMonthsMax: 12,
+  /** In wartime, cut-off pockets of land this small pass to whichever side's capital is nearer… */
+  enclaveSize: 8,
+  /** …checked this often (seconds). */
+  borderTidyInterval: 2,
+  /** Hoplites a polis at war always keeps behind its walls. */
+  garrisonFloor: 100,
+  /** An army smaller than this does not lay siege to a capital. */
+  siegeMinimum: 200,
+  /** An army this much stronger (in power or numbers) hunts enemy armies within chaseRadius cells. */
+  chaseRatio: 1.5,
+  chaseRadius: 14,
+  /** Armies within this many cells of a besieged friendly capital march to lift the siege. */
+  reliefRadius: 70,
   /** Island poleis that do not feel the pull of border wars. */
   islandPoleis: ['samos', 'naxos', 'korkyra', 'chios'] as readonly string[],
   /** A bordering rival looks this much weaker to an ambitious neighbour. */
@@ -555,6 +568,7 @@ export class Simulation {
   /** Pairs of poleis whose land touches (key: lower * 4096 + higher), refreshed every second. */
   private borders = new Set<number>();
   private nextDiplomacy = 0;
+  private nextTidy = 0;
   claims: Claim[] = [];
   events: GameEvent[] = [];
   time = 0;
@@ -742,6 +756,7 @@ export class Simulation {
     this.conquests = [];
     this.borders = new Set();
     this.nextDiplomacy = 0;
+    this.nextTidy = 0;
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
     this.floodClaim(
@@ -1408,6 +1423,10 @@ export class Simulation {
       }
     }
 
+    if (this.time >= this.nextTidy) {
+      this.tidyBorders();
+      this.nextTidy = this.time + RULES.borderTidyInterval;
+    }
     if (this.time >= this.nextDiplomacy) {
       this.updateBorders();
       this.driftRelations(1);
@@ -1514,8 +1533,9 @@ export class Simulation {
   /** After the military share is cut, surplus hoplites of the garrison return to the fields. */
   private demobilize(p: PolisState, dt: number) {
     const surplus = this.warriors(p) - this.armyTarget(p);
-    if (surplus <= 0 || p.garrison <= 0) return;
-    const sent = Math.min(p.garrison, surplus) * RULES.demobilizeRate * dt;
+    const floor = p.wars.size ? RULES.garrisonFloor : 0;
+    if (surplus <= 0 || p.garrison <= floor) return;
+    const sent = Math.min(p.garrison - floor, surplus) * RULES.demobilizeRate * dt;
     p.garrison -= sent;
     p.civilians += sent;
   }
@@ -1962,8 +1982,9 @@ export class Simulation {
     let count = 0;
     for (const a of this.armies) if (a.owner === p.idx && !a.dead) count++;
     const cap = Math.min(5, 1 + Math.floor(this.warriors(p) / 1500)) + p.effects.armies;
-    if (count >= cap || p.garrison < 100) return;
-    const strength = Math.round(Math.max(50, p.garrison * 0.35));
+    const spare = p.garrison - RULES.garrisonFloor;
+    if (count >= cap || spare < 50) return;
+    const strength = Math.round(Math.min(spare, Math.max(50, p.garrison * 0.35)));
     p.garrison -= strength;
     this.armies.push({
       id: this.nextId++,
@@ -2013,6 +2034,13 @@ export class Simulation {
         }
         continue;
       }
+      // Lift the siege of a friendly city nearby, or run down a weaker enemy army.
+      const quarry = this.reliefTarget(a) ?? this.preyFor(a);
+      if (quarry) {
+        a.dwell = 0;
+        this.walk(a, quarry.x, quarry.y, dt);
+        continue;
+      }
       if (!this.isEnemyCell(a, a.target)) {
         a.target = this.pickArmyTarget(a);
         a.dwell = 0;
@@ -2026,6 +2054,12 @@ export class Simulation {
       if (a.dwell < RULES.captureDwell) continue;
       a.dwell = 0;
       const victim = this.poleis[this.owner[a.target]];
+      if (a.target === victim.capital && victim.garrison >= 1 && a.strength < RULES.siegeMinimum) {
+        // Too few to invest a city: ravage the countryside instead.
+        a.target = this.adjacentEnemyCell(a);
+        if (a.target === victim.capital) a.target = -1;
+        continue;
+      }
       if (a.target === victim.capital && victim.garrison >= 1) {
         // Camp before the walls; the assault comes later.
         if (!this.armies.some(o => o.siege === victim.idx && o.owner === a.owner && !o.dead)) {
@@ -2040,6 +2074,44 @@ export class Simulation {
       a.strength *= 0.99;
       a.target = this.adjacentEnemyCell(a);
     }
+  }
+
+  /** The nearest army besieging a friendly capital close by (own city, bloc or ally), if any. */
+  private reliefTarget(a: Army): Army | null {
+    const p = this.poleis[a.owner];
+    const friends = new Set([...this.bloc(a.owner), ...p.allies]);
+    let best: Army | null = null;
+    let bestD = Infinity;
+    for (const o of this.armies) {
+      if (o.dead || o.siege < 0 || !friends.has(o.siege) || !p.wars.has(o.owner)) continue;
+      const town = this.poleis[o.siege];
+      if (Math.hypot(town.cx - a.x, town.cy - a.y) > RULES.reliefRadius) continue;
+      const d = Math.hypot(o.x - a.x, o.y - a.y);
+      if (d < bestD) {
+        bestD = d;
+        best = o;
+      }
+    }
+    return best;
+  }
+
+  /** A nearby enemy army this one outmatches by half again in fighting power or in men. */
+  private preyFor(a: Army): Army | null {
+    const p = this.poleis[a.owner];
+    const power = a.strength * this.battleMultiplier(a.owner);
+    let best: Army | null = null;
+    let bestD = Infinity;
+    for (const o of this.armies) {
+      if (o.dead || o.battle || !p.wars.has(o.owner)) continue;
+      const d = Math.hypot(o.x - a.x, o.y - a.y);
+      if (d > RULES.chaseRadius || d >= bestD) continue;
+      const stronger =
+        power >= RULES.chaseRatio * o.strength * this.battleMultiplier(o.owner) || a.strength >= RULES.chaseRatio * o.strength;
+      if (!stronger) continue;
+      bestD = d;
+      best = o;
+    }
+    return best;
   }
 
   /** A hostile army within reach that dwarfs this one, if any. */
@@ -2129,7 +2201,7 @@ export class Simulation {
   private pickArmyTarget(a: Army): number {
     const w = this.world;
     const p = this.poleis[a.owner];
-    if (this.rand() < 0.12) {
+    if (a.strength >= RULES.siegeMinimum && this.rand() < 0.12) {
       let best = -1;
       let bestD = Infinity;
       for (const e of p.wars) {
@@ -2371,6 +2443,68 @@ export class Simulation {
     if (flash) this.claims.push({ cell, t: this.time });
     this.dirty.push(cell);
     this.version++;
+  }
+
+  /**
+   * Smooths wartime border gore: a small pocket of land cut off by an enemy (a stray pixel or a few)
+   * passes to whichever of the warring sides has its capital nearer. Capitals never change hands here.
+   */
+  private tidyBorders() {
+    const w = this.world;
+    const own = this.owner;
+    const seen = new Uint8Array(w.size);
+    const stack: number[] = [];
+    for (const start of w.greekCells) {
+      const o = own[start];
+      if (o < 0 || seen[start]) continue;
+      // Flood the whole pocket so every cell is visited once.
+      const pocket: number[] = [];
+      const rivals = new Set<number>();
+      seen[start] = 1;
+      stack.push(start);
+      while (stack.length) {
+        const c = stack.pop()!;
+        pocket.push(c);
+        const x = c % w.cols;
+        for (const n of w.neighbours4(x, (c - x) / w.cols)) {
+          const q = own[n];
+          if (q === o) {
+            if (!seen[n]) {
+              seen[n] = 1;
+              stack.push(n);
+            }
+          } else if (q >= 0) {
+            rivals.add(q);
+          }
+        }
+      }
+      const p = this.poleis[o];
+      if (pocket.length > RULES.enclaveSize || !p.wars.size || pocket.includes(p.capital)) continue;
+      const enemies = [...rivals].filter(q => p.wars.has(q));
+      if (!enemies.length) continue;
+      let cx = 0;
+      let cy = 0;
+      for (const c of pocket) {
+        cx += (c % w.cols) + 0.5;
+        cy += Math.floor(c / w.cols) + 0.5;
+      }
+      cx /= pocket.length;
+      cy /= pocket.length;
+      const dist = (q: number) => Math.hypot(this.poleis[q].cx - cx, this.poleis[q].cy - cy);
+      const heir = enemies.reduce((best, q) => (dist(q) < dist(best) ? q : best), o);
+      if (heir === o) continue;
+      for (const c of pocket) {
+        if (o === this.player) {
+          const war = this.playerWars.get(heir);
+          if (war) war.cellsLost++;
+        } else if (heir === this.player) {
+          const war = this.playerWars.get(o);
+          if (war) war.cellsGained++;
+        }
+        this.setOwner(c, heir, true);
+      }
+      if (p.cells === 0) this.conquer(o, heir);
+    }
   }
 
   /** Returns a cell to the wilderness. */
