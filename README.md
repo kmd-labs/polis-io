@@ -23,8 +23,12 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   One time in ten a small vassal polis is founded on a nearby historical site (Tegea, Delphi, Abdera…);
   vassals wear their overlord's colour and join all of its wars and treaties.
 - **Sea trade**: coastal poleis send small merchant ships along sea routes to the harbours of coastal poleis
-  they are not at war with. Each completed voyage earns 1 drachma, raised by culture (+8% per point);
-  every port lets one more ship sail at a time.
+  they are not at war with. Each completed voyage earns the owner 1 drachma, raised by culture (+8% per point),
+  and the receiving city 30% of that; every port lets one more ship sail at a time.
+- **Victories**: every battle your army or garrison wins pauses the game with a report — a little gold
+  (spoils), 15% of the beaten army taken captive as workers, and +1 power projection.
+- **Power projection**: makes your polis look stronger to would-be attackers, brings embassies offering a
+  defensive alliance (allies join any war declared on you, and you on them), and draws merchant ships to your harbours.
 - **War letters**: when a rival declares war on you, the game pauses and a short letter arrives in the voice
   of that city (Solon of Athens, Chilon of Sparta, Periander of Corinth…) — scornful if they think you weak.
 - **Declare war**: click another polis, then *Declare war*. Small armies march out on their own and

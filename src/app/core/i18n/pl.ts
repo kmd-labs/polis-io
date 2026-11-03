@@ -50,7 +50,11 @@ export const PL: Dict = {
     },
     {
       term: 'Handel morski',
-      desc: 'Polis nad morzem wysyła małe statki kupieckie do portów nadmorskich polis, z którymi nie prowadzi wojny. Każdy ukończony rejs daje 1 drachmę, powiększoną przez kulturę (+8% za punkt). Każdy port pozwala wysłać jednocześnie o jeden statek więcej.'
+      desc: 'Polis nad morzem wysyła małe statki kupieckie do portów nadmorskich polis, z którymi nie prowadzi wojny. Każdy ukończony rejs daje właścicielowi 1 drachmę, powiększoną przez kulturę (+8% za punkt), a miastu docelowemu 30% tej kwoty. Każdy port pozwala wysłać jednocześnie o jeden statek więcej.'
+    },
+    {
+      term: 'Zwycięstwa i projekcja siły',
+      desc: 'Każda bitwa wygrana przez twoją armię lub garnizon zatrzymuje grę i daje raport: trochę złota, 15% pokonanej armii jako jeńców pracujących na twoich polach (liczą się jako robotnicy) oraz punkt projekcji siły. Projekcja siły zniechęca rywali do ataku, sprowadza poselstwa z propozycją sojuszu i przyciąga statki kupieckie do twoich portów. Sojusznicy ruszają ci z pomocą, gdy ktoś wypowie ci wojnę.'
     },
     {
       term: 'Robotnicy',
@@ -124,8 +128,14 @@ export const PL: Dict = {
   ports: 'Porty',
   vassals: 'Wasale',
   ships: 'Statki',
+  allies: 'Sojusznicy',
+  ally: 'Sojusznik',
+  statPrestige: 'Projekcja siły',
+  statPrestigeHint:
+    'Zdobywana w wygranych bitwach. Rywale zastanowią się dwa razy, zanim cię zaatakują, miasta mogą zaproponować ci sojusz, a kupcy wolą twoje porty.',
+  slavesHint: 'W tym {n} jeńców wziętych w bitwach.',
   buildingsHint:
-    'Farmy, porty i polis-wasale powstałe dzięki rozwojowi oraz statki kupieckie na morzu. Każdy rejs do przyjaznego portu daje {v} drachmy (dotąd {t}).',
+    'Farmy, porty i polis-wasale powstałe dzięki rozwojowi, sojusznicy oraz statki kupieckie na morzu. Każdy rejs do przyjaznego portu daje {v} drachmy (z handlu dotąd {t}); miasto docelowe dostaje dodatkowo 30% tej kwoty.',
   vassalOf: 'Wasal polis {b}',
 
   // Diplomacy panel
@@ -153,6 +163,29 @@ export const PL: Dict = {
   evFarm: 'Polis {a} zakłada nowe farmy',
   evPort: 'Polis {a} buduje port',
   evVassal: 'Polis {a} zakłada polis {b} — swojego wasala',
+  evAlliance: 'Polis {a} i polis {b} zawierają sojusz',
+  evAllianceOffer: 'Polis {a} wysyła posłów do polis {b}',
+
+  // Battle report
+  reportTitle: 'Zwycięstwo!',
+  reportNear: 'W pobliżu polis {place}',
+  reportBattles: 'Wygrane bitwy: {n}',
+  reportGold: 'Łupy',
+  reportGoldValue: '+{n} drachm',
+  reportSlaves: 'Jeńcy zmuszeni do pracy',
+  reportSlavesValue: '+{n} robotników',
+  reportPrestigeValue: '+{n} (teraz {t})',
+  reportLosses: 'Polegli',
+  reportLossesValue: 'wróg {e} · nasi {o}',
+  reportAction: 'Naprzód!',
+
+  // Embassy (alliance offer)
+  embassyTitle: 'Poselstwo z polis {name}',
+  embassySubtitle: 'U twoich bram czekają posłowie z gałązkami oliwnymi.',
+  embassyText:
+    'Cała Hellada mówi o waszych zwycięstwach. Polis {name} proponuje wam sojusz: jeśli ktokolwiek wypowie wam wojnę, staniemy u waszego boku — a wy u naszego.',
+  embassyAccept: 'Przyjmij sojusz',
+  embassyDecline: 'Odeślij posłów',
 
   // War letters
   letterTitle: 'List z polis {name}',

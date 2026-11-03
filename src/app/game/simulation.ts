@@ -65,6 +65,21 @@ export const RULES = {
   maxShips: 4,
   /** Sea routes are planned on a grid this many times coarser than the map. */
   routeCoarse: 3,
+  /** Share of a voyage's value also earned by the receiving harbour. */
+  tradeReceiverShare: 0.3,
+  /** Spoils of a won battle: drachmae per fallen enemy, plus a flat purse. */
+  lootPerEnemy: 0.25,
+  lootBase: 15,
+  /** Share of the beaten army taken captive and put to work. */
+  captiveShare: 0.15,
+  /** Power projection gained per battle won. */
+  prestigePerVictory: 1,
+  /** Each point of power projection makes a polis look this much stronger to would-be attackers. */
+  prestigeDeterrence: 0.08,
+  /** Each point makes merchants this much more likely to choose its harbour. */
+  prestigeTradePull: 0.15,
+  /** Per AI decision and per point of the player's power projection: chance to offer an alliance. */
+  allianceOfferChance: 0.004,
   /** Cells per second. */
   armySpeedLand: 6.5,
   armySpeedSea: 4.2,
@@ -141,6 +156,26 @@ export interface PolisState {
   harbourAt: number;
   /** Drachmae earned from sea trade so far. */
   tradeEarned: number;
+  /** Captives working the land; counted as workers, they neither grow nor fight. */
+  slaves: number;
+  /** Power projection earned in battle. */
+  prestige: number;
+  /** Defensive allies: each joins any war declared on the other. */
+  allies: Set<number>;
+  /** No new alliance offers before this time. */
+  embassyAt: number;
+}
+
+/** Spoils of a battle won by the player, consumed by the UI. */
+export interface BattleReport {
+  enemy: number;
+  /** Closest living polis to the battlefield (the place the battle is named after). */
+  near: number;
+  gold: number;
+  slaves: number;
+  prestige: number;
+  enemyLosses: number;
+  ownLosses: number;
 }
 
 /** A merchant ship sailing a precomputed sea route between two friendly harbours. */
@@ -196,7 +231,18 @@ export interface Claim {
   t: number;
 }
 
-export type GameEventKind = 'war' | 'peace' | 'peaceRefused' | 'settle' | 'colony' | 'fall' | 'farm' | 'port' | 'vassal';
+export type GameEventKind =
+  | 'war'
+  | 'peace'
+  | 'peaceRefused'
+  | 'settle'
+  | 'colony'
+  | 'fall'
+  | 'farm'
+  | 'port'
+  | 'vassal'
+  | 'alliance'
+  | 'allianceOffer';
 
 export interface GameEvent {
   id: number;
@@ -220,6 +266,8 @@ export class Simulation {
   buildings: Building[] = [];
   ships: Ship[] = [];
   tradeFx: TradeFx[] = [];
+  /** Battles the player has won since the UI last took them. */
+  reports: BattleReport[] = [];
   claims: Claim[] = [];
   events: GameEvent[] = [];
   time = 0;
@@ -305,7 +353,11 @@ export class Simulation {
       nextShip: this.time + 3 + this.rand() * RULES.shipInterval,
       harbour: -1,
       harbourAt: -Infinity,
-      tradeEarned: 0
+      tradeEarned: 0,
+      slaves: 0,
+      prestige: 0,
+      allies: new Set<number>(),
+      embassyAt: this.time + 60
     };
   }
 
@@ -377,6 +429,7 @@ export class Simulation {
     this.buildings = [];
     this.ships = [];
     this.tradeFx = [];
+    this.reports = [];
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
     this.floodClaim(
@@ -426,7 +479,7 @@ export class Simulation {
   }
 
   workers(p: PolisState): number {
-    return Math.floor(p.civilians * RULES.laborShare);
+    return Math.floor(p.civilians * RULES.laborShare + p.slaves);
   }
 
   fieldStrength(idx: number): number {
@@ -440,7 +493,7 @@ export class Simulation {
   }
 
   totalPopulation(p: PolisState): number {
-    return Math.round(p.civilians + p.garrison + this.fieldStrength(p.idx));
+    return Math.round(p.civilians + p.slaves + p.garrison + this.fieldStrength(p.idx));
   }
 
   settlers(p: PolisState): number {
@@ -504,9 +557,41 @@ export class Simulation {
     if (a === b || !pa?.alive || !pb?.alive || pa.wars.has(b)) return;
     const mine = this.bloc(a);
     if (mine.includes(b)) return;
-    // Overlords and vassals march together.
-    for (const x of mine) for (const y of this.bloc(b)) this.link(x, y);
+    // Attacking an ally tears up the treaty.
+    pa.allies.delete(b);
+    pb.allies.delete(a);
+    // Overlords and vassals march together…
+    const theirs = this.bloc(b);
+    for (const x of mine) for (const y of theirs) this.link(x, y);
     this.emit('war', a, b);
+    // …and the defender's allies come to its aid.
+    for (const d of theirs) {
+      for (const ally of this.poleis[d].allies) {
+        if (!this.poleis[ally].alive || mine.includes(ally)) continue;
+        for (const x of this.bloc(ally)) for (const y of mine) this.link(x, y);
+      }
+    }
+  }
+
+  allied(a: number, b: number): boolean {
+    return this.poleis[a]?.allies.has(b) ?? false;
+  }
+
+  /** Seals a defensive alliance; the two make peace first if they were fighting. */
+  ally(a: number, b: number) {
+    const pa = this.poleis[a];
+    const pb = this.poleis[b];
+    if (a === b || !pa?.alive || !pb?.alive || pa.allies.has(b)) return;
+    if (pa.wars.has(b)) this.makePeace(a, b);
+    pa.allies.add(b);
+    pb.allies.add(a);
+    this.emit('alliance', a, b);
+  }
+
+  /** The player turned an embassy away; the city will not ask again for a while. */
+  declineAlliance(from: number) {
+    const p = this.poleis[from];
+    if (p) p.embassyAt = this.time + 120;
   }
 
   private link(x: number, y: number) {
@@ -836,16 +921,32 @@ export class Simulation {
       const mine = this.warriors(p);
       const friends = this.bloc(p.idx);
       for (const q of this.poleis) {
-        if (!q.alive || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0) continue;
+        if (!q.alive || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0 || p.allies.has(q.idx)) continue;
         if (q.idx === this.player && this.time < RULES.aiPlayerGrace) continue;
         if (Math.hypot(q.cx - p.cx, q.cy - p.cy) > RULES.aiWarRange) continue;
-        const ratio = mine / Math.max(1, this.warriors(q));
+        // A fearsome reputation makes a city look stronger than it is.
+        const ratio = mine / Math.max(1, this.warriors(q) * (1 + RULES.prestigeDeterrence * q.prestige));
         if (ratio > bestRatio) {
           bestRatio = ratio;
           target = q.idx;
         }
       }
       if (target >= 0) this.declareWar(p.idx, target);
+    }
+
+    // Impressed by the player's victories, a city may send an embassy offering an alliance.
+    const me = this.poleis[this.player];
+    if (
+      me?.alive &&
+      me.prestige > 0 &&
+      this.time >= p.embassyAt &&
+      !p.allies.has(me.idx) &&
+      !p.wars.has(me.idx) &&
+      !this.bloc(me.idx).includes(p.idx) &&
+      this.rand() < RULES.allianceOfferChance * me.prestige
+    ) {
+      p.embassyAt = this.time + 120;
+      this.emit('allianceOffer', p.idx, me.idx);
     }
 
     const playerBloc = this.player >= 0 ? this.bloc(this.player) : [];
@@ -911,7 +1012,8 @@ export class Simulation {
       const harbour = this.harbourOf(q);
       if (harbour < 0) continue;
       const d = Math.hypot((harbour % w.cols) - (from % w.cols), Math.floor(harbour / w.cols) - Math.floor(from / w.cols));
-      options.push({ q, harbour, weight: 1 / (d + 60) });
+      const pull = (1 + RULES.prestigeTradePull * q.prestige) * (p.allies.has(q.idx) ? 2 : 1);
+      options.push({ q, harbour, weight: pull / (d + 60) });
     }
     if (!options.length) return;
     let pick = this.rand() * options.reduce((sum, o) => sum + o.weight, 0);
@@ -973,6 +1075,11 @@ export class Simulation {
     owner.drachmae += amount;
     owner.tradeEarned += amount;
     this.tradeFx.push({ x: s.x, y: s.y, t: this.time, amount, owner: owner.idx });
+    // The receiving harbour profits too, though less than the shipowner.
+    const share = amount * RULES.tradeReceiverShare;
+    dest.drachmae += share;
+    dest.tradeEarned += share;
+    this.tradeFx.push({ x: s.x, y: s.y - 1.5, t: this.time, amount: share, owner: dest.idx });
   }
 
   /** A* over the coarse sea grid, smoothed into a gentle polyline; cached per harbour pair. */
@@ -1269,8 +1376,10 @@ export class Simulation {
       const [win, lose, winMult] = attackerWins ? [sa, sd, ma] : [sd, sa, md];
       const survivors = Math.max(2, (win - lose * (0.35 + this.rand() * 0.3)) / winMult);
 
+      const before = { att: att.strength, def: def ? def.strength : q.garrison };
       if (attackerWins) {
         att.strength = survivors;
+        this.spoils(att.owner, q.idx, before.def, before.att - survivors, b);
         if (def) {
           def.dead = true;
         } else {
@@ -1279,11 +1388,48 @@ export class Simulation {
         }
       } else {
         att.dead = true;
+        this.spoils(q.idx, att.owner, before.att, before.def - survivors, b);
         if (def) def.strength = survivors;
         else q.garrison = survivors;
       }
     }
     this.battles = pending;
+  }
+
+  /** Gold, captives and renown for the victor; the player's victories are reported to the UI. */
+  private spoils(winner: number, loser: number, enemyLosses: number, ownLosses: number, b: Battle) {
+    const w = this.poleis[winner];
+    const gold = Math.round(RULES.lootBase + enemyLosses * RULES.lootPerEnemy);
+    const slaves = Math.round(enemyLosses * RULES.captiveShare);
+    w.drachmae += gold;
+    w.slaves += slaves;
+    w.prestige += RULES.prestigePerVictory;
+    if (winner !== this.player) return;
+    let near = loser;
+    let bestD = Infinity;
+    for (const q of this.poleis) {
+      if (!q.alive) continue;
+      const d = Math.hypot(q.cx - b.x, q.cy - b.y);
+      if (d < bestD) {
+        bestD = d;
+        near = q.idx;
+      }
+    }
+    this.reports.push({
+      enemy: loser,
+      near,
+      gold,
+      slaves,
+      prestige: RULES.prestigePerVictory,
+      enemyLosses: Math.round(enemyLosses),
+      ownLosses: Math.max(0, Math.round(ownLosses))
+    });
+  }
+
+  takeReports(): BattleReport[] {
+    const out = this.reports;
+    this.reports = [];
+    return out;
   }
 
   // ─── Territory ────────────────────────────────────────────────────────────
@@ -1333,7 +1479,9 @@ export class Simulation {
       if (this.owner[c] === loser) this.setOwner(c, winner, true);
     }
     w.civilians += l.civilians * 0.5;
+    w.slaves += l.slaves * 0.5;
     l.civilians = 0;
+    l.slaves = 0;
     l.garrison = 0;
     l.expedition = null;
     l.alive = false;
@@ -1344,8 +1492,12 @@ export class Simulation {
       this.poleis[e].warStart.delete(loser);
     }
     l.wars.clear();
-    // Vassals of a fallen city go their own way.
-    for (const v of this.poleis) if (v.overlord === loser) v.overlord = -1;
+    // Vassals of a fallen city go their own way; its treaties die with it.
+    for (const v of this.poleis) {
+      if (v.overlord === loser) v.overlord = -1;
+      v.allies.delete(loser);
+    }
+    l.allies.clear();
     this.emit('fall', loser, winner);
   }
 

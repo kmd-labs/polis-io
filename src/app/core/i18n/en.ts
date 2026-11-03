@@ -50,7 +50,11 @@ export const EN: Dict = {
     },
     {
       term: 'Sea trade',
-      desc: 'A polis on the coast sends small merchant ships to the harbours of coastal poleis it is not at war with. Every completed voyage earns 1 drachma, raised by culture (+8% per point). Each port lets one more ship sail at a time.'
+      desc: 'A polis on the coast sends small merchant ships to the harbours of coastal poleis it is not at war with. Every completed voyage earns the owner 1 drachma, raised by culture (+8% per point), and the receiving city 30% of that. Each port lets one more ship sail at a time.'
+    },
+    {
+      term: 'Victories & power projection',
+      desc: 'Every battle your army or garrison wins pauses the game with a report: a little gold, 15% of the beaten army taken captive to work your fields (they count as workers), and a point of power projection. Power projection makes rivals less eager to attack you, brings embassies offering alliances, and draws merchant ships to your harbours. Allies march to your aid when someone declares war on you.'
     },
     {
       term: 'Workers',
@@ -124,8 +128,14 @@ export const EN: Dict = {
   ports: 'Ports',
   vassals: 'Vassals',
   ships: 'Ships',
+  allies: 'Allies',
+  ally: 'Ally',
+  statPrestige: 'Power projection',
+  statPrestigeHint:
+    'Earned by winning battles. Rivals think twice before attacking you, cities may offer you an alliance, and merchants prefer your harbours.',
+  slavesHint: 'Includes {n} captives taken in battle.',
   buildingsHint:
-    'Farms, ports and vassal poleis created by development, and merchant ships at sea. Each voyage to a friendly harbour earns {v} drachmae ({t} so far).',
+    'Farms, ports and vassal poleis created by development, allies, and merchant ships at sea. Each voyage to a friendly harbour earns {v} drachmae ({t} from trade so far); the receiving city gets 30% of that too.',
   vassalOf: 'Vassal of {b}',
 
   // Diplomacy panel
@@ -153,6 +163,29 @@ export const EN: Dict = {
   evFarm: '{a} laid out new farms',
   evPort: '{a} built a harbour',
   evVassal: '{a} founded {b}, a vassal polis',
+  evAlliance: '{a} and {b} formed an alliance',
+  evAllianceOffer: '{a} sent envoys to {b}',
+
+  // Battle report
+  reportTitle: 'Victory!',
+  reportNear: 'Near {place}',
+  reportBattles: '{n} battles won',
+  reportGold: 'Spoils',
+  reportGoldValue: '+{n} drachmae',
+  reportSlaves: 'Captives put to work',
+  reportSlavesValue: '+{n} workers',
+  reportPrestigeValue: '+{n} (now {t})',
+  reportLosses: 'Fallen',
+  reportLossesValue: 'enemy {e} · ours {o}',
+  reportAction: 'Onward!',
+
+  // Embassy (alliance offer)
+  embassyTitle: 'An embassy from {name}',
+  embassySubtitle: 'Envoys bearing olive branches wait at your gates.',
+  embassyText:
+    'All of Hellas speaks of your victories. {name} offers you an alliance: if anyone declares war on you, we will march at your side — and you at ours.',
+  embassyAccept: 'Accept the alliance',
+  embassyDecline: 'Send them away',
 
   // War letters
   letterTitle: 'A letter from {name}',

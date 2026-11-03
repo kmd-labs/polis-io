@@ -132,6 +132,22 @@
     }
   </ng-template>
 
+  <ng-template #reportTpl>
+    @if (reportView(); as report) {
+      @if (report.battles) {
+        <p class="report__battles">{{ report.battles }}</p>
+      }
+      <dl class="report">
+        @for (row of report.rows; track row.label) {
+          <div class="report__row">
+            <dt><lucide-icon [img]="row.icon" [size]="14"></lucide-icon>{{ row.label }}</dt>
+            <dd>{{ row.value }}</dd>
+          </div>
+        }
+      </dl>
+    }
+  </ng-template>
+
   <app-popup [closeAriaLabel]="t.close"></app-popup>
   <app-tooltip></app-tooltip>
 </main>

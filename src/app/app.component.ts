@@ -11,7 +11,11 @@ import {
   Pause,
   FastForward,
   Maximize,
-  RotateCcw
+  RotateCcw,
+  Coins,
+  Pickaxe,
+  Flag,
+  Swords
 } from 'lucide-angular';
 import {
   BrandComponent,
@@ -29,7 +33,7 @@ import {
 } from '@kmd/design-system';
 import { I18nService } from './core/i18n/i18n.service';
 import { Lang } from './core/i18n/i18n.types';
-import { formatYear, interpolate } from './core/i18n/format';
+import { formatNumber, formatYear, interpolate } from './core/i18n/format';
 import { GameService } from './game/game.service';
 import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
@@ -71,11 +75,48 @@ export class AppComponent {
   @ViewChild(MapCanvasComponent) private map?: MapCanvasComponent;
   @ViewChild('rulesTpl', { static: true }) private rulesTpl!: TemplateRef<unknown>;
   @ViewChild('letterTpl', { static: true }) private letterTpl!: TemplateRef<unknown>;
+  @ViewChild('reportTpl', { static: true }) private reportTpl!: TemplateRef<unknown>;
 
-  /** Sender and text of the open war letter, localized. */
+  /** The open victory report, localized. */
+  readonly reportView = computed(() => {
+    const n = this.game.notice();
+    if (n?.kind !== 'victory') return null;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const num = (v: number) => formatNumber(v, lang);
+    return {
+      battles: n.battles > 1 ? interpolate(t.reportBattles, { n: n.battles }) : '',
+      rows: [
+        { icon: this.icons.Coins, label: t.reportGold, value: interpolate(t.reportGoldValue, { n: num(n.gold) }) },
+        { icon: this.icons.Pickaxe, label: t.reportSlaves, value: interpolate(t.reportSlavesValue, { n: num(n.slaves) }) },
+        {
+          icon: this.icons.Flag,
+          label: t.statPrestige,
+          value: interpolate(t.reportPrestigeValue, { n: num(n.prestige), t: num(n.totalPrestige) })
+        },
+        {
+          icon: this.icons.Swords,
+          label: t.reportLosses,
+          value: interpolate(t.reportLossesValue, { e: num(n.enemyLosses), o: num(n.ownLosses) })
+        }
+      ]
+    };
+  });
+
+  /** Sender and text of the open war letter or embassy, localized. */
   readonly letterView = computed(() => {
-    const letter = this.game.letter();
-    if (!letter) return null;
+    const n = this.game.notice();
+    if (n?.kind === 'alliance') {
+      const name = this.game.name(n.from);
+      const t = this.i18n.t();
+      return {
+        sender: interpolate(t.letterGeneric.sender, { name }),
+        text: interpolate(t.embassyText, { name }),
+        color: this.game.sim.poleis[n.from].def.color
+      };
+    }
+    if (n?.kind !== 'war') return null;
+    const letter = n;
     const t = this.i18n.t();
     const def = this.game.sim.poleis[letter.from].def;
     const name = this.game.name(letter.from);
@@ -87,7 +128,7 @@ export class AppComponent {
     };
   });
 
-  readonly icons = { Globe, BookOpen, Play, Pause, FastForward, Maximize, RotateCcw };
+  readonly icons = { Globe, BookOpen, Play, Pause, FastForward, Maximize, RotateCcw, Coins, Pickaxe, Flag, Swords };
 
   readonly currentView = signal<MapView>('political');
 
@@ -132,10 +173,15 @@ export class AppComponent {
       if (this.splash.revealed() && this.game.ready()) untracked(() => this.splash.finish());
     });
 
-    // A declaration of war arrives as a letter; the clock stays stopped until it is read.
+    // Letters, embassies and battle reports stop the clock until they are read.
     effect(() => {
-      const letter = this.game.letter();
-      if (letter) untracked(() => this.openLetter(letter.from));
+      const n = this.game.notice();
+      if (!n) return;
+      untracked(() => {
+        if (n.kind === 'war') this.openLetter(n.from);
+        else if (n.kind === 'alliance') this.openEmbassy(n.from);
+        else this.openReport(n.near);
+      });
     });
 
     // Announce the end of the game once.
@@ -186,8 +232,45 @@ export class AppComponent {
       subtitle: computed(() => interpolate(this.i18n.t().letterDeclares, { name: name() })),
       template: this.letterTpl,
       size: 'sm',
-      onClose: () => this.game.closeLetter(),
+      onClose: () => this.game.closeNotice(),
       actions: [{ label: computed(() => this.i18n.t().letterAction), variant: 'play', hot: true }]
+    });
+  }
+
+  private openEmbassy(from: number) {
+    const name = () => this.game.name(from);
+    this.popup.open({
+      id: 'embassy',
+      title: computed(() => interpolate(this.i18n.t().embassyTitle, { name: name() })),
+      subtitle: computed(() => this.i18n.t().embassySubtitle),
+      template: this.letterTpl,
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [
+        {
+          label: computed(() => this.i18n.t().embassyDecline),
+          variant: 'default',
+          onClick: () => this.game.declineAlliance(from)
+        },
+        {
+          label: computed(() => this.i18n.t().embassyAccept),
+          variant: 'play',
+          hot: true,
+          onClick: () => this.game.acceptAlliance(from)
+        }
+      ]
+    });
+  }
+
+  private openReport(near: number) {
+    this.popup.open({
+      id: 'battle-report',
+      title: computed(() => this.i18n.t().reportTitle),
+      subtitle: computed(() => interpolate(this.i18n.t().reportNear, { place: this.game.name(near) })),
+      template: this.reportTpl,
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => this.i18n.t().reportAction), variant: 'play', hot: true }]
     });
   }
 

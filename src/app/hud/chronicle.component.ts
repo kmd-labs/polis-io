@@ -15,7 +15,9 @@ const TEMPLATE_KEY = {
   fall: 'evFall',
   farm: 'evFarm',
   port: 'evPort',
-  vassal: 'evVassal'
+  vassal: 'evVassal',
+  alliance: 'evAlliance',
+  allianceOffer: 'evAllianceOffer'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Floating feed of the latest wars, treaties, colonies and conquests (top-right, under the view switcher). */
@@ -41,7 +43,7 @@ export class ChronicleComponent {
     return this.game
       .events()
       // Other poleis' settling and building are routine; only the player's own projects are news.
-      .filter(e => !['settle', 'colony', 'farm', 'port'].includes(e.kind) || e.a === player)
+      .filter(e => !['settle', 'colony', 'farm', 'port', 'allianceOffer'].includes(e.kind) || (e.a === player && e.kind !== 'allianceOffer'))
       .slice(-limit)
       .reverse()
       .map(e => ({

@@ -12,6 +12,9 @@
       <div class="panel__traits">
         <app-trait-pips kind="militarism" [label]="t.statMilitarism" [value]="me.militarism" [hint]="t.statMilitarismHint"></app-trait-pips>
         <app-trait-pips kind="culture" [label]="t.statCulture" [value]="me.culture" [hint]="t.statCultureHint"></app-trait-pips>
+        <span class="prestige" [appTooltip]="t.statPrestigeHint">
+          <lucide-icon [img]="icons.Flag" [size]="11"></lucide-icon>{{ t.statPrestige }} <b>{{ me.prestige }}</b>
+        </span>
       </div>
     </header>
 
@@ -20,7 +23,7 @@
         <dt><lucide-icon [img]="icons.Users" [size]="12"></lucide-icon>{{ t.statPopulation }}</dt>
         <dd>{{ num(me.total) }}</dd>
       </div>
-      <div class="stat stat--major" [appTooltip]="t.statWorkersHint">
+      <div class="stat stat--major" [appTooltip]="workersHint()">
         <dt><lucide-icon [img]="icons.Pickaxe" [size]="12"></lucide-icon>{{ t.statWorkers }}</dt>
         <dd>{{ num(me.workers) }}</dd>
       </div>
@@ -87,12 +90,15 @@
       </div>
     </div>
 
-    @if (me.farms || me.ports || me.vassals.length || me.ships) {
+    @if (me.farms || me.ports || me.vassals.length || me.ships || me.allies.length) {
       <div class="holdings" [appTooltip]="holdingsHint()">
         <span><lucide-icon [img]="icons.Wheat" [size]="12"></lucide-icon>{{ t.farms }} <b>{{ me.farms }}</b></span>
         <span><lucide-icon [img]="icons.Anchor" [size]="12"></lucide-icon>{{ t.ports }} <b>{{ me.ports }}</b></span>
         <span><lucide-icon [img]="icons.Crown" [size]="12"></lucide-icon>{{ t.vassals }} <b>{{ me.vassals.length }}</b></span>
         <span><lucide-icon [img]="icons.Sailboat" [size]="12"></lucide-icon>{{ t.ships }} <b>{{ me.ships }}</b></span>
+        @if (me.allies.length) {
+          <span><lucide-icon [img]="icons.Handshake" [size]="12"></lucide-icon>{{ t.allies }} <b>{{ me.allies.length }}</b></span>
+        }
       </div>
     }
   }

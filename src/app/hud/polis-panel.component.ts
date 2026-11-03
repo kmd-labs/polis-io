@@ -5,6 +5,8 @@ import {
   Building2,
   Coins,
   Crown,
+  Flag,
+  Handshake,
   MapIcon,
   Pickaxe,
   Sailboat,
@@ -33,12 +35,19 @@ export class PolisPanelComponent {
   readonly i18n = inject(I18nService);
   readonly game = inject(GameService);
 
-  readonly icons = { Anchor, Building2, Coins, Crown, MapIcon, Pickaxe, Sailboat, Shield, Sprout, Swords, TrendingUp, Users, Wheat };
+  readonly icons = { Anchor, Building2, Coins, Crown, Flag, Handshake, MapIcon, Pickaxe, Sailboat, Shield, Sprout, Swords, TrendingUp, Users, Wheat };
 
   readonly name = computed(() => {
     const me = this.game.me();
     this.i18n.t();
     return me ? this.game.name(me.idx) : '';
+  });
+
+  readonly workersHint = computed(() => {
+    const t = this.i18n.t();
+    const me = this.game.me();
+    if (!me?.slaves) return t.statWorkersHint;
+    return `${t.statWorkersHint} ${interpolate(t.slavesHint, { n: this.num(me.slaves) })}`;
   });
 
   readonly holdingsHint = computed(() => {

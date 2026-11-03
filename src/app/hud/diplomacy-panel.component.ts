@@ -31,9 +31,9 @@ export class DiplomacyPanelComponent {
     const target = this.game.target();
     if (!target) return null;
     if (!target.alive) return { text: t.fallen, color: this.theme.getTokenColor('neutral-500') };
-    return this.atWar()
-      ? { text: t.atWar, color: this.theme.getTokenColor('danger') }
-      : { text: t.atPeace, color: this.theme.getTokenColor('success-600') };
+    if (this.atWar()) return { text: t.atWar, color: this.theme.getTokenColor('danger') };
+    if (this.game.me()?.allies.includes(target.idx)) return { text: t.ally, color: this.theme.getTokenColor('accent') };
+    return { text: t.atPeace, color: this.theme.getTokenColor('success-600') };
   });
 
   readonly fallenTo = computed(() => {

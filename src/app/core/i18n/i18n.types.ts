@@ -96,6 +96,11 @@ export interface Dict {
   ports: string;
   vassals: string;
   ships: string;
+  allies: string;
+  ally: string;
+  statPrestige: string;
+  statPrestigeHint: string;
+  slavesHint: string;
   buildingsHint: string;
   vassalOf: string;
 
@@ -124,6 +129,28 @@ export interface Dict {
   evFarm: string;
   evPort: string;
   evVassal: string;
+  evAlliance: string;
+  evAllianceOffer: string;
+
+  // Battle report
+  reportTitle: string;
+  reportNear: string;
+  reportBattles: string;
+  reportGold: string;
+  reportGoldValue: string;
+  reportSlaves: string;
+  reportSlavesValue: string;
+  reportPrestigeValue: string;
+  reportLosses: string;
+  reportLossesValue: string;
+  reportAction: string;
+
+  // Embassy (alliance offer)
+  embassyTitle: string;
+  embassySubtitle: string;
+  embassyText: string;
+  embassyAccept: string;
+  embassyDecline: string;
 
   // War letters
   letterTitle: string;

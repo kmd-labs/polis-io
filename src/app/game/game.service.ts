@@ -33,6 +33,9 @@ export interface PolisView {
   farms: number;
   ports: number;
   ships: number;
+  slaves: number;
+  prestige: number;
+  allies: number[];
   tradeValue: number;
   tradeEarned: number;
   vassals: number[];
@@ -42,12 +45,25 @@ export interface PolisView {
   wars: number[];
 }
 
-/** A declaration of war against the player, delivered as a letter. */
-export interface WarLetterView {
-  from: number;
-  /** Whether the sender thinks the player is weak. */
-  tone: 'taunt' | 'challenge';
-}
+/**
+ * Something that stops the clock until the player has read it: a declaration of war (letter),
+ * the spoils of a won battle, or an embassy offering an alliance.
+ */
+export type Notice =
+  | { kind: 'war'; from: number; tone: 'taunt' | 'challenge' }
+  | {
+      kind: 'victory';
+      enemy: number;
+      near: number;
+      battles: number;
+      gold: number;
+      slaves: number;
+      prestige: number;
+      totalPrestige: number;
+      enemyLosses: number;
+      ownLosses: number;
+    }
+  | { kind: 'alliance'; from: number };
 
 export type GameSpeed = 1 | 2 | 4;
 
@@ -79,8 +95,8 @@ export class GameService {
   readonly year = signal(0);
   readonly poleis = signal<PolisView[]>([]);
   readonly events = signal<GameEvent[]>([]);
-  /** Pending war letter; the game is paused while it is open. */
-  readonly letter = signal<WarLetterView | null>(null);
+  /** Notice on screen; the game is paused while it is open. Further notices wait in a queue. */
+  readonly notice = signal<Notice | null>(null);
 
   readonly me = computed(() => this.poleis()[this.player()] ?? null);
   readonly target = computed(() => {
@@ -91,7 +107,8 @@ export class GameService {
   private lastFrame = 0;
   private lastUi = 0;
   private lastEventId = 0;
-  private pausedBeforeLetter = false;
+  private pausedBeforeNotice = false;
+  private readonly queue: Notice[] = [];
 
   constructor() {
     void this.load();
@@ -159,10 +176,21 @@ export class GameService {
     return p ? polisName(this.i18n.t(), p.def) : '';
   }
 
-  closeLetter() {
-    if (!this.letter()) return;
-    this.letter.set(null);
-    this.paused.set(this.pausedBeforeLetter);
+  /** Dismisses the open notice and shows the next one, or resumes the game. */
+  closeNotice() {
+    if (!this.notice()) return;
+    const next = this.queue.shift() ?? null;
+    this.notice.set(next);
+    if (!next) this.paused.set(this.pausedBeforeNotice);
+  }
+
+  acceptAlliance(from: number) {
+    this.sim.ally(this.sim.player, from);
+    this.publish();
+  }
+
+  declineAlliance(from: number) {
+    this.sim.declineAlliance(from);
   }
 
   declareWar(target: number) {
@@ -190,7 +218,8 @@ export class GameService {
 
   restart() {
     this.sim.reset();
-    this.letter.set(null);
+    this.notice.set(null);
+    this.queue.length = 0;
     this.lastEventId = 0;
     this.selected.set(-1);
     this.preview.set(-1);
@@ -242,6 +271,9 @@ export class GameService {
         culture: p.culture,
         farms: p.farms,
         ports: p.ports,
+        slaves: Math.round(p.slaves),
+        prestige: p.prestige,
+        allies: [...p.allies].filter(a => sim.poleis[a].alive),
         ships: sim.shipsOf(p.idx),
         tradeValue: sim.tradeValue(p),
         tradeEarned: p.tradeEarned,
@@ -253,23 +285,51 @@ export class GameService {
       }))
     );
     if (this.events().at(-1)?.id !== sim.events.at(-1)?.id) this.events.set([...sim.events]);
-    this.deliverLetters();
+    this.collectNotices();
   }
 
-  /** A rival declaring war on the player (or a vassal) sends a letter and stops the clock. */
-  private deliverLetters() {
+  /** Turns fresh war declarations, embassies and the player's victories into notices that stop the clock. */
+  private collectNotices() {
     const sim = this.sim;
     const fresh = sim.events.filter(e => e.id > this.lastEventId);
-    if (!fresh.length) return;
-    this.lastEventId = fresh[fresh.length - 1].id;
-    if (sim.status !== 'playing' || this.letter()) return;
-    const mine = sim.bloc(sim.player);
-    const war = fresh.find(e => e.kind === 'war' && mine.includes(e.b) && !mine.includes(e.a));
-    if (!war) return;
+    if (fresh.length) this.lastEventId = fresh[fresh.length - 1].id;
+    const reports = sim.takeReports();
+    if (sim.status !== 'playing') return;
+
     const me = sim.poleis[sim.player];
-    const ratio = sim.warriors(sim.poleis[war.a]) / Math.max(1, sim.warriors(me));
-    this.pausedBeforeLetter = this.paused();
-    this.paused.set(true);
-    this.letter.set({ from: war.a, tone: ratio > 1.4 || me.drachmae < 100 ? 'taunt' : 'challenge' });
+    const mine = sim.bloc(sim.player);
+    const incoming: Notice[] = [];
+    for (const e of fresh) {
+      if (e.kind === 'war' && mine.includes(e.b) && !mine.includes(e.a)) {
+        const ratio = sim.warriors(sim.poleis[e.a]) / Math.max(1, sim.warriors(me));
+        incoming.push({ kind: 'war', from: e.a, tone: ratio > 1.4 || me.drachmae < 100 ? 'taunt' : 'challenge' });
+      } else if (e.kind === 'allianceOffer' && e.b === sim.player) {
+        incoming.push({ kind: 'alliance', from: e.a });
+      }
+    }
+    // Several battles won in one breath make a single report.
+    if (reports.length) {
+      const sum = (key: 'gold' | 'slaves' | 'prestige' | 'enemyLosses' | 'ownLosses') =>
+        reports.reduce((total, r) => total + r[key], 0);
+      incoming.push({
+        kind: 'victory',
+        enemy: reports[0].enemy,
+        near: reports[0].near,
+        battles: reports.length,
+        gold: sum('gold'),
+        slaves: sum('slaves'),
+        prestige: sum('prestige'),
+        totalPrestige: me.prestige,
+        enemyLosses: sum('enemyLosses'),
+        ownLosses: sum('ownLosses')
+      });
+    }
+    if (!incoming.length) return;
+    if (!this.notice()) {
+      this.pausedBeforeNotice = this.paused();
+      this.paused.set(true);
+      this.notice.set(incoming.shift()!);
+    }
+    this.queue.push(...incoming);
   }
 }

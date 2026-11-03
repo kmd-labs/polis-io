@@ -256,6 +256,45 @@
   }
 }
 
+.report {
+  margin: 0;
+  display: grid;
+  gap: spacing("xs");
+
+  &__battles {
+    margin: 0 0 spacing("sm");
+    font-size: font-size("sm");
+    color: color("text-desc");
+  }
+
+  &__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: spacing("lg");
+    padding: spacing("xs") spacing("md");
+    border-radius: radius("sm");
+    background: color("btn-bg");
+
+    dt {
+      display: inline-flex;
+      align-items: center;
+      gap: spacing("xs");
+      font-size: font-size("sm");
+      color: color("text-desc");
+    }
+
+    dd {
+      margin: 0;
+      font-family: var(--font-family-mono);
+      font-size: font-size("sm");
+      font-weight: font-weight("semibold");
+      color: color("text-bright");
+      text-align: right;
+    }
+  }
+}
+
 .rules {
   margin: 0;
   display: grid;

@@ -37,6 +37,21 @@
     align-items: flex-end;
     gap: 3px;
   }
+}
+
+.prestige {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: font-size("xxs");
+  color: color("text-dim");
+  cursor: default;
+
+  b {
+    font-family: var(--font-family-mono);
+    font-weight: font-weight("semibold");
+    color: color("accent");
+  }
 
   &__eyebrow {
     font-size: font-size("xxs");
