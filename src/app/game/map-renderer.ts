@@ -12,7 +12,7 @@ export interface Camera {
   oy: number;
 }
 
-export type MapView = 'political' | 'relief' | 'fertility' | 'relations';
+export type MapView = 'political' | 'relief' | 'fertility' | 'relations' | 'hegemony';
 
 /** Cartographic label (a mountain peak) placed by longitude / latitude. */
 export interface MapLabel {
@@ -24,6 +24,8 @@ export interface MapLabel {
 
 export interface RenderOptions {
   view: MapView;
+  /** Hegemony view: the top three poleis by hegemony points, best first. */
+  podium?: number[];
   hover: number;
   selected: number;
   /** Localized polis names, indexed like `sim.poleis`. */
@@ -145,7 +147,7 @@ export class MapRenderer {
       'neutral-600', 'success-100', 'success-200', 'success-600', 'warning-100', 'warning-200', 'warning-300',
       'info-50', 'info-100', 'info-200', 'info-300', 'info-400', 'info-700', 'primary-200', 'primary-300', 'primary-400',
       'primary-800', 'neutral-700', 'neutral-900', 'warning-50', 'warning-700', 'warning-800', 'success-500', 'accent', 'text-bright', 'text-main',
-      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong', 'danger-400', 'danger-700', 'success-400', 'success-700'
+      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong', 'danger-400', 'danger-700', 'success-400', 'success-700', 'warning-400', 'warning-500'
     ];
     for (const t of tokens) {
       this.css[t] = this.theme.getTokenColor(t, '#888888');
@@ -294,7 +296,8 @@ export class MapRenderer {
     const wars = me ? [...me.wars].join(',') : '';
     // In the relations view, a city repaints when its standing with the player moves a step.
     const standing = opt.view === 'relations' && me ? sim.poleis.map(p => Math.round(sim.relation(p.idx, me.idx) / 10)).join(',') + [...me.allies].join(',') : '';
-    const key = `${sim.resets}|${opt.view}|${opt.hover}|${opt.selected}|${sim.player}|${wars}|${standing}`;
+    const podium = opt.view === 'hegemony' ? (opt.podium ?? []).join(',') : '';
+    const key = `${sim.resets}|${opt.view}|${opt.hover}|${opt.selected}|${sim.player}|${wars}|${standing}|${podium}`;
     const dirty = sim.takeDirty();
 
     if (key !== this.paintedKey) {
@@ -347,6 +350,14 @@ export class MapRenderer {
     if (border) {
       const k = Math.min(1, 0.8 + 0.2 * s);
       col = [tint[0] * k, tint[1] * k, tint[2] * k];
+    } else if (opt.view === 'hegemony') {
+      // Gold, silver and bronze for the three leading poleis; everyone else greyed out.
+      const place = opt.podium?.indexOf(o) ?? -1;
+      const c = this.rgb;
+      const medal = [mix(c['warning-400'], c['warning-500'], 0.4), c['neutral-400'], mix(c['warning-700'], c['danger-400'], 0.25)][place];
+      const m = medal ? mix(medal, c['neutral-0'], focus ? 0.1 : 0.22) : mix(c['neutral-200'], c['neutral-0'], 0.35);
+      const k = 0.7 + 0.3 * s;
+      col = [m[0] * k, m[1] * k, m[2] * k];
     } else if (opt.view === 'relations') {
       const k = 0.7 + 0.3 * s;
       const m = mix(this.relationTint(o), this.rgb['neutral-0'], focus ? 0.2 : 0.38);

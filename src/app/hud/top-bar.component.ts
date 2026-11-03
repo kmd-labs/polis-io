@@ -16,7 +16,9 @@ import {
 } from 'lucide-angular';
 import { BreakpointService, ButtonComponent, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
-import { fmt1, formatCompact, formatNumber, formatRate, formatYear, interpolate } from '../core/i18n/format';
+import { fmt1, formatCompact, formatNumber, formatOrdinal, formatRate, formatYear, interpolate } from '../core/i18n/format';
+import { HEGEMONY_CATEGORIES } from '../game/hegemony';
+import { HudStateService } from './hud-state.service';
 import { GameService, SPEEDS } from '../game/game.service';
 import { PolisFlagComponent } from './polis-flag.component';
 
@@ -46,6 +48,7 @@ export class TopBarComponent {
   readonly i18n = inject(I18nService);
   readonly game = inject(GameService);
   readonly bp = inject(BreakpointService);
+  private readonly hud = inject(HudStateService);
 
   readonly help = output<void>();
   readonly restart = output<void>();
@@ -136,6 +139,23 @@ export class TopBarComponent {
     ];
     return { rows, total: dr(b.gross + b.other - b.upkeep) };
   });
+
+  /** The laurel: the player's hegemony points and places in the three categories. */
+  readonly laurel = computed(() => {
+    const h = this.game.hegemony();
+    const me = this.game.player();
+    if (!h || !h.places[me]) return null;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const score = h.scores[me] ?? 0;
+    const places = HEGEMONY_CATEGORIES.map(c => `${t.hegemonyCats[c].name} ${formatOrdinal(h.places[me][c], lang)}`).join(' · ');
+    return { score: `${score}/9`, hint: interpolate(t.topLaurel, { s: score, places }), hegemon: h.hegemon === me };
+  });
+
+  openHegemony() {
+    this.hud.tab.set('hegemony');
+    this.hud.drawerOpen.set(true);
+  }
 
   speedLabel(speed: number): string {
     return interpolate(this.i18n.t().speedN, { n: speed });

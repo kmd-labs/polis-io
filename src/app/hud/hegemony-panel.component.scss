@@ -1,0 +1,169 @@
+@use "variables" as *;
+@use "app/theme/greek" as greek;
+
+:host {
+  display: block;
+}
+
+.intro {
+  margin: 0 0 spacing("sm");
+  font-size: font-size("xs");
+  line-height: 1.45;
+  color: color("text-desc");
+}
+
+.hegemon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid color("line");
+  border-radius: radius("sm");
+  background: color("panel-bg-solid");
+
+  &--mine {
+    border-color: color("accent");
+    background: color("accent-glow-soft");
+  }
+
+  &__crown {
+    color: color("warning-600");
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+
+    b {
+      @include greek.display-type(0.05em);
+      font-size: font-size("sm");
+      color: color("text-bright");
+    }
+  }
+
+  &__label {
+    font-size: font-size("xxs");
+    color: color("text-dim");
+  }
+}
+
+.cat {
+  margin-top: spacing("md");
+
+  &__name {
+    @include greek.display-type(0.05em);
+    margin: 0 0 4px;
+    font-size: font-size("xs");
+    font-weight: font-weight("bold");
+    color: color("text-bright");
+    cursor: help;
+  }
+}
+
+.podium {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &__row {
+    --medal: var(--color-neutral-300);
+
+    &--1 {
+      --medal: var(--color-warning-400);
+    }
+
+    &--2 {
+      --medal: var(--color-neutral-400);
+    }
+
+    &--3 {
+      --medal: var(--color-warning-700);
+    }
+  }
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: radius("xs");
+    background: transparent;
+    font: inherit;
+    font-size: font-size("xs");
+    color: color("text-main");
+    text-align: left;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background: color("btn-hover");
+      outline: none;
+    }
+
+    .podium__row--mine & {
+      border-color: color("accent");
+      background: color("accent-glow-soft");
+    }
+  }
+
+  &__medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--medal);
+    font-family: var(--font-family-mono);
+    font-size: 10px;
+    font-weight: font-weight("bold");
+    color: color("neutral-0");
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: font-weight("semibold");
+    color: color("text-bright");
+  }
+
+  &__value {
+    font-family: var(--font-family-mono);
+    font-size: font-size("xxs");
+    color: color("text-main");
+  }
+
+  &__trend {
+    color: color("success-600");
+
+    &--down {
+      color: color("danger");
+    }
+  }
+}
+
+.you {
+  margin-top: spacing("md");
+
+  &__list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: font-size("xs");
+    line-height: 1.5;
+    color: color("text-main");
+  }
+}
+
+.chart {
+  display: block;
+  margin-top: spacing("md");
+}

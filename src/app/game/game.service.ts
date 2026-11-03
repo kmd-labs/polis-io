@@ -22,6 +22,7 @@ import {
 import { World } from './world';
 import { BUDGET_PRESETS, FundForecast, PresetId, forecastFund } from './economy';
 import { GameHistory, budgetChanged } from './history';
+import { HEGEMONY_CATEGORIES, HEGEMONY_RULES, HegemonyCategory, HegemonyStanding, rankHegemony } from './hegemony';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
 export interface PolisView {
@@ -118,6 +119,7 @@ export type Notice =
   | { kind: 'alliance'; from: number; reason: AllianceReason; enemy: number }
   | ({ kind: 'warEnd' } & WarReport)
   | { kind: 'conquest'; from: number }
+  | { kind: 'hegemon'; hegemon: number; previous: number }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
 /** Clock multipliers behind the five speed keys (1–5). */
@@ -130,9 +132,24 @@ export interface ReportItem {
   time: number;
 }
 
+/** A change on a hegemony podium that concerns the player (shown in the alerts row). */
+export interface PodiumNews {
+  id: number;
+  year: number;
+  time: number;
+  category: HegemonyCategory;
+  /** The player's new place (0 = off the podium) and the place before. */
+  place: number;
+  was: number;
+  /** Who took the player's place, if anyone. */
+  by: number;
+}
+
 /** Unread reports fade from the alerts row after this many game seconds (5 years). */
 const REPORT_TTL = 20;
 const REPORTS_MAX = 6;
+/** Years a new Hegemon must hold the title before it is announced. */
+const HEGEMON_SETTLE_YEARS = 3;
 
 export type GameSpeed = (typeof SPEEDS)[number];
 
@@ -174,6 +191,15 @@ export class GameService {
   /** Shares last written to the history, and the pending debounce for slider moves. */
   private loggedBudget: Budget | null = null;
   private budgetTimer = 0;
+  /** This year's hegemony rankings, the player's score over the years, and podium news for the alerts. */
+  readonly hegemony = signal<HegemonyStanding | null>(null);
+  readonly hegemonyLog = signal<{ year: number; score: number }[]>([]);
+  readonly podiumNews = signal<PodiumNews[]>([]);
+  /** Rankings ten years ago, for the trend arrows. */
+  readonly hegemonyPast = signal<HegemonyStanding | null>(null);
+  private standings: HegemonyStanding[] = [];
+  /** The Hegemon last announced to the player (popup and chronicle). */
+  private announcedHegemon = -1;
   /** Battle, war and survey reports waiting in the alerts row. */
   readonly reports = signal<ReportItem[]>([]);
 
@@ -240,6 +266,72 @@ export class GameService {
     this.history.clear();
     this.loggedBudget = { ...this.sim.poleis[idx].budget };
     this.publish();
+  }
+
+  /** Ranks the year just recorded and reports what changed on the podiums. */
+  private rankYear() {
+    const sim = this.sim;
+    const rows = this.history.recent(HEGEMONY_RULES.armsYears + 1);
+    const before = this.standings.at(-1) ?? null;
+    const now = rankHegemony(rows, sim.year, before?.hegemon ?? -1);
+    this.standings.push(now);
+    if (this.standings.length > 11) this.standings.shift();
+    this.hegemony.set(now);
+    this.hegemonyPast.set(this.standings.length > 10 ? this.standings[0] : null);
+    const me = sim.player;
+    this.hegemonyLog.update(log => [...log, { year: now.year, score: now.scores[me] ?? 0 }]);
+    if (!before || sim.status !== 'playing') return;
+
+    const news: PodiumNews[] = [];
+    for (const cat of HEGEMONY_CATEGORIES) {
+      const lead = now[cat][0]?.idx ?? -1;
+      const was = before[cat][0]?.idx ?? -1;
+      if (lead >= 0 && was >= 0 && lead !== was) sim.note('podium', lead, was, cat);
+      // The player's podium place in this category moved.
+      const podium = (s: HegemonyStanding) => {
+        const i = s[cat].slice(0, 3).findIndex(r => r.idx === me);
+        return i < 0 ? 0 : i + 1;
+      };
+      const place = podium(now);
+      const prev = podium(before);
+      if (place !== prev) {
+        const taker = prev ? (now[cat][prev - 1]?.idx ?? -1) : -1;
+        news.push({ id: ++this.reportId, year: sim.year, time: sim.time, category: cat, place, was: prev, by: taker === me ? -1 : taker });
+      }
+    }
+    if (news.length) this.podiumNews.update(list => [...list.filter(n => sim.time - n.time < REPORT_TTL), ...news].slice(-REPORTS_MAX));
+    // A new Hegemon of Hellas is worth stopping the game for — once the title has stayed with the
+    // same city for a few years (close rivals can trade it back and forth on thin margins), and
+    // only after the first decade, when the rankings have some history behind them.
+    const settled = this.standings.slice(-HEGEMON_SETTLE_YEARS);
+    if (
+      now.hegemon >= 0 &&
+      now.hegemon !== this.announcedHegemon &&
+      settled.length === HEGEMON_SETTLE_YEARS &&
+      settled.every(st => st.hegemon === now.hegemon)
+    ) {
+      const previous = this.announcedHegemon;
+      this.announcedHegemon = now.hegemon;
+      sim.note('hegemon', now.hegemon, previous);
+      if (this.history.length > HEGEMONY_RULES.financeYears) this.enqueue([{ kind: 'hegemon', hegemon: now.hegemon, previous }]);
+    }
+  }
+
+  /** The three poleis with the most hegemony points, best first (for the hegemony map). */
+  readonly hegemonyPodium = computed(() => {
+    const h = this.hegemony();
+    if (!h) return [];
+    const pop = new Map(h.population.map(r => [r.idx, r.value]));
+    return Object.entries(h.scores)
+      .map(([idx, score]) => ({ idx: Number(idx), score }))
+      .filter(r => r.score > 0)
+      .sort((a, b) => b.score - a.score || (pop.get(b.idx) ?? 0) - (pop.get(a.idx) ?? 0))
+      .slice(0, 3)
+      .map(r => r.idx);
+  });
+
+  dismissPodiumNews(id: number) {
+    this.podiumNews.update(list => list.filter(n => n.id !== id));
   }
 
   /** Writes a budget change to the history once the sliders have rested a second (≥5 points moved). */
@@ -380,6 +472,12 @@ export class GameService {
     this.reports.set([]);
     this.history.clear();
     this.historyVersion.update(v => v + 1);
+    this.standings = [];
+    this.announcedHegemon = -1;
+    this.hegemony.set(null);
+    this.hegemonyPast.set(null);
+    this.hegemonyLog.set([]);
+    this.podiumNews.set([]);
     this.queue.length = 0;
     this.lastEventId = 0;
     this.selected.set(-1);
@@ -461,6 +559,7 @@ export class GameService {
     if (sim.status !== 'choosing' && this.history.years.at(-1) !== sim.year) {
       this.history.record(sim);
       this.historyVersion.update(v => v + 1);
+      this.rankYear();
     }
     this.collectNotices();
   }

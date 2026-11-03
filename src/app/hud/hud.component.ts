@@ -5,6 +5,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Coins,
+  Crown,
   Compass,
   Handshake,
   HeartHandshake,
@@ -27,6 +28,7 @@ import { BudgetPanelComponent } from './budget-panel.component';
 import { ChronicleComponent } from './chronicle.component';
 import { DiplomacyListComponent } from './diplomacy-list.component';
 import { HistoryChartsComponent } from './history-charts.component';
+import { HegemonyPanelComponent } from './hegemony-panel.component';
 import { DiplomacyPanelComponent } from './diplomacy-panel.component';
 import { HUD_TABS, HudStateService, HudTab } from './hud-state.service';
 import { OutlinerComponent } from './outliner.component';
@@ -54,6 +56,7 @@ import { TopBarComponent } from './top-bar.component';
     PolisScreenComponent,
     DiplomacyListComponent,
     HistoryChartsComponent,
+    HegemonyPanelComponent,
     DiplomacyPanelComponent,
     ChronicleComponent,
     OutlinerComponent
@@ -79,12 +82,13 @@ export class HudComponent {
     budget: Coins,
     polis: Landmark,
     diplomacy: Handshake,
+    hegemony: Crown,
     chronicle: ScrollText
   };
 
   readonly tabs = computed(() => {
     const t = this.i18n.t();
-    return HUD_TABS.map(id => ({ id, icon: this.tabIcons[id], label: t.tabs[id], key: id === 'budget' ? 'B' : '' }));
+    return HUD_TABS.map(id => ({ id, icon: this.tabIcons[id], label: t.tabs[id], key: id === 'budget' ? 'B' : id === 'hegemony' ? 'H' : '' }));
   });
 
   readonly tabTitle = computed(() => this.i18n.t().tabs[this.hud.tab()]);
@@ -95,7 +99,8 @@ export class HudComponent {
       { id: 'political', icon: Landmark, label: t.viewPolitical },
       { id: 'relief', icon: Mountain, label: t.viewRelief },
       { id: 'fertility', icon: Wheat, label: t.viewFertility },
-      { id: 'relations', icon: HeartHandshake, label: t.viewRelations }
+      { id: 'relations', icon: HeartHandshake, label: t.viewRelations },
+      { id: 'hegemony', icon: Crown, label: t.viewHegemony }
     ];
     return modes;
   });

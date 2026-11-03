@@ -5,6 +5,7 @@ import { formatPlural, formatYear, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { GameEventKind } from '../game/simulation';
 import { ImprovementId } from '../game/data/improvements';
+import { HegemonyCategory } from '../game/hegemony';
 
 const TEMPLATE_KEY = {
   war: 'evWar',
@@ -28,7 +29,9 @@ const TEMPLATE_KEY = {
   festival: 'evFestival',
   farmPlanned: 'evFarmPlanned',
   portPlanned: 'evPortPlanned',
-  built: 'evBuilt'
+  built: 'evBuilt',
+  podium: 'evPodium',
+  hegemon: 'evHegemon'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Feed of the latest wars, treaties, colonies and conquests: a few lines in the outliner, the full record in the drawer. */
@@ -68,7 +71,12 @@ export class ChronicleComponent {
           a: name(e.a),
           b: name(e.b),
           m: e.n ? formatPlural(e.n, t.monthsOne, t.monthsFew, t.monthsMany) : '',
-          w: e.kind === 'built' && e.tag ? (t.improvements[e.tag as ImprovementId]?.name ?? '') : ''
+          w:
+            e.kind === 'built' && e.tag
+              ? (t.improvements[e.tag as ImprovementId]?.name ?? '')
+              : e.kind === 'podium' && e.tag
+                ? (t.hegemonyCats[e.tag as HegemonyCategory]?.name ?? '')
+                : ''
         }),
         mine: e.a === player || e.b === player,
         hostile: ['war', 'fall', 'siege', 'client', 'annexed', 'revolt'].includes(e.kind)

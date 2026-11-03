@@ -91,7 +91,13 @@ The in-game HUD sits on the edges of the map, grand-strategy style:
   share). While a slider moves, the old figure is struck through next to the new one. Presets (Balanced, War economy,
   Expansion, Mercantile, Golden age) set all five shares at once; any manual move switches to *Custom*.
 - **Left drawer** (collapsible to an icon rail): *Budget*, *Polis* (figures and building trees), *Diplomacy*
-  (every city and its standing with you) and *Chronicle*.
+  (every city and its standing with you), *Hegemony* and *Chronicle & charts*.
+- **Hegemony**: every year the three best cities in *First in Silver* (average monthly income over 10 years, tribute
+  included), *First in People* (population; vassals count for themselves) and *First in Arms* (last 25 years: battle
+  won 1, capital taken 5, war won 3) earn 3/2/1 points. The most points (of 9) makes the **Hegemon of Hellas**
+  (a reigning Hegemon keeps the title on a tie). The laurel in the top bar shows your points; the hegemony map mode
+  paints the leading three gold, silver and bronze. Podium changes go to the chronicle and the alerts row; a new
+  Hegemon who has held the title for three years is announced with a popup.
 - **History**: every year the game records a snapshot of every polis. The *Chronicle & charts* tab plots your
   population, income per month, territory and hoplites on one time axis, with markers where you changed the budget
   (by 5 points or more), went to war or made peace, and completed a building. Hover the drachmae in the top bar for
@@ -105,7 +111,7 @@ The in-game HUD sits on the edges of the map, grand-strategy style:
 - On phones the drawer and the outliner become a bottom sheet behind a tab bar.
 
 Panel layout is remembered per browser. Keys: <kbd>Space</kbd> pauses, <kbd>1</kbd>–<kbd>5</kbd> set the speed,
-<kbd>B</kbd> opens the budget, <kbd>Esc</kbd> folds the drawer; the wheel or a pinch zooms; dragging pans.
+<kbd>B</kbd> opens the budget, <kbd>H</kbd> the hegemony, <kbd>Esc</kbd> folds the drawer; the wheel or a pinch zooms; dragging pans.
 
 ## Development
 

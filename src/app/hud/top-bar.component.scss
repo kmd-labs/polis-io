@@ -233,6 +233,41 @@
   }
 }
 
+.laurel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid color("line");
+  border-radius: radius("pill");
+  background: color("panel-bg-solid");
+  color: color("warning-700");
+  cursor: pointer;
+
+  &:hover {
+    background: color("btn-hover");
+  }
+
+  &:focus-visible {
+    outline: 2px solid color("accent");
+    outline-offset: 1px;
+  }
+
+  &--hegemon {
+    border-color: color("warning-500");
+    background: color("accent-glow-soft");
+  }
+
+  &__score {
+    font-family: var(--font-family-mono);
+    font-size: font-size("xs");
+    font-weight: font-weight("bold");
+    color: color("text-bright");
+  }
+}
+
 .speed-cycle {
   min-width: 34px;
   height: 28px;

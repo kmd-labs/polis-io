@@ -2,12 +2,10 @@
 @let me = game.me();
 
 <div class="bar glass-panel" role="region" [attr.aria-label]="t.topBarLabel">
-  @if (me && !bp.mobile()) {
+  @if (me && !bp.tablet()) {
     <span class="bar__polis">
       <app-polis-flag [def]="game.sim.poleis[me.idx].def" [size]="18" [label]="name()"></app-polis-flag>
-      @if (!bp.tablet()) {
-        <span class="bar__name">{{ name() }}</span>
-      }
+      <span class="bar__name">{{ name() }}</span>
     </span>
   }
 
@@ -36,6 +34,18 @@
     }
   </dl>
 
+  @if (laurel(); as l) {
+    @if (!bp.mobile()) {
+      <button type="button" class="laurel" [class.laurel--hegemon]="l.hegemon" [attr.aria-label]="l.hint" [appTooltip]="l.hint" (click)="openHegemony()">
+        <svg class="laurel__icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path d="M12 21c-4.5-1.5-7.5-5.5-7.5-11M12 21c4.5-1.5 7.5-5.5 7.5-11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          <path d="M5 7.5c-1.6-.4-2.3-1.8-2-3.2 1.5 0 2.6 1 2.9 2.4M5.4 12c-1.7.2-2.9-.8-3.2-2.2 1.5-.4 2.8.3 3.4 1.6M7.4 16c-1.6.6-3 .1-3.6-1.2 1.3-.8 2.8-.5 3.7.6M19 7.5c1.6-.4 2.3-1.8 2-3.2-1.5 0-2.6 1-2.9 2.4M18.6 12c1.7.2 2.9-.8 3.2-2.2-1.5-.4-2.8.3-3.4 1.6M16.6 16c1.6.6 3 .1 3.6-1.2-1.3-.8-2.8-.5-3.7.6" fill="currentColor" />
+        </svg>
+        <span class="laurel__score">{{ l.score }}</span>
+      </button>
+    }
+  }
+
   <div class="bar__clock">
     <span class="bar__date" aria-live="off">{{ year() }}</span>
     @if (ended()) {
@@ -54,7 +64,7 @@
         (btnClick)="game.togglePause()">
         <lucide-icon [img]="game.paused() ? icons.Play : icons.Pause" [size]="13"></lucide-icon>
       </app-button>
-      @if (bp.mobile()) {
+      @if (bp.tablet()) {
         <button type="button" class="speed-cycle" [attr.aria-label]="t.speed" (click)="game.cycleSpeed()">{{ game.speed() }}×</button>
       } @else {
         <div class="speeds" role="radiogroup" [attr.aria-label]="t.speed">

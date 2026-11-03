@@ -26,7 +26,11 @@ export const EN: Dict = {
   glossaryItems: [
     {
       term: 'Keyboard',
-      desc: 'Space pauses, 1–5 set the speed, B opens the budget, Esc folds the side panel.'
+      desc: 'Space pauses, 1–5 set the speed, B opens the budget, H the hegemony rankings, Esc folds the side panel.'
+    },
+    {
+      term: 'Hegemony',
+      desc: 'Every year the three best cities in silver (average income over 10 years, tribute included), people (today’s population; vassals count for themselves) and arms (last 25 years: battle won 1, capital taken 5, war won 3) earn 3, 2 and 1 points. The most points (out of 9) makes the Hegemon of Hellas. See the Hegemony tab, the laurel in the top bar and the hegemony map mode.'
     },
     {
       term: 'Polis',
@@ -301,6 +305,8 @@ export const EN: Dict = {
   evFarmPlanned: 'Surveyors lay out new farms — ready in {m}',
   evPortPlanned: 'Work begins on a new port — ready in {m}',
   evBuilt: '{a} completed: {w}',
+  evPodium: '{a} overtakes {b} — {w}',
+  evHegemon: '{a} is the new Hegemon of Hellas',
 
   // Conquest decision
   conquestTitle: '{name} lies at your feet',
@@ -356,7 +362,7 @@ export const EN: Dict = {
   drawerLabel: 'Polis panels',
   drawerCollapse: 'Fold the panel',
   drawerExpand: 'Open the panel',
-  tabs: { budget: 'Budget', polis: 'Polis', diplomacy: 'Diplomacy', chronicle: 'Chronicle & charts' },
+  tabs: { budget: 'Budget', polis: 'Polis', diplomacy: 'Diplomacy', hegemony: 'Hegemony', chronicle: 'Chronicle & charts' },
   outlinerTitle: 'Situation',
   outlinerToggle: 'Show or hide the situation panel',
   outWars: 'Wars',
@@ -375,6 +381,34 @@ export const EN: Dict = {
   chronicleEmpty: 'Nothing worth recording has happened yet.',
   alertsLabel: 'Alerts',
   etaNow: 'now',
+  viewHegemony: 'Hegemony',
+  hegemonyCats: {
+    finance: { name: 'First in Silver', desc: 'Average monthly income over the last 10 years, tribute included' },
+    population: { name: 'First in People', desc: 'People of the city and its incorporated towns (vassals count for themselves)' },
+    arms: { name: 'First in Arms', desc: 'Last 25 years: battle won 1, capital taken 5, war won 3' }
+  },
+  hegIntro: 'Each year the three best cities in every category earn 3, 2 and 1 hegemony points. The most points makes the Hegemon of Hellas.',
+  hegHegemon: 'Hegemon of Hellas',
+  hegNoHegemon: 'No city rules Hellas yet.',
+  hegYou: 'Your standing',
+  hegYourPlace: '{place} in {cat}',
+  hegScore: '{s}/9 points',
+  hegChart: 'Your hegemony points',
+  hegEmpty: 'The first rankings come at the end of the first year.',
+  hegTrendUp: 'up on ten years ago',
+  hegTrendDown: 'down on ten years ago',
+  hegUnitFinance: '{n} dr/mo',
+  hegUnitArms: '{n} pts',
+  topLaurel: 'Hegemony points {s}/9 — {places}',
+  podUp: '{cat}: we are now {place}',
+  podDown: '{cat}: {name} pushed us to {place}',
+  podOff: '{cat}: we have dropped off the podium',
+  hegemonTitle: '{name} is the Hegemon of Hellas',
+  hegemonText: 'Silver, people and arms: {name} now leads Hellas. Expect the other cities to court it — and to fear it.',
+  hegemonYouTitle: 'You are the Hegemon of Hellas!',
+  hegemonYouText: 'No city stands higher in silver, people and arms. Hold the title — and beware the envy it breeds.',
+  hegemonOpen: 'See the rankings',
+  hegemonAction: 'Onward',
   chartIncome: 'Income per month',
   chartBuilt: 'Built: {w}',
   chartWar: 'War with {name}',

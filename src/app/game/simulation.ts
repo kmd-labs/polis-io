@@ -264,6 +264,8 @@ export const RULES = {
   /** A stray pocket of land this small, cut off from its capital, goes back to the wild after this many seconds (4 years). */
   strayPocket: 4,
   strayDecay: 16,
+  /** Cells more than the enemy a side must have taken for a war ending in peace to count as won. */
+  warWonMargin: 5,
   /** At war a polis fields between this many armies… */
   armiesMin: 2,
   armiesMax: 5,
@@ -403,9 +405,13 @@ export interface PolisState {
   inflow: number;
   /** The military fund ran dry this tick: unpaid hoplites are going home. */
   unpaid: boolean;
-  /** Battles won and lost, for the history and the hegemony rankings. */
+  /** Battles won and lost, capitals taken and wars won, for the history and the hegemony rankings. */
   battlesWon: number;
   battlesLost: number;
+  capitalsTaken: number;
+  warsWon: number;
+  /** Cells taken from each current enemy during this war (decides who won when peace is made). */
+  warGains: Map<number, number>;
   lastVictoryAt: number;
   /** Trade voyages completed to (or received from) each other polis, by index. */
   voyages: number[];
@@ -588,7 +594,9 @@ export type GameEventKind =
   | 'festival'
   | 'farmPlanned'
   | 'portPlanned'
-  | 'built';
+  | 'built'
+  | 'podium'
+  | 'hegemon';
 
 export interface GameEvent {
   id: number;
@@ -743,6 +751,9 @@ export class Simulation {
       inflow: 0,
       battlesWon: 0,
       battlesLost: 0,
+      capitalsTaken: 0,
+      warsWon: 0,
+      warGains: new Map<number, number>(),
       lastVictoryAt: -Infinity,
       voyages: [],
       remnant: null,
@@ -1215,6 +1226,8 @@ export class Simulation {
     py.wars.add(x);
     px.warStart.set(y, this.time);
     py.warStart.set(x, this.time);
+    px.warGains.set(y, 0);
+    py.warGains.set(x, 0);
     px.nextSpawn = Math.min(px.nextSpawn, this.time);
     py.nextSpawn = Math.min(py.nextSpawn, this.time + 1);
     const enemy = x === this.player ? y : y === this.player ? x : -1;
@@ -1293,6 +1306,13 @@ export class Simulation {
     const pa = this.poleis[a];
     const pb = this.poleis[b];
     if (!pa.wars.has(b)) return;
+    // Whoever took clearly more ground won the war.
+    const ga = pa.warGains.get(b) ?? 0;
+    const gb = pb.warGains.get(a) ?? 0;
+    if (ga >= gb + RULES.warWonMargin) pa.warsWon++;
+    else if (gb >= ga + RULES.warWonMargin) pb.warsWon++;
+    pa.warGains.delete(b);
+    pb.warGains.delete(a);
     pa.wars.delete(b);
     pb.wars.delete(a);
     pa.warStart.delete(b);
@@ -2780,6 +2800,7 @@ export class Simulation {
   private capture(cell: number, winner: number, loser: number) {
     const w = this.poleis[winner];
     const l = this.poleis[loser];
+    if (w.warGains.has(loser)) w.warGains.set(loser, w.warGains.get(loser)! + 1);
     const share = l.civilians / Math.max(1, l.cells);
     l.civilians -= share * 0.6;
     this.mood(l, RULES.satisfactionPerCellLost);
@@ -2822,6 +2843,11 @@ export class Simulation {
     const l = this.poleis[loser];
     const w = this.poleis[winner];
     if (!l.alive || l.captured) return;
+    // Taking a capital is the greatest feat of arms, and it ends that war in victory.
+    w.capitalsTaken++;
+    if (w.wars.has(loser)) w.warsWon++;
+    l.warGains.delete(winner);
+    w.warGains.delete(loser);
     if (winner === this.player && loser !== this.player) {
       // The player decides the fate of the city; until then it is held, disarmed and at peace.
       this.disarm(l);
@@ -3039,6 +3065,11 @@ export class Simulation {
     const cells = mine.reduce((sum, i) => sum + this.poleis[i].cells, 0);
     const rivals = this.poleis.some(p => p.alive && !mine.includes(p.idx));
     if (!rivals || cells >= this.world.greekCells.length * RULES.victoryShare) this.status = 'won';
+  }
+
+  /** Adds an entry to the chronicle from outside the simulation (e.g. hegemony changes). */
+  note(kind: GameEventKind, a: number, b = -1, tag?: string) {
+    this.emit(kind, a, b, undefined, tag);
   }
 
   private emit(kind: GameEventKind, a: number, b = -1, n?: number, tag?: string) {

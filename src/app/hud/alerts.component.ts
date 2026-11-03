@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import {
   LucideAngularModule,
   Handshake,
+  Crown,
   Hammer,
   LucideIconData,
   PiggyBank,
@@ -13,7 +14,7 @@ import {
 } from 'lucide-angular';
 import { BreakpointService, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
-import { formatYear, interpolate } from '../core/i18n/format';
+import { formatOrdinal, formatYear, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { BUDGET_KEYS } from '../game/simulation';
 import { HudStateService } from './hud-state.service';
@@ -84,6 +85,29 @@ export class AlertsComponent {
         tone: 'warn',
         text: interpolate(t.alertFundIdle, { fund: t.budgetKeys[key].name }),
         act: budget
+      });
+    }
+
+    const hegemonyTab = () => (this.bp.mobile() ? this.hud.sheet.set('hegemony') : (this.hud.tab.set('hegemony'), this.hud.drawerOpen.set(true)));
+    for (const n of this.game.podiumNews()) {
+      const cat = t.hegemonyCats[n.category].name;
+      const place = formatOrdinal(n.place, this.i18n.lang());
+      const text = !n.place
+        ? interpolate(t.podOff, { cat })
+        : n.place < n.was || !n.was
+          ? interpolate(t.podUp, { cat, place })
+          : n.by >= 0
+            ? interpolate(t.podDown, { cat, place, name: name(n.by) })
+            : interpolate(t.podUp, { cat, place });
+      out.push({
+        key: `podium-${n.id}`,
+        icon: Crown,
+        tone: n.place && (n.place < n.was || !n.was) ? 'good' : 'warn',
+        text: `${formatYear(n.year, t)} · ${text}`,
+        act: () => {
+          this.game.dismissPodiumNews(n.id);
+          hegemonyTab();
+        }
       });
     }
 

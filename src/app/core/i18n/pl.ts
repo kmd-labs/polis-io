@@ -26,7 +26,11 @@ export const PL: Dict = {
   glossaryItems: [
     {
       term: 'Klawiatura',
-      desc: 'Spacja wstrzymuje grę, 1–5 ustawiają prędkość, B otwiera budżet, Esc zwija boczny panel.'
+      desc: 'Spacja wstrzymuje grę, 1–5 ustawiają prędkość, B otwiera budżet, H ranking hegemonii, Esc zwija boczny panel.'
+    },
+    {
+      term: 'Hegemonia',
+      desc: 'Co roku trzy najlepsze miasta w srebrze (średni dochód z 10 lat, łącznie z daniną), ludziach (bieżąca ludność; wasale liczą się osobno) i orężu (ostatnie 25 lat: wygrana bitwa 1, zdobyta stolica 5, wygrana wojna 3) dostają 3, 2 i 1 punkt. Najwięcej punktów (na 9) czyni Hegemonem Hellady. Zobacz zakładkę Hegemonia, wieniec laurowy na górnym pasku i tryb mapy hegemonii.'
     },
     {
       term: 'Polis',
@@ -301,6 +305,8 @@ export const PL: Dict = {
   evFarmPlanned: 'Mierniczowie wytyczają nowe farmy — gotowe za {m}',
   evPortPlanned: 'Rusza budowa nowego portu — gotowy za {m}',
   evBuilt: '{a} ukończyła budowę: {w}',
+  evPodium: '{a} wyprzedza: {b} — {w}',
+  evHegemon: '{a} zostaje nowym Hegemonem Hellady',
 
   // Conquest decision
   conquestTitle: 'Polis {name} u twoich stóp',
@@ -356,7 +362,7 @@ export const PL: Dict = {
   drawerLabel: 'Panele polis',
   drawerCollapse: 'Zwiń panel',
   drawerExpand: 'Rozwiń panel',
-  tabs: { budget: 'Budżet', polis: 'Polis', diplomacy: 'Dyplomacja', chronicle: 'Kronika i wykresy' },
+  tabs: { budget: 'Budżet', polis: 'Polis', diplomacy: 'Dyplomacja', hegemony: 'Hegemonia', chronicle: 'Kronika i wykresy' },
   outlinerTitle: 'Sytuacja',
   outlinerToggle: 'Pokaż lub ukryj panel sytuacji',
   outWars: 'Wojny',
@@ -375,6 +381,34 @@ export const PL: Dict = {
   chronicleEmpty: 'Nie wydarzyło się jeszcze nic godnego zapisania.',
   alertsLabel: 'Alerty',
   etaNow: 'teraz',
+  viewHegemony: 'Hegemonia',
+  hegemonyCats: {
+    finance: { name: 'Pierwsi w skarbie', desc: 'Średni dochód miesięczny z ostatnich 10 lat, łącznie z daniną' },
+    population: { name: 'Pierwsi w ludzie', desc: 'Ludność miasta i wcielonych osad (wasale liczą się osobno)' },
+    arms: { name: 'Pierwsi w boju', desc: 'Ostatnie 25 lat: wygrana bitwa 1, zdobyta stolica 5, wygrana wojna 3' }
+  },
+  hegIntro: 'Co roku trzy najlepsze miasta w każdej kategorii dostają 3, 2 i 1 punkt hegemonii. Najwięcej punktów czyni Hegemonem Hellady.',
+  hegHegemon: 'Hegemon Hellady',
+  hegNoHegemon: 'Żadne miasto nie rządzi jeszcze Helladą.',
+  hegYou: 'Wasza pozycja',
+  hegYourPlace: '{place} miejsce: {cat}',
+  hegScore: '{s}/9 pkt',
+  hegChart: 'Wasze punkty hegemonii',
+  hegEmpty: 'Pierwszy ranking pojawi się na koniec pierwszego roku.',
+  hegTrendUp: 'wzrost od dziesięciu lat',
+  hegTrendDown: 'spadek od dziesięciu lat',
+  hegUnitFinance: '{n} dr/mies.',
+  hegUnitArms: '{n} pkt',
+  topLaurel: 'Punkty hegemonii {s}/9 — {places}',
+  podUp: '{cat}: jesteśmy teraz na {place} miejscu',
+  podDown: '{cat}: {name} zepchnęło nas na {place} miejsce',
+  podOff: '{cat}: wypadliśmy z podium',
+  hegemonTitle: '{name} — Hegemonem Hellady',
+  hegemonText: 'Srebro, ludzie i oręż: {name} prowadzi teraz Helladę. Inne miasta będą zabiegać o jego łaskę — i bać się go.',
+  hegemonYouTitle: 'Jesteście Hegemonem Hellady!',
+  hegemonYouText: 'Żadne miasto nie stoi wyżej w srebrze, ludziach i orężu. Utrzymajcie tytuł — i strzeżcie się zawiści, którą budzi.',
+  hegemonOpen: 'Zobacz ranking',
+  hegemonAction: 'Naprzód',
   chartIncome: 'Dochód miesięczny',
   chartBuilt: 'Zbudowano: {w}',
   chartWar: 'Wojna z: {name}',
