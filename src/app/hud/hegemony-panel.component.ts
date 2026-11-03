@@ -68,7 +68,10 @@ export class HegemonyPanelComponent {
       ? HEGEMONY_CATEGORIES.map(cat => interpolate(t.hegYourPlace, { place: formatOrdinal(places[cat], lang), cat: t.hegemonyCats[cat].name }))
       : [];
     const log = this.game.hegemonyLog();
+    // Read alongside the yearly ranking, which is when the coalition forms or breaks up.
+    const target = this.game.sim.coalitionTarget;
     return {
+      coalition: target >= 0 ? interpolate(target === me ? t.hegCoalitionYou : t.hegCoalition, { name: this.game.name(target) }) : '',
       hegemon: h.hegemon >= 0 ? { idx: h.hegemon, def: def(h.hegemon), name: this.game.name(h.hegemon), mine: h.hegemon === me } : null,
       categories,
       mine,

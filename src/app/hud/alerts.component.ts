@@ -88,6 +88,9 @@ export class AlertsComponent {
       });
     }
 
+    if (this.game.hegemony() && this.game.sim.coalitionTarget === me.idx) {
+      out.push({ key: 'coalition', icon: Crown, tone: 'danger', text: t.alertCoalition, act: () => (this.bp.mobile() ? this.hud.sheet.set('hegemony') : (this.hud.tab.set('hegemony'), this.hud.drawerOpen.set(true))) });
+    }
     const hegemonyTab = () => (this.bp.mobile() ? this.hud.sheet.set('hegemony') : (this.hud.tab.set('hegemony'), this.hud.drawerOpen.set(true)));
     for (const n of this.game.podiumNews()) {
       const cat = t.hegemonyCats[n.category].name;

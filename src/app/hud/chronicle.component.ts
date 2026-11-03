@@ -31,7 +31,9 @@ const TEMPLATE_KEY = {
   portPlanned: 'evPortPlanned',
   built: 'evBuilt',
   podium: 'evPodium',
-  hegemon: 'evHegemon'
+  hegemon: 'evHegemon',
+  coalition: 'evCoalition',
+  coalitionEnd: 'evCoalitionEnd'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Feed of the latest wars, treaties, colonies and conquests: a few lines in the outliner, the full record in the drawer. */

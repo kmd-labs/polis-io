@@ -48,6 +48,17 @@
   }
 }
 
+.coalition {
+  margin: spacing("sm") 0 0;
+  padding: 6px 10px;
+  border: 1px solid color("btn-active-red-border");
+  border-radius: radius("sm");
+  background: color("danger-soft");
+  font-size: font-size("xs");
+  line-height: 1.4;
+  color: color("danger-700");
+}
+
 .cat {
   margin-top: spacing("md");
 

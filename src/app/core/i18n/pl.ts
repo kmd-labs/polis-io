@@ -30,7 +30,7 @@ export const PL: Dict = {
     },
     {
       term: 'Hegemonia',
-      desc: 'Co roku trzy najlepsze miasta w srebrze (średni dochód z 10 lat, łącznie z daniną), ludziach (bieżąca ludność; wasale liczą się osobno) i orężu (ostatnie 25 lat: wygrana bitwa 1, zdobyta stolica 5, wygrana wojna 3) dostają 3, 2 i 1 punkt. Najwięcej punktów (na 9) czyni Hegemonem Hellady. Zobacz zakładkę Hegemonia, wieniec laurowy na górnym pasku i tryb mapy hegemonii.'
+      desc: 'Co roku trzy najlepsze miasta w srebrze (średni dochód z 10 lat, łącznie z daniną), ludziach (bieżąca ludność; wasale liczą się osobno) i orężu (ostatnie 25 lat: wygrana bitwa 1, zdobyta stolica 5, wygrana wojna 3) dostają 3, 2 i 1 punkt. Najwięcej punktów (na 9) czyni Hegemonem Hellady. Każdy punkt daje +0,1 projekcji siły rocznie; Hegemon zarabia o 5% więcej na handlu morskim i przyciąga więcej statków. Miasto, które przez dziesięć lat z rzędu ma 7 lub więcej punktów, jednoczy Helladę przeciw sobie: życzliwość wszystkich maleje o 2 rocznie, a rywale chętniej zawierają sojusze i atakują — dopóki jego wynik nie spadnie poniżej 6. Zobacz zakładkę Hegemonia, wieniec laurowy na górnym pasku i tryb mapy hegemonii.'
     },
     {
       term: 'Polis',
@@ -307,6 +307,8 @@ export const PL: Dict = {
   evBuilt: '{a} ukończyła budowę: {w}',
   evPodium: '{a} wyprzedza: {b} — {w}',
   evHegemon: '{a} zostaje nowym Hegemonem Hellady',
+  evCoalition: 'Hellada lęka się potęgi polis {a}: miasta jednoczą się przeciw niej',
+  evCoalitionEnd: 'Koalicja przeciw polis {a} się rozpada',
 
   // Conquest decision
   conquestTitle: 'Polis {name} u twoich stóp',
@@ -395,6 +397,9 @@ export const PL: Dict = {
   hegScore: '{s}/9 pkt',
   hegChart: 'Wasze punkty hegemonii',
   hegEmpty: 'Pierwszy ranking pojawi się na koniec pierwszego roku.',
+  hegCoalition: 'Hellada lęka się polis {name}: inne miasta jednoczą się przeciw niej — co roku maleje ich życzliwość, chętniej zawierają sojusze i wypowiadają wojny.',
+  hegCoalitionYou: 'Hellada lęka się waszej potęgi: inne miasta jednoczą się przeciw wam. Ich życzliwość maleje co roku, dopóki wasz wynik nie spadnie poniżej 6.',
+  alertCoalition: 'Cała Hellada jednoczy się przeciw nam: spodziewajcie się wrogów i mniejszej liczby przyjaciół, dopóki dominujemy.',
   hegTrendUp: 'wzrost od dziesięciu lat',
   hegTrendDown: 'spadek od dziesięciu lat',
   hegUnitFinance: '{n} dr/mies.',
