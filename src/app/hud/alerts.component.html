@@ -1,0 +1,18 @@
+@if (alerts().length) {
+  <ul class="alerts" [attr.aria-label]="i18n.t().alertsLabel">
+    @for (a of alerts(); track a.key) {
+      <li>
+        <button
+          type="button"
+          class="alert"
+          [class]="'alert alert--' + a.tone"
+          [attr.aria-label]="a.text"
+          [appTooltip]="a.text"
+          tooltipPlacement="bottom"
+          (click)="a.act()">
+          <lucide-icon [img]="a.icon" [size]="15"></lucide-icon>
+        </button>
+      </li>
+    }
+  </ul>
+}

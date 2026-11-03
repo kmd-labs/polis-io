@@ -44,6 +44,13 @@ $outliner-w: 260px;
     min-width: 0;
   }
 
+  &__alerts {
+    grid-area: center;
+    align-self: start;
+    justify-self: start;
+    min-width: 0;
+  }
+
   &__bottom {
     grid-area: bottom;
     display: flex;

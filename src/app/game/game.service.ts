@@ -13,6 +13,7 @@ import {
   DevelopmentPlan,
   GameEvent,
   GameStatus,
+  PolisState,
   Purchase,
   RULES,
   Simulation,
@@ -61,6 +62,9 @@ export interface PolisView {
   overlord: number;
   client: boolean;
   besieged: number;
+  /** Player only: hoplites are deserting for want of pay; colonization has nowhere to go. */
+  unpaid: boolean;
+  colonyBlocked: boolean;
   /** Diplomatic reputation between this polis and the player (−100…+100). */
   relation: number;
   tributeGold: number;
@@ -110,6 +114,18 @@ export type Notice =
 
 /** Clock multipliers behind the five speed keys (1–5). */
 export const SPEEDS = [1, 2, 4, 8, 16] as const;
+/** A report the player may read when they like (it does not stop the game). */
+export interface ReportItem {
+  id: number;
+  notice: Extract<Notice, { kind: 'victory' | 'warEnd' | 'develop' }>;
+  year: number;
+  time: number;
+}
+
+/** Unread reports fade from the alerts row after this many game seconds (5 years). */
+const REPORT_TTL = 20;
+const REPORTS_MAX = 6;
+
 export type GameSpeed = (typeof SPEEDS)[number];
 
 const UI_REFRESH_MS = 200;
@@ -144,6 +160,8 @@ export class GameService {
   readonly events = signal<GameEvent[]>([]);
   /** Notice on screen; the game is paused while it is open. Further notices wait in a queue. */
   readonly notice = signal<Notice | null>(null);
+  /** Battle, war and survey reports waiting in the alerts row. */
+  readonly reports = signal<ReportItem[]>([]);
 
   readonly me = computed(() => this.poleis()[this.player()] ?? null);
   readonly target = computed(() => {
@@ -154,6 +172,7 @@ export class GameService {
   private lastFrame = 0;
   private lastUi = 0;
   private lastEventId = 0;
+  private reportId = 0;
   private pausedBeforeNotice = false;
   private readonly queue: Notice[] = [];
 
@@ -219,6 +238,21 @@ export class GameService {
     return p ? polisName(this.i18n.t(), p.def) : '';
   }
 
+  /** Nothing for the colonization fund to do: no expedition can set out and no colony site is left. */
+  private colonyBlocked(p: PolisState): boolean {
+    if (p.expedition) return false;
+    const next = this.sim.nextPurchase(p, 'colonization');
+    return !next || (next.kind === 'expedition' && !this.sim.canSettle(p));
+  }
+
+    /** Opens a report from the alerts row (the game waits while it is read). */
+  openReport(id: number) {
+    const item = this.reports().find(r => r.id === id);
+    if (!item) return;
+    this.reports.update(list => list.filter(r => r.id !== id));
+    this.enqueue([item.notice]);
+  }
+
   /** Dismisses the open notice and shows the next one, or resumes the game. */
   closeNotice() {
     if (!this.notice()) return;
@@ -278,6 +312,7 @@ export class GameService {
   restart() {
     this.sim.reset();
     this.notice.set(null);
+    this.reports.set([]);
     this.queue.length = 0;
     this.lastEventId = 0;
     this.selected.set(-1);
@@ -339,6 +374,8 @@ export class GameService {
         vassals: sim.vassalsOf(p.idx),
         client: p.client,
         besieged: p.besieged,
+        unpaid: p.unpaid,
+        colonyBlocked: p.idx === sim.player && this.colonyBlocked(p),
         relation: sim.player >= 0 ? sim.relation(sim.player, p.idx) : 0,
         tributeGold: Math.round(p.tributeGold),
         tributeWorkers: Math.round(p.tributeWorkers),
@@ -385,6 +422,8 @@ export class GameService {
     const me = sim.poleis[sim.player];
     const mine = sim.bloc(sim.player);
     const incoming: Notice[] = [];
+    // Reports do not stop the game: they wait in the alerts row until read or stale.
+    const filed: ReportItem['notice'][] = [];
     for (const e of fresh) {
       if (e.kind === 'war' && mine.includes(e.b) && !mine.includes(e.a)) {
         const ratio = sim.warriors(sim.poleis[e.a]) / Math.max(1, sim.warriors(me));
@@ -397,7 +436,7 @@ export class GameService {
     if (reports.length) {
       const sum = (key: 'gold' | 'slaves' | 'prestige' | 'enemyLosses' | 'ownLosses') =>
         reports.reduce((total, r) => total + r[key], 0);
-      incoming.push({
+      filed.push({
         kind: 'victory',
         enemy: reports[0].enemy,
         near: reports[0].near,
@@ -411,12 +450,15 @@ export class GameService {
       });
     }
     for (const c of conquests) incoming.push({ kind: 'conquest', from: c });
-    for (const r of warReports) incoming.push({ kind: 'warEnd', ...r });
+    for (const r of warReports) filed.push({ kind: 'warEnd', ...r });
     // The player's budget founded a colony: say where and when.
     for (const { owner, plan } of sim.takePlans()) {
-      if (owner === sim.player) incoming.push({ kind: 'develop', work: plan.kind, months: plan.months, site: plan.site });
+      if (owner === sim.player) filed.push({ kind: 'develop', work: plan.kind, months: plan.months, site: plan.site });
     }
     this.enqueue(incoming);
+    const live = this.reports().filter(r => sim.time - r.time < REPORT_TTL);
+    const added = filed.map(notice => ({ id: ++this.reportId, notice, year: sim.year, time: sim.time }));
+    if (added.length || live.length !== this.reports().length) this.reports.set([...live, ...added].slice(-REPORTS_MAX));
   }
 
   /** Shows the first notice (pausing the game) and queues the rest. */

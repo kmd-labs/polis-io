@@ -57,7 +57,7 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   shared borders and big armies sour it, culture, power projection and contented citizens slowly sweeten it.
   It shapes AI wars, peace terms, alliance offers and trade. Neighbours fight more often (except the islands
   Samos, Naxos, Corcyra and Chios).
-- **Victories**: every battle your army or garrison wins pauses the game with a report — a little gold
+- **Victories**: every battle your army or garrison wins files a report in the alerts row — a little gold
   (spoils), 15% of the beaten army taken captive as workers, and +1 power projection.
 - **Power projection**: makes your polis look stronger to would-be attackers, brings embassies offering a
   defensive alliance (allies join any war declared on you, and you on them), and draws merchant ships to your harbours.
@@ -91,6 +91,9 @@ The in-game HUD sits on the edges of the map, grand-strategy style:
 - **Right outliner** (collapsible): wars with a strength bar, allies, sieges and the latest news.
 - **Map modes** bottom-right: political, terrain relief, soil fertility and relations; the card of a selected
   foreign city appears bottom-left.
+- **Alerts** under the top bar (round icons): a siege, deserting hoplites, allies at war, an idle fund, blocked
+  colonization, and battle / war / survey reports waiting to be read. They never stop the game — only decisions do
+  (a declaration of war, an embassy, the fate of a conquered city, the end of the game).
 - On phones the drawer and the outliner become a bottom sheet behind a tab bar.
 
 Panel layout is remembered per browser. Keys: <kbd>Space</kbd> pauses, <kbd>1</kbd>–<kbd>5</kbd> set the speed,

@@ -25,6 +25,8 @@
     <app-top-bar class="hud__bar" (help)="help.emit()" (restart)="restart.emit()"></app-top-bar>
   </div>
 
+  <app-alerts class="hud__alerts"></app-alerts>
+
   @if (!mobile) {
     <aside class="drawer" [class.drawer--closed]="!hud.drawerOpen()" data-occlude="left" [attr.aria-label]="t.drawerLabel">
       <nav class="drawer__rail glass-panel" role="tablist" aria-orientation="vertical" [attr.aria-label]="t.drawerLabel">
