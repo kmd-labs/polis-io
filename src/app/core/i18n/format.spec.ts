@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { fmt1, formatCompact, formatNumber, formatRate } from './format';
+import { fmt1, formatCompact, formatEta, formatNumber, formatRate } from './format';
+import { EN } from './en';
+import { PL } from './pl';
 
 describe('fmt1', () => {
   it('hides float noise', () => {
@@ -32,5 +34,21 @@ describe('formatCompact', () => {
   it('shortens large numbers for narrow bars', () => {
     expect(formatCompact(18146, 'en')).toBe('18.1K');
     expect(formatCompact(950, 'en')).toBe('950');
+  });
+});
+
+describe('formatEta', () => {
+  it('reads "now" once affordable', () => {
+    expect(formatEta(0, 4, EN, 'en')).toBe(EN.etaNow);
+  });
+
+  it('counts months under a year', () => {
+    expect(formatEta(1, 4, EN, 'en')).toBe('~3 months');
+    expect(formatEta(0.1, 4, PL, 'pl')).toBe('~1 miesiąc');
+  });
+
+  it('gives years with one decimal', () => {
+    expect(formatEta(12.8, 4, EN, 'en')).toBe('~3.2 yr');
+    expect(formatEta(12.8, 4, PL, 'pl')).toBe('~3,2 roku');
   });
 });

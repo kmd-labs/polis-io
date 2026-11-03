@@ -46,6 +46,18 @@ export function rebalanceBudget(budget: Budget, key: BudgetKey, value: number): 
   return out;
 }
 
+/** Small fast seeded PRNG (mulberry32): the same seed replays the same game. */
+export function seededRandom(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /** Scales arbitrary weights into a valid budget (whole percents, each at least the minimum). */
 function normalizeBudget(weights: Budget): Budget {
   const total = BUDGET_KEYS.reduce((sum, k) => sum + weights[k], 0);
@@ -384,6 +396,11 @@ export interface PolisState {
   captured: boolean;
   /** Diplomatic reputation with every other polis, by index (−100…+100). */
   relations: number[];
+  /** Gross income from work (before hoplite pay), and the pay itself, per second. */
+  gross: number;
+  upkeep: number;
+  /** Smoothed drachmae per second reaching the funds from every source (taxes, trade, tribute, spoils). */
+  inflow: number;
   /** The military fund ran dry this tick: unpaid hoplites are going home. */
   unpaid: boolean;
   /** Battles won and lost, for the history and the hegemony rankings. */
@@ -630,7 +647,8 @@ export class Simulation {
   private dirty: number[] = [];
 
   private nextId = 1;
-  private readonly rand = Math.random;
+  /** Math.random by default; a fixed seed makes runs reproducible (tests, autoplay). */
+  private readonly rand: () => number;
   /** Greek land cell of every vassal site, resolved once. */
   private readonly siteCells: { id: SiteId; lon: number; lat: number; cell: number }[];
   private usedSites = new Set<SiteId>();
@@ -641,7 +659,11 @@ export class Simulation {
   private readonly seaRows: number;
   private readonly routes = new Map<string, number[] | null>();
 
-  constructor(readonly world: World) {
+  constructor(
+    readonly world: World,
+    options: { seed?: number } = {}
+  ) {
+    this.rand = options.seed === undefined ? Math.random : seededRandom(options.seed);
     this.owner = new Int16Array(world.size);
     this.siteCells = SITES.map(site => ({ ...site, cell: this.landCellAt(site.lon, site.lat) }));
     const k = RULES.routeCoarse;
@@ -715,6 +737,9 @@ export class Simulation {
       captured: false,
       relations: [],
       unpaid: false,
+      gross: 0,
+      upkeep: 0,
+      inflow: 0,
       battlesWon: 0,
       battlesLost: 0,
       lastVictoryAt: -Infinity,
@@ -930,6 +955,12 @@ export class Simulation {
   setBudget(idx: number, key: BudgetKey, value: number) {
     const p = this.poleis[idx];
     if (p) p.budget = rebalanceBudget(p.budget, key, value);
+  }
+
+  /** Replaces all five shares at once (a preset); invalid budgets are normalised. */
+  setShares(idx: number, budget: Budget) {
+    const p = this.poleis[idx];
+    if (p) p.budget = normalizeBudget(budget);
   }
 
   /** A city's habits: warlike cities arm, cultured ones celebrate, everyone settles while land is free. */
@@ -1538,6 +1569,8 @@ export class Simulation {
     const gross = this.workers(p) * RULES.incomePerWorker * p.prosperity * (0.7 + 0.3 * avgFertility) * culture * trade * bonus;
     const upkeep = this.warriors(p) * RULES.upkeepPerWarrior;
     p.income = gross - upkeep;
+    p.gross = gross;
+    p.upkeep = upkeep;
     p.drachmae += gross * dt;
     // A client state sends part of its income and a stream of labourers to its overlord.
     const lord = p.client && p.overlord >= 0 ? this.poleis[p.overlord] : null;
@@ -1561,6 +1594,8 @@ export class Simulation {
   private allocate(p: PolisState, upkeep: number, dt: number) {
     const cash = Math.max(0, p.drachmae);
     p.drachmae = 0;
+    // About a year of smoothing: spoils and trade arrive in lumps.
+    if (dt > 0) p.inflow += (cash / dt - p.inflow) * Math.min(1, dt / RULES.secondsPerYear);
     for (const k of BUDGET_KEYS) p.funds[k] += (cash * p.budget[k]) / 100;
     p.funds.military -= upkeep * dt;
     this.demobilize(p, dt);

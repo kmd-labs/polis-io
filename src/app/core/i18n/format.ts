@@ -52,3 +52,14 @@ export function fmt1(value: number, lang: Lang): string {
 export function formatCompact(value: number, lang: Lang): string {
   return Math.round(value).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { notation: 'compact', maximumFractionDigits: 1 });
 }
+
+/** Time until something happens: "now", "~5 months" under a year, else "~3.2 yr" (one decimal). */
+export function formatEta(seconds: number, secondsPerYear: number, t: Dict, lang: Lang): string {
+  if (seconds <= 0) return t.etaNow;
+  const years = seconds / secondsPerYear;
+  if (years < 1) {
+    const months = Math.max(1, Math.round(years * 12));
+    return `~${formatPlural(months, t.monthsOne, t.monthsFew, t.monthsMany)}`;
+  }
+  return interpolate(t.etaYears, { n: years.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) });
+}

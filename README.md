@@ -86,6 +86,10 @@ The in-game HUD sits on the edges of the map, grand-strategy style:
 
 - **Top bar**: your banner, drachmae (+ per month), population, workers, hoplites (now / target), satisfaction,
   power projection and territory; on the right the date, pause, five speeds and the rules.
+- **Budget forecasts**: under every slider, what the fund will buy next and when ("New farm in ~2.1 yr · +2,500
+  land capacity", "+120 hoplites/yr · pay 4 dr/mo", a red "Desertion in ~8 months" when pay outruns the military
+  share). While a slider moves, the old figure is struck through next to the new one. Presets (Balanced, War economy,
+  Expansion, Mercantile, Golden age) set all five shares at once; any manual move switches to *Custom*.
 - **Left drawer** (collapsible to an icon rail): *Budget*, *Polis* (figures and building trees), *Diplomacy*
   (every city and its standing with you) and *Chronicle*.
 - **Right outliner** (collapsible): wars with a strength bar, allies, sieges and the latest news.

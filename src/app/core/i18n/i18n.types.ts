@@ -1,6 +1,7 @@
 import { PolisId, SiteId } from '../../game/data/poleis';
 import { ImprovementId, ImprovementTree } from '../../game/data/improvements';
 import { AllianceReason, BudgetKey, Purchase } from '../../game/simulation';
+import { PresetId } from '../../game/economy';
 
 export type Lang = 'en' | 'pl';
 
@@ -260,6 +261,23 @@ export interface Dict {
   standings: Record<'war' | 'ally' | 'vassal' | 'client' | 'peace', string>;
   chronicleEmpty: string;
   alertsLabel: string;
+  etaNow: string;
+  etaYears: string;
+  presetsLabel: string;
+  presets: Record<PresetId | 'custom', string>;
+  presetHints: Record<PresetId, string>;
+  fcNext: string;
+  fcStalled: string;
+  fcHoplites: string;
+  fcPay: string;
+  fcDesert: string;
+  fcFarm: string;
+  fcPort: string;
+  fcFestival: string;
+  fcExpedition: string;
+  fcColonyOnly: string;
+  fcIdle: string;
+  fcBlocked: string;
   alertOpen: string;
   alertSiege: string;
   alertSiegeAlly: string;
