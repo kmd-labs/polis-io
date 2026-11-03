@@ -55,6 +55,16 @@ export const RULES = {
   portBonus: 0.12,
   /** Travel budget (cells) of a vassal's founding land. */
   vassalReach: 7,
+  /** Drachmae earned by the owner for every completed trade voyage, before the culture bonus. */
+  tradeIncome: 1,
+  /** Cells per second. */
+  shipSpeed: 6,
+  /** Mean seconds between departures from a coastal polis. */
+  shipInterval: 8,
+  /** Trade ships at sea per polis: one, plus one per port, up to this many. */
+  maxShips: 4,
+  /** Sea routes are planned on a grid this many times coarser than the map. */
+  routeCoarse: 3,
   /** Cells per second. */
   armySpeedLand: 6.5,
   armySpeedSea: 4.2,
@@ -125,6 +135,36 @@ export interface PolisState {
   conqueror: number;
   /** Bumped whenever one of its cells changes owner. */
   version: number;
+  nextShip: number;
+  /** Sea cell its merchants sail from (-1: landlocked), refreshed periodically. */
+  harbour: number;
+  harbourAt: number;
+  /** Drachmae earned from sea trade so far. */
+  tradeEarned: number;
+}
+
+/** A merchant ship sailing a precomputed sea route between two friendly harbours. */
+export interface Ship {
+  id: number;
+  owner: number;
+  dest: number;
+  /** Polyline in map coordinates: x0, y0, x1, y1, … */
+  path: number[];
+  seg: number;
+  along: number;
+  x: number;
+  y: number;
+  angle: number;
+  done: boolean;
+}
+
+/** A floating "+income" marker where a voyage was completed. */
+export interface TradeFx {
+  x: number;
+  y: number;
+  t: number;
+  amount: number;
+  owner: number;
 }
 
 export interface Army {
@@ -178,6 +218,8 @@ export class Simulation {
   armies: Army[] = [];
   battles: Battle[] = [];
   buildings: Building[] = [];
+  ships: Ship[] = [];
+  tradeFx: TradeFx[] = [];
   claims: Claim[] = [];
   events: GameEvent[] = [];
   time = 0;
@@ -195,10 +237,31 @@ export class Simulation {
   /** Greek land cell of every vassal site, resolved once. */
   private readonly siteCells: { id: SiteId; lon: number; lat: number; cell: number }[];
   private usedSites = new Set<SiteId>();
+  /** Coarse sea grid for route planning, and routes already found between coarse harbour cells. */
+  private readonly seaGrid: Uint8Array;
+  private readonly seaCols: number;
+  private readonly seaRows: number;
+  private readonly routes = new Map<string, number[] | null>();
 
   constructor(readonly world: World) {
     this.owner = new Int16Array(world.size);
     this.siteCells = SITES.map(site => ({ ...site, cell: this.landCellAt(site.lon, site.lat) }));
+    const k = RULES.routeCoarse;
+    this.seaCols = Math.ceil(world.cols / k);
+    this.seaRows = Math.ceil(world.rows / k);
+    this.seaGrid = new Uint8Array(this.seaCols * this.seaRows);
+    for (let cy = 0; cy < this.seaRows; cy++) {
+      for (let cx = 0; cx < this.seaCols; cx++) {
+        let sea = 0;
+        for (let y = cy * k; y < Math.min(world.rows, cy * k + k); y++) {
+          for (let x = cx * k; x < Math.min(world.cols, cx * k + k); x++) {
+            if (world.terrain[y * world.cols + x] === Terrain.Sea) sea++;
+          }
+        }
+        // Mostly-water blocks are navigable, so narrow straits stay open.
+        this.seaGrid[cy * this.seaCols + cx] = sea >= (k * k) / 2 ? 1 : 0;
+      }
+    }
     this.reset();
   }
 
@@ -238,7 +301,11 @@ export class Simulation {
       nextAi: this.time + 2 + idx * 0.17,
       nextSpawn: 0,
       conqueror: -1,
-      version: 0
+      version: 0,
+      nextShip: this.time + 3 + this.rand() * RULES.shipInterval,
+      harbour: -1,
+      harbourAt: -Infinity,
+      tradeEarned: 0
     };
   }
 
@@ -308,6 +375,8 @@ export class Simulation {
     this.resets++;
 
     this.buildings = [];
+    this.ships = [];
+    this.tradeFx = [];
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
     this.floodClaim(
@@ -648,7 +717,14 @@ export class Simulation {
         this.spawnArmy(p);
         p.nextSpawn = this.time + 2;
       }
+      if (this.time >= p.nextShip) {
+        this.launchShip(p);
+        p.nextShip = this.time + RULES.shipInterval * (0.6 + this.rand() * 0.8);
+      }
     }
+
+    this.sailShips(dt);
+    this.tradeFx = this.tradeFx.filter(f => this.time - f.t < 2);
 
     this.moveArmies(dt);
     this.detectBattles();
@@ -777,6 +853,213 @@ export class Simulation {
       if (playerBloc.includes(e) || !p.wars.has(e)) continue;
       if (this.time - (p.warStart.get(e) ?? this.time) > 40 && this.rand() < 0.08) this.makePeace(p.idx, e);
     }
+  }
+
+  // ─── Sea trade ────────────────────────────────────────────────────────────
+
+  shipsOf(idx: number): number {
+    let n = 0;
+    for (const s of this.ships) if (s.owner === idx && !s.done) n++;
+    return n;
+  }
+
+  /** Voyage income for a polis: the base fee raised by its culture. */
+  tradeValue(p: PolisState): number {
+    return RULES.tradeIncome * (1 + RULES.cultureBonus * p.culture);
+  }
+
+  /** Sea cell beside the polis's coast closest to its port (or capital); -1 when landlocked. */
+  harbourOf(p: PolisState): number {
+    if (this.time - p.harbourAt < 20 && (p.harbour < 0 || this.bordersOwner(p.harbour, p.idx))) return p.harbour;
+    const w = this.world;
+    const port = this.buildings.find(b => b.kind === 'port' && this.owner[b.cell] === p.idx);
+    const ox = port ? (port.cell % w.cols) + 0.5 : p.cx;
+    const oy = port ? Math.floor(port.cell / w.cols) + 0.5 : p.cy;
+    let best = -1;
+    let bestD = Infinity;
+    for (const c of w.greekCells) {
+      if (this.owner[c] !== p.idx) continue;
+      const x = c % w.cols;
+      const y = (c - x) / w.cols;
+      const d = Math.hypot(x + 0.5 - ox, y + 0.5 - oy);
+      if (d >= bestD) continue;
+      const sea = w.neighbours4(x, y).find(n => w.terrain[n] === Terrain.Sea);
+      if (sea === undefined) continue;
+      bestD = d;
+      best = sea;
+    }
+    p.harbour = best;
+    p.harbourAt = this.time;
+    return best;
+  }
+
+  private bordersOwner(seaCell: number, idx: number): boolean {
+    const w = this.world;
+    const x = seaCell % w.cols;
+    return w.neighbours4(x, (seaCell - x) / w.cols).some(n => this.owner[n] === idx);
+  }
+
+  /** Sends a merchant to a random friendly coastal polis, nearer ones more often. */
+  private launchShip(p: PolisState) {
+    if (this.shipsOf(p.idx) >= Math.min(RULES.maxShips, 1 + p.ports)) return;
+    const from = this.harbourOf(p);
+    if (from < 0) return;
+    const w = this.world;
+    const options: { q: PolisState; harbour: number; weight: number }[] = [];
+    for (const q of this.poleis) {
+      if (!q.alive || q === p || p.wars.has(q.idx)) continue;
+      const harbour = this.harbourOf(q);
+      if (harbour < 0) continue;
+      const d = Math.hypot((harbour % w.cols) - (from % w.cols), Math.floor(harbour / w.cols) - Math.floor(from / w.cols));
+      options.push({ q, harbour, weight: 1 / (d + 60) });
+    }
+    if (!options.length) return;
+    let pick = this.rand() * options.reduce((sum, o) => sum + o.weight, 0);
+    const choice = options.find(o => (pick -= o.weight) <= 0) ?? options[options.length - 1];
+    const path = this.seaRoute(from, choice.harbour);
+    if (!path) return;
+    this.ships.push({
+      id: this.nextId++,
+      owner: p.idx,
+      dest: choice.q.idx,
+      path,
+      seg: 0,
+      along: 0,
+      x: path[0],
+      y: path[1],
+      angle: 0,
+      done: false
+    });
+  }
+
+  private sailShips(dt: number) {
+    for (const s of this.ships) {
+      const owner = this.poleis[s.owner];
+      if (!owner.alive) {
+        s.done = true;
+        continue;
+      }
+      s.along += RULES.shipSpeed * dt;
+      const pts = s.path;
+      while (!s.done) {
+        const i = s.seg * 2;
+        if (i + 3 >= pts.length) {
+          this.arrive(s);
+          break;
+        }
+        const dx = pts[i + 2] - pts[i];
+        const dy = pts[i + 3] - pts[i + 1];
+        const len = Math.hypot(dx, dy);
+        if (s.along < len) {
+          s.x = pts[i] + (dx / len) * s.along;
+          s.y = pts[i + 1] + (dy / len) * s.along;
+          s.angle = Math.atan2(dy, dx);
+          break;
+        }
+        s.along -= len;
+        s.seg++;
+      }
+    }
+    this.ships = this.ships.filter(s => !s.done);
+  }
+
+  /** A completed voyage pays its owner, unless the destination has turned hostile meanwhile. */
+  private arrive(s: Ship) {
+    s.done = true;
+    const owner = this.poleis[s.owner];
+    const dest = this.poleis[s.dest];
+    if (!dest.alive || owner.wars.has(dest.idx)) return;
+    const amount = this.tradeValue(owner);
+    owner.drachmae += amount;
+    owner.tradeEarned += amount;
+    this.tradeFx.push({ x: s.x, y: s.y, t: this.time, amount, owner: owner.idx });
+  }
+
+  /** A* over the coarse sea grid, smoothed into a gentle polyline; cached per harbour pair. */
+  private seaRoute(fromCell: number, toCell: number): number[] | null {
+    const w = this.world;
+    const k = RULES.routeCoarse;
+    const coarse = (cell: number) => this.nearestNavigable(Math.floor((cell % w.cols) / k), Math.floor(Math.floor(cell / w.cols) / k));
+    const a = coarse(fromCell);
+    const b = coarse(toCell);
+    if (a < 0 || b < 0) return null;
+    const key = `${a}-${b}`;
+    let nodes = this.routes.get(key);
+    if (nodes === undefined) {
+      nodes = this.planRoute(a, b);
+      this.routes.set(key, nodes);
+      this.routes.set(`${b}-${a}`, nodes ? [...nodes].reverse() : null);
+    }
+    if (!nodes) return null;
+
+    // Coarse cell centres, every other one, then two rounds of Chaikin corner cutting.
+    let pts: [number, number][] = [[(fromCell % w.cols) + 0.5, Math.floor(fromCell / w.cols) + 0.5]];
+    nodes.forEach((n, i) => {
+      if (i % 2 === 0 || i === nodes!.length - 1) pts.push([((n % this.seaCols) + 0.5) * k, (Math.floor(n / this.seaCols) + 0.5) * k]);
+    });
+    pts.push([(toCell % w.cols) + 0.5, Math.floor(toCell / w.cols) + 0.5]);
+    for (let round = 0; round < 2; round++) {
+      const next: [number, number][] = [pts[0]];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [x0, y0] = pts[i];
+        const [x1, y1] = pts[i + 1];
+        next.push([x0 * 0.75 + x1 * 0.25, y0 * 0.75 + y1 * 0.25], [x0 * 0.25 + x1 * 0.75, y0 * 0.25 + y1 * 0.75]);
+      }
+      next.push(pts[pts.length - 1]);
+      pts = next;
+    }
+    return pts.flat();
+  }
+
+  private nearestNavigable(cx: number, cy: number): number {
+    for (let r = 0; r <= 4; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const x = cx + dx;
+          const y = cy + dy;
+          if (x < 0 || y < 0 || x >= this.seaCols || y >= this.seaRows) continue;
+          if (this.seaGrid[y * this.seaCols + x]) return y * this.seaCols + x;
+        }
+      }
+    }
+    return -1;
+  }
+
+  private planRoute(a: number, b: number): number[] | null {
+    const cols = this.seaCols;
+    const bx = b % cols;
+    const by = Math.floor(b / cols);
+    const g = new Map<number, number>([[a, 0]]);
+    const prev = new Map<number, number>();
+    const heap = new MinHeap();
+    heap.push(a, 0);
+    while (heap.size) {
+      const c = heap.pop();
+      if (c === b) {
+        const out = [b];
+        let n = b;
+        while (prev.has(n)) out.push((n = prev.get(n)!));
+        return out.reverse();
+      }
+      const cx = c % cols;
+      const cy = (c - cx) / cols;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          const x = cx + dx;
+          const y = cy + dy;
+          if (x < 0 || y < 0 || x >= cols || y >= this.seaRows || !this.seaGrid[y * cols + x]) continue;
+          const n = y * cols + x;
+          const cost = g.get(c)! + Math.hypot(dx, dy);
+          if (cost >= (g.get(n) ?? Infinity)) continue;
+          g.set(n, cost);
+          prev.set(n, c);
+          heap.push(n, cost + Math.hypot(x - bx, y - by));
+        }
+      }
+    }
+    return null;
   }
 
   // ─── Armies & battles ─────────────────────────────────────────────────────

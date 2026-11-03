@@ -49,6 +49,10 @@ export const EN: Dict = {
       desc: 'Spend drachmae on development. Usually you get a farm (the land feeds 2,500 more people) or a port (more trade income). In one case out of ten, a small new polis is founded on a nearby historical site — your vassal, which fights in all your wars.'
     },
     {
+      term: 'Sea trade',
+      desc: 'A polis on the coast sends small merchant ships to the harbours of coastal poleis it is not at war with. Every completed voyage earns 1 drachma, raised by culture (+8% per point). Each port lets one more ship sail at a time.'
+    },
+    {
       term: 'Workers',
       desc: 'Civilians fit for physical labour. They earn drachmae, become settlers and are armed as hoplites.'
     },
@@ -119,7 +123,9 @@ export const EN: Dict = {
   farms: 'Farms',
   ports: 'Ports',
   vassals: 'Vassals',
-  buildingsHint: 'Farms, ports and vassal poleis created by development.',
+  ships: 'Ships',
+  buildingsHint:
+    'Farms, ports and vassal poleis created by development, and merchant ships at sea. Each voyage to a friendly harbour earns {v} drachmae ({t} so far).',
   vassalOf: 'Vassal of {b}',
 
   // Diplomacy panel
@@ -264,9 +270,6 @@ export const EN: Dict = {
   hoverAltitude: '{m} m',
 
   // Cartographic labels
-  seaIonian: 'Ionian Sea',
-  seaAegean: 'Aegean Sea',
-  seaCretan: 'Sea of Crete',
   peakOlympus: 'Mt Olympus',
 
   polisNames: {

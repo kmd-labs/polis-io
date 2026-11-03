@@ -13,12 +13,12 @@ export interface Camera {
 
 export type MapView = 'political' | 'relief' | 'fertility';
 
-/** Cartographic label (sea, mountain) placed by longitude / latitude. */
+/** Cartographic label (a mountain peak) placed by longitude / latitude. */
 export interface MapLabel {
   lon: number;
   lat: number;
   text: string;
-  kind: 'sea' | 'peak';
+  kind: 'peak';
 }
 
 export interface RenderOptions {
@@ -28,6 +28,8 @@ export interface RenderOptions {
   /** Localized polis names, indexed like `sim.poleis`. */
   names: string[];
   labels: MapLabel[];
+  /** BCP 47 locale for numbers drawn on the map. */
+  locale: string;
 }
 
 type Rgb = [number, number, number];
@@ -68,6 +70,16 @@ function ramp(stops: [number, Rgb][], v: number): Rgb {
 }
 
 const WAVE_TILE = 160;
+/** Elevation step (m) of the terraced, contour-lined land tints. */
+const LAND_BAND = 250;
+/** Depth thresholds (m) of the stepped sea tints and isobaths. */
+const SEA_BANDS = [0, 60, 250, 1000, 2200];
+
+interface Cloud {
+  x: number;
+  y: number;
+  puffs: [number, number, number][];
+}
 
 /**
  * Paints the pixel map of Hellas: a shaded-relief raster (one canvas pixel per map cell, scaled with
@@ -87,6 +99,7 @@ export class MapRenderer {
   private readonly surf = document.createElement('canvas');
   private wavePatterns: CanvasPattern[] = [];
 
+  private readonly clouds: Cloud[];
   private outline: Path2D | null = null;
   private outlineKey = '';
 
@@ -109,6 +122,16 @@ export class MapRenderer {
     }
     this.image = new ImageData(cols, rows);
     this.base = new Uint8ClampedArray(size * 3);
+    // A handful of slow cumulus shadows drifting east with the meltemi.
+    const rnd = mulberry32(99);
+    this.clouds = Array.from({ length: 8 }, () => {
+      const r = 22 + rnd() * 40;
+      return {
+        x: rnd() * cols,
+        y: rnd() * rows,
+        puffs: Array.from({ length: 3 + Math.floor(rnd() * 3) }, () => [(rnd() - 0.5) * r * 1.6, (rnd() - 0.5) * r * 0.7, r * (0.45 + rnd() * 0.5)] as [number, number, number])
+      };
+    });
     this.resolveTokens();
   }
 
@@ -117,7 +140,8 @@ export class MapRenderer {
     const tokens = [
       'bg-deep', 'neutral-0', 'neutral-100', 'neutral-200', 'neutral-300', 'neutral-400', 'neutral-500',
       'neutral-600', 'success-100', 'success-200', 'success-600', 'warning-100', 'warning-200', 'warning-300',
-      'info-50', 'info-100', 'info-200', 'info-300', 'info-400', 'info-700', 'primary-200', 'primary-300', 'accent', 'text-bright', 'text-main',
+      'info-50', 'info-100', 'info-200', 'info-300', 'info-400', 'info-700', 'primary-200', 'primary-300', 'primary-400',
+      'primary-800', 'neutral-700', 'neutral-900', 'warning-50', 'warning-800', 'success-500', 'accent', 'text-bright', 'text-main',
       'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong'
     ];
     for (const t of tokens) {
@@ -168,43 +192,86 @@ export class MapRenderer {
     this.drawPlayerOutline(ctx, cam);
     this.drawClaims(ctx, cam);
     this.drawBuildings(ctx, cam, width, height);
+    this.drawShips(ctx, cam, now, width, height);
+    this.drawClouds(ctx, cam, now / 1000);
     this.drawEdgeFade(ctx, cam);
+    this.drawGrade(ctx, width, height);
     this.drawLabels(ctx, cam, opt, width, height);
     this.drawCapitals(ctx, cam, opt, width, height);
     this.drawArmies(ctx, cam, now);
+    this.drawTradeFx(ctx, cam, opt);
     this.drawBattles(ctx, cam);
   }
 
   // ─── Territory raster ─────────────────────────────────────────────────────
 
-  /** Shaded relief, sea depth and soil per cell for the given view. */
+  /**
+   * Stylised relief per cell for the given view: terraced elevation tints with contour lines, warm
+   * light and cool shade, an inked coastline, stepped sea depths with isobaths and land casting a
+   * soft shadow onto the water.
+   */
   private buildBase(view: MapView) {
-    const { size, cols, terrain, elevation, shade, shallow, fertility } = this.sim.world;
+    const { size, cols, rows, terrain, elevation, shade, shallow, fertility } = this.sim.world;
     const c = this.rgb;
-    const seaShallow = mix(c['info-100'], c['info-50'], 0.3);
-    const seaDeep = mix(c['info-200'], c['primary-300'], 0.5);
-    const foreign = mix(c['neutral-100'], c['neutral-200'], 0.45);
+    const warm = mix(c['warning-50'], c['neutral-0'], 0.35);
+    const cool = mix(c['primary-800'], c['neutral-700'], 0.5);
+    const ink = c['neutral-700'];
+    const seaTints: Rgb[] = [
+      mix(c['info-50'], c['info-100'], 0.55),
+      c['info-100'],
+      mix(c['info-100'], c['info-200'], 0.6),
+      mix(c['info-200'], c['primary-300'], 0.45),
+      mix(c['primary-300'], c['info-300'], 0.35)
+    ];
+    const foreign = mix(c['neutral-100'], c['neutral-200'], 0.5);
     const out = this.base;
 
+    const seaBand = (i: number) => {
+      const d = -elevation[i];
+      let b = 0;
+      while (b + 1 < SEA_BANDS.length && d >= SEA_BANDS[b + 1]) b++;
+      return b;
+    };
+    const landBand = (i: number) => Math.floor(Math.max(0, elevation[i]) / LAND_BAND);
+    const isSea = (i: number) => terrain[i] === Terrain.Sea;
+
     for (let i = 0; i < size; i++) {
+      const x = i % cols;
+      const y = (i - x) / cols;
       const s = shade[i];
+      const nbrs = [x > 0 ? i - 1 : i, x < cols - 1 ? i + 1 : i, y > 0 ? i - cols : i, y < rows - 1 ? i + cols : i];
       let col: Rgb;
-      if (terrain[i] === Terrain.Sea) {
-        col = mix(seaShallow, seaDeep, Math.pow(Math.min(1, -elevation[i] / 3000), 0.55));
-        col = mix(col, [col[0] * s, col[1] * s, col[2] * s], 0.5);
-        if (shallow[i]) col = mix(col, c['neutral-0'], 0.35);
+
+      if (isSea(i)) {
+        const band = seaBand(i);
+        col = seaTints[band];
+        if (nbrs.some(n => isSea(n) && seaBand(n) !== band)) col = mix(col, c['primary-400'], 0.14);
+        // Land lit from the north-west throws a short shadow south-east over the water.
+        let shadow = 0;
+        for (let k = 1; k <= 4; k++) {
+          const sx = x - k;
+          const sy = y - k;
+          if (sx >= 0 && sy >= 0 && !isSea(sy * cols + sx)) shadow = Math.max(shadow, 0.22 - k * 0.045);
+        }
+        col = mix(col, cool, shadow);
+        col = mix(col, [col[0] * s, col[1] * s, col[2] * s], 0.4);
+        if (shallow[i]) col = mix(col, c['neutral-0'], 0.45);
       } else if (terrain[i] === Terrain.Foreign) {
-        const x = i % cols;
-        const y = (i - x) / cols;
-        col = (x + y) % 7 === 0 ? mix(foreign, c['neutral-300'], 0.35) : foreign;
-        col = mix(col, [col[0] * s, col[1] * s, col[2] * s], 0.5);
+        col = (x + y) % 7 === 0 ? mix(foreign, c['neutral-300'], 0.4) : foreign;
+        col = mix(col, [col[0] * s, col[1] * s, col[2] * s], 0.55);
+        if (nbrs.some(isSea)) col = mix(col, ink, 0.2);
       } else {
-        col =
-          view === 'fertility'
-            ? mix(c['neutral-200'], c['success-600'], (fertility[i] - 0.12) / 0.88)
-            : ramp(this.hypsometric, elevation[i]);
-        const k = (0.3 + 0.7 * s) * (1 + (hash01(i % cols, Math.floor(i / cols), 5) - 0.5) * 0.04);
-        col = [col[0] * k, col[1] * k, col[2] * k];
+        if (view === 'fertility') {
+          col = mix(c['neutral-200'], c['success-600'], (fertility[i] - 0.12) / 0.88);
+        } else {
+          const band = landBand(i);
+          col = ramp(this.hypsometric, band * LAND_BAND + LAND_BAND / 2);
+          if (nbrs.some(n => !isSea(n) && landBand(n) < band)) col = mix(col, ink, 0.1);
+        }
+        col = s >= 1 ? mix(col, warm, Math.min(1, (s - 1) * 2.4)) : mix(col, cool, Math.min(0.55, (1 - s) * 1.5));
+        const grain = 1 + (hash01(x, y, 5) - 0.5) * 0.035;
+        col = [col[0] * grain, col[1] * grain, col[2] * grain];
+        if (nbrs.some(isSea)) col = mix(col, ink, 0.32);
       }
       out[i * 3] = col[0];
       out[i * 3 + 1] = col[1];
@@ -350,6 +417,126 @@ export class MapRenderer {
     ctx.drawImage(this.waves, cam.ox, cam.oy, cols * cam.scale, rows * cam.scale);
     ctx.globalAlpha = 0.25 + 0.2 * Math.sin(t * 1.3);
     ctx.drawImage(this.surf, cam.ox, cam.oy, cols * cam.scale, rows * cam.scale);
+    ctx.restore();
+  }
+
+  /**
+   * Thin fair-weather clouds drifting east: a faint shadow on the ground and, lifted to the north-west
+   * of it, the translucent white body of the cloud itself.
+   */
+  private drawClouds(ctx: CanvasRenderingContext2D, cam: Camera, t: number) {
+    const { cols } = this.sim.world;
+    const [sr, sg, sb] = this.rgb['neutral-900'];
+    const [cr, cg, cb] = this.rgb['neutral-0'];
+    const layers: [number, number, string, number][] = [
+      [0, 0, `${sr}, ${sg}, ${sb}`, 0.06],
+      [-7, -9, `${cr}, ${cg}, ${cb}`, 0.28]
+    ];
+    ctx.save();
+    for (const [lx, ly, rgb, alpha] of layers) {
+      for (const cloud of this.clouds) {
+        const span = cols + 160;
+        const cx = ((((cloud.x + t * 1.3) % span) + span) % span) - 80;
+        for (const [dx, dy, pr] of cloud.puffs) {
+          const x = cam.ox + (cx + dx + lx) * cam.scale;
+          const y = cam.oy + (cloud.y + dy + ly) * cam.scale;
+          const rad = pr * cam.scale;
+          const grad = ctx.createRadialGradient(x, y, 0, x, y, rad);
+          grad.addColorStop(0, `rgba(${rgb}, ${alpha})`);
+          grad.addColorStop(0.6, `rgba(${rgb}, ${alpha * 0.45})`);
+          grad.addColorStop(1, `rgba(${rgb}, 0)`);
+          ctx.fillStyle = grad;
+          ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  /** Cinematic grade: warm light from the north-west and a gentle vignette. */
+  private drawGrade(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    const diag = Math.hypot(width, height);
+    const [wr, wg, wb] = this.rgb['warning-200'];
+    const [vr, vg, vb] = this.rgb['neutral-900'];
+    ctx.save();
+    const light = ctx.createRadialGradient(width * 0.12, height * 0.05, 0, width * 0.12, height * 0.05, diag * 0.7);
+    light.addColorStop(0, `rgba(${wr}, ${wg}, ${wb}, 0.16)`);
+    light.addColorStop(1, `rgba(${wr}, ${wg}, ${wb}, 0)`);
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, width, height);
+    const vignette = ctx.createRadialGradient(width / 2, height / 2, diag * 0.3, width / 2, height / 2, diag * 0.62);
+    vignette.addColorStop(0, `rgba(${vr}, ${vg}, ${vb}, 0)`);
+    vignette.addColorStop(1, `rgba(${vr}, ${vg}, ${vb}, 0.14)`);
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+
+  /** Little merchantmen: wooden hull, a sail in the owner's colour and a white wake. */
+  private drawShips(ctx: CanvasRenderingContext2D, cam: Camera, now: number, width: number, height: number) {
+    const sim = this.sim;
+    const l = Math.max(8, Math.min(16, cam.scale * 3.2));
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const ship of sim.ships) {
+      const x = cam.ox + ship.x * cam.scale;
+      const y = cam.oy + ship.y * cam.scale + Math.sin(now / 300 + ship.id) * 0.6;
+      if (x < -l * 3 || y < -l * 3 || x > width + l * 3 || y > height + l * 3) continue;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ship.angle);
+      // Wake
+      ctx.strokeStyle = this.css['neutral-0'];
+      ctx.globalAlpha = 0.75;
+      ctx.lineWidth = Math.max(1, l * 0.12);
+      ctx.beginPath();
+      ctx.moveTo(-l * 0.5, -l * 0.12);
+      ctx.lineTo(-l * 1.6, -l * 0.42);
+      ctx.moveTo(-l * 0.5, l * 0.12);
+      ctx.lineTo(-l * 1.6, l * 0.42);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      // Hull
+      ctx.fillStyle = this.css['warning-800'];
+      ctx.beginPath();
+      ctx.moveTo(l * 0.6, 0);
+      ctx.quadraticCurveTo(l * 0.15, -l * 0.32, -l * 0.55, -l * 0.22);
+      ctx.lineTo(-l * 0.55, l * 0.22);
+      ctx.quadraticCurveTo(l * 0.15, l * 0.32, l * 0.6, 0);
+      ctx.fill();
+      // Square sail across the beam
+      ctx.fillStyle = this.colorOf(ship.owner);
+      ctx.strokeStyle = ship.owner === sim.player ? this.css['accent'] : this.css['neutral-0'];
+      ctx.lineWidth = Math.max(0.8, l * 0.1);
+      ctx.beginPath();
+      ctx.roundRect(-l * 0.12, -l * 0.42, l * 0.24, l * 0.84, l * 0.08);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  /** "+1.2" rising from a harbour when one of the player's voyages pays out. */
+  private drawTradeFx(ctx: CanvasRenderingContext2D, cam: Camera, opt: RenderOptions) {
+    const sim = this.sim;
+    ctx.save();
+    ctx.font = `600 11px ${this.mono}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const fx of sim.tradeFx) {
+      if (fx.owner !== sim.player) continue;
+      const age = (sim.time - fx.t) / 2;
+      const x = cam.ox + fx.x * cam.scale;
+      const y = cam.oy + fx.y * cam.scale - 10 - age * 18;
+      const text = `+${fx.amount.toLocaleString(opt.locale, { maximumFractionDigits: 1 })}`;
+      ctx.globalAlpha = Math.max(0, 1 - age);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = this.css['neutral-0'];
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = this.css['success-600'];
+      ctx.fillText(text, x, y);
+    }
     ctx.restore();
   }
 
@@ -522,7 +709,7 @@ export class MapRenderer {
 
   // ─── Labels & capitals ────────────────────────────────────────────────────
 
-  /** Spaced small caps for seas, a peak glyph for mountains. */
+  /** A peak glyph with an italic name for landmark mountains. */
   private drawLabels(ctx: CanvasRenderingContext2D, cam: Camera, opt: RenderOptions, width: number, height: number) {
     const w = this.sim.world;
     ctx.save();
@@ -533,13 +720,7 @@ export class MapRenderer {
       const sx = cam.ox + p.x * cam.scale;
       const sy = cam.oy + p.y * cam.scale;
       if (sx < -200 || sy < -40 || sx > width + 200 || sy > height + 40) continue;
-      if (label.kind === 'sea') {
-        ctx.font = `italic 500 12px ${this.font}`;
-        ctx.letterSpacing = '0.32em';
-        ctx.fillStyle = this.css['info-700'];
-        ctx.globalAlpha = 0.55;
-        ctx.fillText(label.text.toUpperCase(), sx, sy);
-      } else {
+      {
         ctx.globalAlpha = 0.85;
         ctx.fillStyle = this.css['text-dim'];
         ctx.beginPath();

@@ -49,6 +49,10 @@ export const PL: Dict = {
       desc: 'Wydaj drachmy na rozwój. Zwykle powstaje farma (ziemia wyżywi 2500 osób więcej) albo port (większe dochody z handlu). W jednym przypadku na dziesięć w pobliskim historycznym miejscu powstaje małe nowe polis — twój wasal, który walczy we wszystkich twoich wojnach.'
     },
     {
+      term: 'Handel morski',
+      desc: 'Polis nad morzem wysyła małe statki kupieckie do portów nadmorskich polis, z którymi nie prowadzi wojny. Każdy ukończony rejs daje 1 drachmę, powiększoną przez kulturę (+8% za punkt). Każdy port pozwala wysłać jednocześnie o jeden statek więcej.'
+    },
+    {
       term: 'Robotnicy',
       desc: 'Cywile zdolni do pracy fizycznej. Zarabiają drachmy, zostają osadnikami i są uzbrajani jako hoplici.'
     },
@@ -119,7 +123,9 @@ export const PL: Dict = {
   farms: 'Farmy',
   ports: 'Porty',
   vassals: 'Wasale',
-  buildingsHint: 'Farmy, porty i polis-wasale powstałe dzięki rozwojowi.',
+  ships: 'Statki',
+  buildingsHint:
+    'Farmy, porty i polis-wasale powstałe dzięki rozwojowi oraz statki kupieckie na morzu. Każdy rejs do przyjaznego portu daje {v} drachmy (dotąd {t}).',
   vassalOf: 'Wasal polis {b}',
 
   // Diplomacy panel
@@ -264,9 +270,6 @@ export const PL: Dict = {
   hoverAltitude: '{m} m n.p.m.',
 
   // Cartographic labels
-  seaIonian: 'Morze Jońskie',
-  seaAegean: 'Morze Egejskie',
-  seaCretan: 'Morze Kreteńskie',
   peakOlympus: 'Olimp',
 
   polisNames: {

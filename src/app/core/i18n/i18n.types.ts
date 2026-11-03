@@ -95,6 +95,7 @@ export interface Dict {
   farms: string;
   ports: string;
   vassals: string;
+  ships: string;
   buildingsHint: string;
   vassalOf: string;
 
@@ -145,9 +146,6 @@ export interface Dict {
   hoverAltitude: string;
 
   // Cartographic labels
-  seaIonian: string;
-  seaAegean: string;
-  seaCretan: string;
   peakOlympus: string;
 
   polisNames: Record<PolisId, string>;

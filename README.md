@@ -5,8 +5,9 @@ A pixel real-time strategy game set in Archaic Greece, 600 BC, built on the
 
 The map is a 639×628 raster of ~1.25 km pixels: coastlines and borders from Natural Earth, elevation and
 sea depth from AWS Terrain Tiles. Every one of the 84,000 Greek land pixels belongs to one of 18 poleis or is
-still wild; land outside modern Greece is shown but never playable. The map is drawn as shaded relief with
-an animated sea, and has three views: political, terrain relief and soil fertility.
+still wild; land outside modern Greece is shown but never playable. The map is drawn as a stylised relief —
+terraced contour tints with warm light and cool shade, an inked coastline, stepped sea depths with isobaths,
+twinkling waves and drifting cloud shadows — and has three views: political, terrain relief and soil fertility.
 
 ## Gameplay
 
@@ -21,6 +22,9 @@ an animated sea, and has three views: political, terrain relief and soil fertili
 - **Develop the polis**: spend drachmae on a farm (the land feeds 2,500 more people) or a port (+12% income).
   One time in ten a small vassal polis is founded on a nearby historical site (Tegea, Delphi, Abdera…);
   vassals wear their overlord's colour and join all of its wars and treaties.
+- **Sea trade**: coastal poleis send small merchant ships along sea routes to the harbours of coastal poleis
+  they are not at war with. Each completed voyage earns 1 drachma, raised by culture (+8% per point);
+  every port lets one more ship sail at a time.
 - **War letters**: when a rival declares war on you, the game pauses and a short letter arrives in the voice
   of that city (Solon of Athens, Chilon of Sparta, Periander of Corinth…) — scornful if they think you weak.
 - **Declare war**: click another polis, then *Declare war*. Small armies march out on their own and

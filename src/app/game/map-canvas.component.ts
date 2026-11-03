@@ -187,12 +187,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
 
     if (this.renderer) {
       const t = this.i18n.t();
-      const labels: MapLabel[] = [
-        { lon: 19.75, lat: 37.55, text: t.seaIonian, kind: 'sea' },
-        { lon: 25.0, lat: 39.25, text: t.seaAegean, kind: 'sea' },
-        { lon: 25.0, lat: 35.85, text: t.seaCretan, kind: 'sea' },
-        { lon: 22.35, lat: 40.085, text: t.peakOlympus, kind: 'peak' }
-      ];
+      const labels: MapLabel[] = [{ lon: 22.35, lat: 40.085, text: t.peakOlympus, kind: 'peak' }];
       const preview = this.game.preview();
       this.renderer.render(
         this.ctx,
@@ -204,7 +199,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
           hover: this.hover >= 0 ? this.hover : preview,
           selected: this.game.selected(),
           names: this.game.sim.poleis.map(p => polisName(t, p.def)),
-          labels
+          labels,
+          locale: t.htmlLang
         },
         now
       );
@@ -217,6 +213,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
 
   /** Exponential ease toward the flight target, interpolating zoom in log space. */
   private animateCamera(dt: number) {
+    this.breathe();
     const f = this.flight;
     if (!f) return;
     const k = 1 - Math.exp(-dt * 5);
@@ -231,6 +228,19 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       this.cam = f;
       this.flight = null;
     }
+  }
+
+  /** On the untouched start screen the camera slowly pushes in and out, like an establishing shot. */
+  private breathe() {
+    if (this.userMoved || this.flight || !this.game.ready() || this.game.status() !== 'choosing' || this.game.selected() >= 0) return;
+    const { cols, rows } = this.game.world;
+    const a = this.freeArea();
+    const scale = this.fitScale * (1.04 + 0.04 * Math.sin(performance.now() / 9000));
+    this.cam = {
+      scale,
+      ox: (a.left + a.right - cols * scale) / 2,
+      oy: (a.top + a.bottom - rows * scale) / 2
+    };
   }
 
   // ─── Interaction ──────────────────────────────────────────────────────────

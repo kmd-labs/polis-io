@@ -32,6 +32,9 @@ export interface PolisView {
   culture: number;
   farms: number;
   ports: number;
+  ships: number;
+  tradeValue: number;
+  tradeEarned: number;
   vassals: number[];
   overlord: number;
   developCost: number;
@@ -239,6 +242,9 @@ export class GameService {
         culture: p.culture,
         farms: p.farms,
         ports: p.ports,
+        ships: sim.shipsOf(p.idx),
+        tradeValue: sim.tradeValue(p),
+        tradeEarned: p.tradeEarned,
         vassals: sim.vassalsOf(p.idx),
         overlord: p.overlord,
         developCost: sim.developCost(p),
