@@ -1,2 +1,111 @@
+@use "sass:color";
 @use "variables" as *;
 @use "base";
+@use "app/theme/greek" as greek;
+
+// ─── Classical theme: warm parchment and marble surfaces, terracotta rules ──────
+// Overrides the design-system surface tokens so every KMD component follows suit.
+:root {
+  --font-family-display: "Cinzel", "Inter", serif;
+  --color-bg-deep: #{color.mix(palette("warning-50"), palette("neutral-100"), 55%)};
+  --color-panel-bg: #{rgba(palette("warning-50"), 0.9)};
+  --color-panel-bg-heavy: #{rgba(palette("warning-50"), 0.98)};
+  --color-panel-bg-solid: #{color.mix(palette("neutral-0"), palette("warning-50"), 50%)};
+  --color-tooltip-bg: #{rgba(palette("warning-50"), 0.97)};
+  --color-line: #{rgba(palette("warning-900"), 0.16)};
+  --color-line-strong: #{rgba(palette("warning-900"), 0.3)};
+  --color-btn-bg: #{rgba(palette("warning-900"), 0.05)};
+  --color-btn-hover: #{rgba(palette("warning-900"), 0.1)};
+}
+
+// Double rule inside every frosted panel, like the border of a painted vase.
+.glass-panel,
+.glass-panel--heavy {
+  box-shadow:
+    inset 0 0 0 3px var(--color-panel-bg-solid),
+    inset 0 0 0 4px #{rgba(palette("warning-700"), 0.2)},
+    0 10px 32px var(--color-shadow-panel);
+}
+
+// Meander frieze along the top of the dock panels and the chronicle.
+.dock .glass-panel,
+.chronicle {
+  position: relative;
+
+  &::before {
+    @include greek.frieze(top, 5px, 20px, 6px, 0.4);
+  }
+}
+
+// Titles and names in Roman capitals.
+.panel__title,
+.start__title,
+.dock__year,
+.chronicle__head,
+.card__name {
+  @include greek.display-type(0.05em);
+}
+
+.start__head {
+  position: relative;
+
+  &::after {
+    @include greek.frieze(bottom, 6px, 24px, 8px, 0.5);
+  }
+}
+
+// ─── Message boxes (design-system popup) ───────────────────────────────────
+body .popup-dialog {
+  border: 1px solid #{rgba(palette("warning-800"), 0.35)};
+  box-shadow:
+    inset 0 0 0 4px var(--color-panel-bg-solid),
+    inset 0 0 0 5px #{rgba(palette("warning-700"), 0.35)},
+    0 24px 64px #{rgba(palette("neutral-900"), 0.28)};
+
+  .popup-dialog__header {
+    position: relative;
+    border-bottom: none;
+    padding-bottom: 22px;
+
+    &::after {
+      @include greek.frieze(bottom, 6px, 20px, 9px, 0.6);
+    }
+  }
+
+  .popup-dialog__title {
+    @include greek.display-type(0.06em);
+    color: #{palette("warning-900")};
+  }
+
+  .popup-dialog__subtitle {
+    font-style: italic;
+  }
+
+  .popup-dialog__footer {
+    position: relative;
+    border-top: none;
+    padding-top: 22px;
+
+    &::before {
+      @include greek.frieze(top, 6px, 20px, 9px, 0.6);
+    }
+  }
+
+  // The decisive action is painted in terracotta, like a black-figure amphora inverted.
+  .popup-dialog__footer .btn--play {
+    @include greek.display-type(0.08em);
+    background: #{palette("warning-600")};
+    border-color: #{palette("warning-800")};
+    color: #{palette("neutral-0")};
+    font-weight: font-weight("semibold");
+
+    &:hover:not(:disabled) {
+      background: #{palette("warning-700")};
+      color: #{palette("neutral-0")};
+    }
+  }
+}
+
+body .popup-backdrop {
+  background: #{rgba(color.mix(palette("warning-900"), palette("neutral-900"), 40%), 0.4)};
+}

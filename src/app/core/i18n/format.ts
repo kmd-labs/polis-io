@@ -29,3 +29,11 @@ export function formatYear(year: number, t: Dict): string {
 export function polisName(t: Dict, def: PolisDef): string {
   return def.kind === 'site' ? t.siteNames[def.id] : t.polisNames[def.id];
 }
+
+/** "{n} year(s)" with Polish-style plural forms (1 / 2–4 / 5+). */
+export function formatYears(n: number, t: Dict): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  const form = n === 1 ? t.yearsOne : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? t.yearsFew : t.yearsMany;
+  return interpolate(form, { n });
+}

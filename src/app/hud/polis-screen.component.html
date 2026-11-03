@@ -1,0 +1,51 @@
+@let t = i18n.t();
+
+<div class="screen">
+  <p class="screen__intro">
+    <lucide-icon [img]="icons.Smile" [size]="14"></lucide-icon>
+    {{ t.satisfaction }} <b>{{ mood() }}%</b> — {{ t.polisScreenIntro }}
+  </p>
+
+  <div class="trees">
+    @for (tree of trees(); track tree.tree) {
+      <section class="tree" [class]="'tree tree--' + tree.tree">
+        <header class="tree__head">
+          <lucide-icon [img]="tree.icon" [size]="16"></lucide-icon>
+          <h3>{{ tree.title }}</h3>
+        </header>
+        <ol class="tree__list">
+          @for (b of tree.items; track b.id) {
+            <li class="building" [class]="'building building--' + b.state">
+              <span class="building__tier">{{ b.tier }}</span>
+              <div class="building__body">
+                <span class="building__name">{{ b.name }}</span>
+                <span class="building__desc">{{ b.desc }}</span>
+                @switch (b.state) {
+                  @case ('built') {
+                    <span class="building__status"><lucide-icon [img]="icons.Check" [size]="12"></lucide-icon>{{ t.built }}</span>
+                  }
+                  @case ('building') {
+                    <span class="building__status">{{ t.underConstruction }}</span>
+                    <span class="building__progress"><span [style.width.%]="b.progress * 100"></span></span>
+                  }
+                  @case ('locked') {
+                    <span class="building__status building__status--dim">
+                      <lucide-icon [img]="icons.Lock" [size]="11"></lucide-icon>{{ t.lockedHint }}
+                    </span>
+                  }
+                  @default {
+                    <app-button size="sm" extraClass="building__build" [disabled]="!b.affordable" (btnClick)="game.improve(b.id)">
+                      <lucide-icon [img]="icons.Hammer" [size]="12"></lucide-icon>
+                      <span>{{ t.build }}</span>
+                      <span class="building__cost">{{ b.cost }}</span>
+                    </app-button>
+                  }
+                }
+              </div>
+            </li>
+          }
+        </ol>
+      </section>
+    }
+  </div>
+</div>

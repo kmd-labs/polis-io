@@ -109,6 +109,7 @@ export class MapRenderer {
   private polisCss: string[] = [];
   private hypsometric: [number, Rgb][] = [];
   private font = '"Inter", sans-serif';
+  private display = '"Cinzel", serif';
   private mono = 'monospace';
 
   constructor(
@@ -159,6 +160,8 @@ export class MapRenderer {
     ];
     this.resolvePolisColors();
     this.font = this.theme.getFontFamily();
+    this.display =
+      getComputedStyle(document.documentElement).getPropertyValue('--font-family-display').trim() || this.font;
     this.mono = getComputedStyle(document.documentElement).getPropertyValue('--font-family-mono').trim() || 'monospace';
     this.buildSeaLayers();
     this.baseView = null;
@@ -759,7 +762,7 @@ export class MapRenderer {
       placed.push({ x: sx - size / 2, y: sy - size / 2, w: size, h: size });
     }
 
-    ctx.font = `600 11px ${this.font}`;
+    ctx.font = `700 11px ${this.display}`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
     for (const p of order) {

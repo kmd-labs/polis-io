@@ -37,21 +37,6 @@
     align-items: flex-end;
     gap: 3px;
   }
-}
-
-.prestige {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: font-size("xxs");
-  color: color("text-dim");
-  cursor: default;
-
-  b {
-    font-family: var(--font-family-mono);
-    font-weight: font-weight("semibold");
-    color: color("accent");
-  }
 
   &__eyebrow {
     font-size: font-size("xxs");
@@ -73,6 +58,98 @@
     font-size: font-size("xs");
     color: color("text-desc");
     max-width: 34ch;
+  }
+}
+
+.prestige {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: font-size("xxs");
+  color: color("text-dim");
+  cursor: default;
+
+  b {
+    font-family: var(--font-family-mono);
+    font-weight: font-weight("semibold");
+    color: color("accent");
+  }
+}
+
+.polis-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 1px 0 0 -6px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: radius("sm");
+  background: transparent;
+  font: inherit;
+  color: color("text-bright");
+  cursor: pointer;
+  transition: background transition("fast"), border-color transition("fast");
+
+  &:hover {
+    background: color("btn-hover");
+    border-color: color("line-strong");
+  }
+
+  &__name {
+    font-family: var(--font-family-display);
+    font-size: font-size("md");
+    font-weight: font-weight("bold");
+    letter-spacing: 0.04em;
+  }
+
+  &__chevron {
+    color: color("text-dim");
+  }
+}
+
+.mood {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: spacing("xs");
+  cursor: default;
+  --mood-color: var(--color-success-500);
+
+  &--mid {
+    --mood-color: var(--color-warning-500);
+  }
+
+  &--low {
+    --mood-color: var(--color-danger-500);
+  }
+
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: font-size("xxs");
+    color: color("text-dim");
+  }
+
+  &__track {
+    height: 6px;
+    border-radius: radius("pill");
+    background: color("line");
+    overflow: hidden;
+  }
+
+  &__fill {
+    display: block;
+    height: 100%;
+    background: var(--mood-color);
+    transition: width transition("slow"), background transition("slow");
+  }
+
+  &__value {
+    font-family: var(--font-family-mono);
+    font-size: font-size("xs");
+    font-weight: font-weight("semibold");
+    color: var(--mood-color);
   }
 }
 

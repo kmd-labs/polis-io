@@ -49,6 +49,14 @@ export const EN: Dict = {
       desc: 'Spend drachmae on development. Usually you get a farm (the land feeds 2,500 more people) or a port (more trade income). In one case out of ten, a small new polis is founded on a nearby historical site — your vassal, which fights in all your wars.'
     },
     {
+      term: 'Polis buildings',
+      desc: 'Click your city’s name in the dock to open the polis: three trees — agriculture, trade and military — of six buildings each, unlocked in order. Every building takes a year to raise, costs drachmae and some of the citizens’ satisfaction, and grants a bonus to the whole polis.'
+    },
+    {
+      term: 'Satisfaction',
+      desc: 'Contented citizens work and multiply faster (×0.7 at 0%, ×1.3 at 100%). Satisfaction falls when you lose battles or land, settle the wilderness, build or levy hoplites; it rises in quiet times, with trade income, won battles and wars, and high power projection. When a war ends you receive a report of what it cost and gained.'
+    },
+    {
       term: 'Sea trade',
       desc: 'A polis on the coast sends small merchant ships to the harbours of coastal poleis it is not at war with. Every completed voyage earns the owner 1 drachma, raised by culture (+8% per point), and the receiving city 30% of that. Each port lets one more ship sail at a time.'
     },
@@ -134,6 +142,56 @@ export const EN: Dict = {
   statPrestigeHint:
     'Earned by winning battles. Rivals think twice before attacking you, cities may offer you an alliance, and merchants prefer your harbours.',
   slavesHint: 'Includes {n} captives taken in battle.',
+  satisfaction: 'Satisfaction',
+  satisfactionHint:
+    'Income and growth ×{m}. Falls when you lose battles or land, settle the wilderness, build or levy hoplites; rises in quiet times, with trade, victories and power projection.',
+
+  // Polis screen
+  openPolis: 'Open the polis: buildings and bonuses',
+  polisScreenIntro: 'every building takes a year to raise and costs drachmae and some of the citizens’ goodwill.',
+  trees: { agriculture: 'Agriculture', trade: 'Trade', military: 'Military' },
+  improvements: {
+    granary: { name: 'Granary', desc: 'Stored grain carries the city through lean years: +8% land capacity.' },
+    irrigation: { name: 'Irrigation channels', desc: 'Water led from the springs: +10% land capacity.' },
+    olives: { name: 'Olive groves', desc: 'Oil for lamps, kitchens and export: +10% income.' },
+    vineyards: { name: 'Vineyards', desc: 'Wine and festivals: +5% income, satisfaction recovers faster.' },
+    terraces: { name: 'Terraced hillsides', desc: 'Settlers tame the slopes: each settler claims 25% more land, +5% capacity.' },
+    demeter: { name: 'Sanctuary of Demeter', desc: 'The goddess blesses the harvest: +15% population growth, +10% capacity.' },
+    agora: { name: 'Agora', desc: 'A market square at the heart of the city: +8% income.' },
+    mint: { name: 'Mint', desc: 'Silver coins stamped with the city’s emblem: +10% income.' },
+    shipyard: { name: 'Shipyard', desc: 'Slipways for merchantmen: one more trade ship at sea.' },
+    guild: { name: 'Merchant guild', desc: 'Contracts and credit: trade voyages pay +50%.' },
+    emporion: { name: 'Emporion', desc: 'Trading posts abroad: development costs −20%, one more trade ship.' },
+    treasury: { name: 'Treasury at Delphi', desc: 'A gleaming offering to Apollo: +2 power projection, +10% income.' },
+    gymnasium: { name: 'Gymnasium', desc: 'Young men train in the nude: hoplites cost 20% less.' },
+    armoury: { name: 'Armoury', desc: 'Bronze helmets and greaves for all: +5% battle strength.' },
+    walls: { name: 'City walls', desc: 'Ashlar walls around the acropolis: the garrison fights 30% harder.' },
+    drill: { name: 'Phalanx drill', desc: 'Shield to shield, in step: +7% battle strength.' },
+    barracks: { name: 'Barracks', desc: 'Common messes for the citizens-in-arms: one more army, marches 15% faster.' },
+    ares: { name: 'Temple of Ares', desc: 'The war god’s favour: +2 power projection, +5% battle strength.' }
+  },
+  build: 'Build',
+  buildCost: '{d} dr · −{s}%',
+  built: 'Built',
+  underConstruction: 'Under construction…',
+  lockedHint: 'Requires the previous building',
+
+  // War report
+  warEndTitle: 'The war with {name} is over',
+  warEndConquest: '{name} has fallen',
+  warEndPeace: 'Peace has been sworn',
+  warDuration: 'Duration',
+  yearsOne: '{n} year',
+  yearsFew: '{n} years',
+  yearsMany: '{n} years',
+  warBattles: 'Battles',
+  warBattlesValue: 'won {w} · lost {l}',
+  warLand: 'Land',
+  warLandValue: '+{g} km² · −{l} km²',
+  warSpoils: 'Spoils',
+  warSpoilsValue: '{g} dr · {c} captives',
+  warMoodValue: '{n}%',
+  warEndAction: 'So be it',
   buildingsHint:
     'Farms, ports and vassal poleis created by development, allies, and merchant ships at sea. Each voyage to a friendly harbour earns {v} drachmae ({t} from trade so far); the receiving city gets 30% of that too.',
   vassalOf: 'Vassal of {b}',

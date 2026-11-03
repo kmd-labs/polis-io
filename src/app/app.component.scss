@@ -1,4 +1,5 @@
 @use "variables" as *;
+@use "app/theme/greek" as greek;
 
 .viewport {
   position: relative;
@@ -233,25 +234,55 @@
 }
 
 .letter {
+  position: relative;
   margin: 0;
-  padding: spacing("lg") spacing("xl");
-  border-left: 3px solid var(--letter-color);
-  border-radius: radius("sm");
-  background: color("warning-50");
+  padding: spacing("xl") spacing("xl") spacing("lg");
+  border: 1px solid color("line-strong");
+  border-radius: radius("xs");
+  background:
+    radial-gradient(ellipse at 50% 0%, #{rgba(palette("neutral-0"), 0.7)}, transparent 70%),
+    #{palette("warning-50")};
+  box-shadow: inset 0 0 24px #{rgba(palette("warning-800"), 0.12)};
+
+  // Seal in the sender's colour
+  &::after {
+    content: "";
+    position: absolute;
+    right: 14px;
+    top: -9px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--letter-color);
+    box-shadow: 0 0 0 2px color("panel-bg-solid"), 0 2px 6px color("shadow-heavy");
+  }
 
   &__text {
     margin: 0;
     font-size: font-size("md");
     font-style: italic;
-    line-height: 1.55;
+    line-height: 1.6;
     color: color("text-bright");
+
+    &::first-letter {
+      float: left;
+      margin: 2px 8px 0 0;
+      font-family: var(--font-family-display);
+      font-size: 2.6em;
+      font-style: normal;
+      font-weight: font-weight("bold");
+      line-height: 0.85;
+      color: color("warning-700");
+    }
   }
 
   &__sender {
-    margin-top: spacing("sm");
+    margin-top: spacing("md");
+    font-family: var(--font-family-display);
     font-size: font-size("xs");
     font-weight: font-weight("semibold");
-    color: color("text-dim");
+    letter-spacing: 0.05em;
+    color: color("warning-800");
     text-align: right;
   }
 }
@@ -273,15 +304,19 @@
     justify-content: space-between;
     gap: spacing("lg");
     padding: spacing("xs") spacing("md");
-    border-radius: radius("sm");
-    background: color("btn-bg");
+    border-left: 3px solid color("warning-600");
+    border-radius: radius("xs");
+    background: #{rgba(palette("warning-100"), 0.55)};
 
     dt {
       display: inline-flex;
       align-items: center;
       gap: spacing("xs");
+      font-family: var(--font-family-display);
       font-size: font-size("sm");
-      color: color("text-desc");
+      font-weight: font-weight("semibold");
+      letter-spacing: 0.04em;
+      color: color("warning-900");
     }
 
     dd {
@@ -302,6 +337,7 @@
 
   &__item {
     dt {
+      @include greek.display-type(0.04em);
       font-size: font-size("sm");
       font-weight: font-weight("semibold");
       color: color("text-bright");

@@ -1,4 +1,5 @@
 import { PolisId, SiteId } from '../../game/data/poleis';
+import { ImprovementId, ImprovementTree } from '../../game/data/improvements';
 
 export type Lang = 'en' | 'pl';
 
@@ -101,6 +102,36 @@ export interface Dict {
   statPrestige: string;
   statPrestigeHint: string;
   slavesHint: string;
+  satisfaction: string;
+  satisfactionHint: string;
+
+  // Polis screen
+  openPolis: string;
+  polisScreenIntro: string;
+  trees: Record<ImprovementTree, string>;
+  improvements: Record<ImprovementId, { name: string; desc: string }>;
+  build: string;
+  buildCost: string;
+  built: string;
+  underConstruction: string;
+  lockedHint: string;
+
+  // War report
+  warEndTitle: string;
+  warEndConquest: string;
+  warEndPeace: string;
+  warDuration: string;
+  yearsOne: string;
+  yearsFew: string;
+  yearsMany: string;
+  warBattles: string;
+  warBattlesValue: string;
+  warLand: string;
+  warLandValue: string;
+  warSpoils: string;
+  warSpoilsValue: string;
+  warMoodValue: string;
+  warEndAction: string;
   buildingsHint: string;
   vassalOf: string;
 

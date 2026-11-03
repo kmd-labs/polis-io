@@ -49,6 +49,14 @@ export const PL: Dict = {
       desc: 'Wydaj drachmy na rozwój. Zwykle powstaje farma (ziemia wyżywi 2500 osób więcej) albo port (większe dochody z handlu). W jednym przypadku na dziesięć w pobliskim historycznym miejscu powstaje małe nowe polis — twój wasal, który walczy we wszystkich twoich wojnach.'
     },
     {
+      term: 'Budowle polis',
+      desc: 'Kliknij nazwę swojego miasta w panelu, by otworzyć polis: trzy drzewa — rolnictwo, handel i wojsko — po sześć budowli, odblokowywanych po kolei. Każda budowla powstaje rok, kosztuje drachmy i część zadowolenia obywateli, a daje bonus całej polis.'
+    },
+    {
+      term: 'Zadowolenie',
+      desc: 'Zadowoleni obywatele szybciej pracują i się mnożą (×0,7 przy 0%, ×1,3 przy 100%). Zadowolenie spada, gdy przegrywasz bitwy lub tracisz ziemię, zasiedlasz dzicz, budujesz albo powołujesz hoplitów; rośnie w spokojnych czasach, dzięki zyskom z handlu, wygranym bitwom i wojnom oraz wysokiej projekcji siły. Po zakończeniu wojny dostajesz raport z jej bilansem.'
+    },
+    {
       term: 'Handel morski',
       desc: 'Polis nad morzem wysyła małe statki kupieckie do portów nadmorskich polis, z którymi nie prowadzi wojny. Każdy ukończony rejs daje właścicielowi 1 drachmę, powiększoną przez kulturę (+8% za punkt), a miastu docelowemu 30% tej kwoty. Każdy port pozwala wysłać jednocześnie o jeden statek więcej.'
     },
@@ -134,6 +142,56 @@ export const PL: Dict = {
   statPrestigeHint:
     'Zdobywana w wygranych bitwach. Rywale zastanowią się dwa razy, zanim cię zaatakują, miasta mogą zaproponować ci sojusz, a kupcy wolą twoje porty.',
   slavesHint: 'W tym {n} jeńców wziętych w bitwach.',
+  satisfaction: 'Zadowolenie',
+  satisfactionHint:
+    'Dochody i przyrost ×{m}. Spada, gdy przegrywasz bitwy lub tracisz ziemię, zasiedlasz dzicz, budujesz albo powołujesz hoplitów; rośnie w spokojnych czasach, dzięki handlowi, zwycięstwom i projekcji siły.',
+
+  // Polis screen
+  openPolis: 'Otwórz polis: budowle i bonusy',
+  polisScreenIntro: 'każda budowla powstaje rok i kosztuje drachmy oraz część przychylności obywateli.',
+  trees: { agriculture: 'Rolnictwo', trade: 'Handel', military: 'Wojsko' },
+  improvements: {
+    granary: { name: 'Spichlerz', desc: 'Zapasy ziarna na chude lata: +8% pojemności ziemi.' },
+    irrigation: { name: 'Kanały nawadniające', desc: 'Woda doprowadzona ze źródeł: +10% pojemności ziemi.' },
+    olives: { name: 'Gaje oliwne', desc: 'Oliwa do lamp, kuchni i na eksport: +10% dochodów.' },
+    vineyards: { name: 'Winnice', desc: 'Wino i święta: +5% dochodów, zadowolenie szybciej wraca.' },
+    terraces: { name: 'Tarasy na zboczach', desc: 'Osadnicy oswajają stoki: każdy zajmuje 25% więcej ziemi, +5% pojemności.' },
+    demeter: { name: 'Sanktuarium Demeter', desc: 'Bogini błogosławi żniwom: +15% przyrostu ludności, +10% pojemności.' },
+    agora: { name: 'Agora', desc: 'Plac targowy w sercu miasta: +8% dochodów.' },
+    mint: { name: 'Mennica', desc: 'Srebrne monety z godłem miasta: +10% dochodów.' },
+    shipyard: { name: 'Stocznia', desc: 'Pochylnie dla statków kupieckich: o jeden statek handlowy więcej.' },
+    guild: { name: 'Gildia kupców', desc: 'Umowy i kredyt: rejsy handlowe dają +50%.' },
+    emporion: { name: 'Emporion', desc: 'Faktorie za morzem: rozwój polis tańszy o 20%, o jeden statek więcej.' },
+    treasury: { name: 'Skarbiec w Delfach', desc: 'Lśniący dar dla Apollina: +2 projekcji siły, +10% dochodów.' },
+    gymnasium: { name: 'Gimnazjon', desc: 'Młodzi ćwiczą nago: hoplici tańsi o 20%.' },
+    armoury: { name: 'Zbrojownia', desc: 'Brązowe hełmy i nagolenice dla wszystkich: +5% siły w bitwie.' },
+    walls: { name: 'Mury miejskie', desc: 'Ciosowe mury wokół akropolu: garnizon walczy o 30% mocniej.' },
+    drill: { name: 'Musztra falangi', desc: 'Tarcza przy tarczy, krok w krok: +7% siły w bitwie.' },
+    barracks: { name: 'Koszary', desc: 'Wspólne posiłki obywateli-żołnierzy: o jedną armię więcej, marsz szybszy o 15%.' },
+    ares: { name: 'Świątynia Aresa', desc: 'Łaska boga wojny: +2 projekcji siły, +5% siły w bitwie.' }
+  },
+  build: 'Buduj',
+  buildCost: '{d} dr · −{s}%',
+  built: 'Zbudowano',
+  underConstruction: 'W budowie…',
+  lockedHint: 'Wymaga poprzedniej budowli',
+
+  // War report
+  warEndTitle: 'Wojna z polis {name} dobiegła końca',
+  warEndConquest: 'Polis {name} upadła',
+  warEndPeace: 'Zaprzysiężono pokój',
+  warDuration: 'Czas trwania',
+  yearsOne: '{n} rok',
+  yearsFew: '{n} lata',
+  yearsMany: '{n} lat',
+  warBattles: 'Bitwy',
+  warBattlesValue: 'wygrane {w} · przegrane {l}',
+  warLand: 'Ziemia',
+  warLandValue: '+{g} km² · −{l} km²',
+  warSpoils: 'Łupy',
+  warSpoilsValue: '{g} dr · {c} jeńców',
+  warMoodValue: '{n}%',
+  warEndAction: 'Niech tak będzie',
   buildingsHint:
     'Farmy, porty i polis-wasale powstałe dzięki rozwojowi, sojusznicy oraz statki kupieckie na morzu. Każdy rejs do przyjaznego portu daje {v} drachmy (z handlu dotąd {t}); miasto docelowe dostaje dodatkowo 30% tej kwoty.',
   vassalOf: 'Wasal polis {b}',

@@ -7,7 +7,11 @@
       <span class="swatch" [style.background]="'var(--color-' + me.color + ')'"></span>
       <div class="panel__titles">
         <span class="panel__eyebrow">{{ t.yourPolis }}</span>
-        <h2 class="panel__title">{{ name() }}</h2>
+        <button type="button" class="polis-btn" [appTooltip]="t.openPolis" (click)="openPolis()">
+          <lucide-icon [img]="icons.Landmark" [size]="15"></lucide-icon>
+          <span class="polis-btn__name">{{ name() }}</span>
+          <lucide-icon class="polis-btn__chevron" [img]="icons.ChevronRight" [size]="14"></lucide-icon>
+        </button>
       </div>
       <div class="panel__traits">
         <app-trait-pips kind="militarism" [label]="t.statMilitarism" [value]="me.militarism" [hint]="t.statMilitarismHint"></app-trait-pips>
@@ -17,6 +21,14 @@
         </span>
       </div>
     </header>
+
+    <div class="mood" [class]="'mood mood--' + moodLevel()" [appTooltip]="moodHint()">
+      <span class="mood__label">
+        <lucide-icon [img]="icons.Smile" [size]="12"></lucide-icon>{{ t.satisfaction }}
+      </span>
+      <span class="mood__track"><span class="mood__fill" [style.width.%]="me.satisfaction"></span></span>
+      <span class="mood__value">{{ round(me.satisfaction) }}%</span>
+    </div>
 
     <dl class="stats">
       <div class="stat stat--major" [appTooltip]="t.statPopulationHint">

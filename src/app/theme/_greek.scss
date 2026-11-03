@@ -1,0 +1,38 @@
+// Classical Greek ornament for the Polis HUD: the meander (Greek key) frieze in terracotta.
+@use "sass:string";
+@use "variables" as *;
+
+$terracotta: palette("warning-600");
+$terracotta-dark: palette("warning-800");
+$parchment: palette("warning-50");
+
+@function -encode($color) {
+  @return "%23" + string.slice("#{$color}", 2);
+}
+
+/** A running meander drawn as a repeating SVG band. */
+@mixin meander($color: $terracotta, $height: 10px) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='12' viewBox='0 0 16 12'%3E%3Cpath d='M0 11.25H16M13 11.25V.75H2.75V8.25H10.25V3.75H5.75V6' fill='none' stroke='#{-encode($color)}' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: auto $height;
+  background-position: left center;
+}
+
+/** Absolutely positioned frieze strip, e.g. under a header. */
+@mixin frieze($edge: bottom, $offset: 0, $inset: 16px, $height: 9px, $opacity: 0.55) {
+  content: "";
+  position: absolute;
+  left: $inset;
+  right: $inset;
+  #{$edge}: $offset;
+  height: $height;
+  opacity: $opacity;
+  pointer-events: none;
+  @include meander($terracotta, $height);
+}
+
+/** Display face for titles and names. */
+@mixin display-type($spacing: 0.06em) {
+  font-family: var(--font-family-display);
+  letter-spacing: $spacing;
+}

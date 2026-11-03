@@ -1,16 +1,20 @@
 import { Component, computed, inject } from '@angular/core';
+import { PopupService } from '@kmd/design-system';
 import {
   LucideAngularModule,
   Anchor,
   Building2,
+  ChevronRight,
   Coins,
   Crown,
   Flag,
   Handshake,
+  Landmark,
   MapIcon,
   Pickaxe,
   Sailboat,
   Shield,
+  Smile,
   Sprout,
   Swords,
   TrendingUp,
@@ -22,6 +26,7 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, formatRate, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { TraitPipsComponent } from './trait-pips.component';
+import { PolisScreenComponent } from './polis-screen.component';
 
 /** Bottom-dock panel: the player's polis figures and its domestic actions. */
 @Component({
@@ -35,7 +40,40 @@ export class PolisPanelComponent {
   readonly i18n = inject(I18nService);
   readonly game = inject(GameService);
 
-  readonly icons = { Anchor, Building2, Coins, Crown, Flag, Handshake, MapIcon, Pickaxe, Sailboat, Shield, Sprout, Swords, TrendingUp, Users, Wheat };
+  readonly icons = { Anchor, Building2, ChevronRight, Coins, Crown, Flag, Handshake, Landmark, Smile, MapIcon, Pickaxe, Sailboat, Shield, Sprout, Swords, TrendingUp, Users, Wheat };
+
+  private readonly popup = inject(PopupService);
+
+  readonly moodLevel = computed(() => {
+    const s = this.game.me()?.satisfaction ?? 0;
+    return s >= 60 ? 'high' : s >= 35 ? 'mid' : 'low';
+  });
+
+  readonly moodHint = computed(() => {
+    const me = this.game.me();
+    if (!me) return '';
+    return interpolate(this.i18n.t().satisfactionHint, {
+      m: me.mood.toLocaleString(this.i18n.lang(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    });
+  });
+
+  /** Opens the Polis screen; the clock stands still while the citizens are consulted. */
+  openPolis() {
+    const wasPaused = this.game.paused();
+    this.game.paused.set(true);
+    this.popup.open({
+      id: 'polis',
+      title: computed(() => this.name()),
+      component: PolisScreenComponent,
+      size: 'lg',
+      onClose: () => this.game.paused.set(wasPaused),
+      actions: [{ label: computed(() => this.i18n.t().close), variant: 'default' }]
+    });
+  }
+
+  round(value: number): number {
+    return Math.round(value);
+  }
 
   readonly name = computed(() => {
     const me = this.game.me();

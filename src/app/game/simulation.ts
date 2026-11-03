@@ -1,4 +1,12 @@
 import { POLEIS, PolisDef, SITES, SiteId } from './data/poleis';
+import {
+  IMPROVEMENT_BY_ID,
+  ImprovementEffects,
+  ImprovementId,
+  ImprovementTree,
+  NO_EFFECTS,
+  improvementCost
+} from './data/improvements';
 import { MinHeap } from './heap';
 import { hash01 } from './rng';
 import { Terrain, World } from './world';
@@ -80,6 +88,26 @@ export const RULES = {
   prestigeTradePull: 0.15,
   /** Per AI decision and per point of the player's power projection: chance to offer an alliance. */
   allianceOfferChance: 0.004,
+  /** Satisfaction (0–100): starting value and what moves it. */
+  satisfactionStart: 70,
+  /** Recovered per second while the citizens are left in peace… */
+  satisfactionRecovery: 0.2,
+  /** …which means this long after the last unpopular act (settling, levies, building). */
+  satisfactionCalm: 5,
+  /** Per second per point of power projection. */
+  satisfactionPerPrestige: 0.01,
+  /** Per drachma of trade income. */
+  satisfactionPerTrade: 0.08,
+  satisfactionBattleWon: 3,
+  satisfactionBattleLost: -4,
+  satisfactionWarWon: 8,
+  satisfactionWarLost: -6,
+  satisfactionPerCellLost: -0.02,
+  satisfactionSettle: -1,
+  satisfactionTrain: -1,
+  /** Income and growth run at this multiplier at 0% satisfaction, and its mirror at 100%. */
+  satisfactionLow: 0.7,
+  satisfactionHigh: 1.3,
   /** Cells per second. */
   armySpeedLand: 6.5,
   armySpeedSea: 4.2,
@@ -164,6 +192,45 @@ export interface PolisState {
   allies: Set<number>;
   /** No new alliance offers before this time. */
   embassyAt: number;
+  /** 0–100 contentment of the citizens. */
+  satisfaction: number;
+  /** Satisfaction only recovers on its own after this time. */
+  calmFrom: number;
+  /** Completed buildings of the Polis screen and their summed nationwide bonuses. */
+  built: Set<ImprovementId>;
+  effects: ImprovementEffects;
+  /** Buildings under construction (at most one per tree). */
+  works: Construction[];
+}
+
+export interface Construction {
+  id: ImprovementId;
+  tree: ImprovementTree;
+  start: number;
+  done: number;
+}
+
+/** Running tally of one of the player's wars, turned into a report when it ends. */
+export interface WarStats {
+  enemy: number;
+  start: number;
+  battlesWon: number;
+  battlesLost: number;
+  cellsGained: number;
+  cellsLost: number;
+  enemyLosses: number;
+  ownLosses: number;
+  gold: number;
+  captives: number;
+}
+
+export type WarOutcome = 'conquest' | 'peace';
+
+export interface WarReport extends WarStats {
+  outcome: WarOutcome;
+  years: number;
+  /** Satisfaction change brought by the end of the war. */
+  satisfaction: number;
 }
 
 /** Spoils of a battle won by the player, consumed by the UI. */
@@ -268,6 +335,10 @@ export class Simulation {
   tradeFx: TradeFx[] = [];
   /** Battles the player has won since the UI last took them. */
   reports: BattleReport[] = [];
+  /** Wars the player has finished since the UI last took them. */
+  warReports: WarReport[] = [];
+  /** Open wars of the player, by enemy. */
+  private playerWars = new Map<number, WarStats>();
   claims: Claim[] = [];
   events: GameEvent[] = [];
   time = 0;
@@ -357,7 +428,12 @@ export class Simulation {
       slaves: 0,
       prestige: 0,
       allies: new Set<number>(),
-      embassyAt: this.time + 60
+      embassyAt: this.time + 60,
+      satisfaction: RULES.satisfactionStart,
+      calmFrom: 0,
+      built: new Set<ImprovementId>(),
+      effects: { ...NO_EFFECTS },
+      works: []
     };
   }
 
@@ -430,6 +506,8 @@ export class Simulation {
     this.ships = [];
     this.tradeFx = [];
     this.reports = [];
+    this.warReports = [];
+    this.playerWars = new Map();
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
     this.floodClaim(
@@ -450,17 +528,30 @@ export class Simulation {
   // ─── Derived figures ──────────────────────────────────────────────────────
 
   capacity(p: PolisState): number {
-    return Math.max(1, p.fertility * RULES.peoplePerFertility + RULES.farmCapacity * p.farms);
+    const land = p.fertility * RULES.peoplePerFertility + RULES.farmCapacity * p.farms;
+    return Math.max(1, land * (1 + p.effects.capacity));
   }
 
   /** Multiplier applied to an army's (or garrison's) strength in battle. */
   battleMultiplier(idx: number): number {
-    return 1 + RULES.militarismBonus * this.poleis[idx].militarism;
+    const p = this.poleis[idx];
+    return 1 + RULES.militarismBonus * p.militarism + p.effects.battle;
+  }
+
+  /** Income and growth multiplier from the citizens' mood. */
+  moodFactor(p: PolisState): number {
+    const lo = RULES.satisfactionLow;
+    return lo + (RULES.satisfactionHigh - lo) * (p.satisfaction / 100);
   }
 
   developCost(p: PolisState): number {
     const base = RULES.developBase + this.totalPopulation(p) * RULES.developPerCapita;
-    return Math.round(base * (1 + RULES.developGrowth * p.developments));
+    return Math.round(base * (1 + RULES.developGrowth * p.developments) * (1 - p.effects.develop));
+  }
+
+  /** Settlers needed per cell of wilderness (terraces make each go further). */
+  settlersPerCell(p: PolisState): number {
+    return RULES.settlersPerCell / (1 + p.effects.settle);
   }
 
   canDevelop(p: PolisState): boolean {
@@ -501,7 +592,7 @@ export class Simulation {
   }
 
   canSettle(p: PolisState): boolean {
-    return p.alive && !p.expedition && this.wildCells > 0 && this.settlers(p) >= RULES.settlersPerCell;
+    return p.alive && !p.expedition && this.wildCells > 0 && this.settlers(p) >= this.settlersPerCell(p);
   }
 
   trainBatch(p: PolisState): number {
@@ -509,7 +600,7 @@ export class Simulation {
   }
 
   trainCost(p: PolisState): number {
-    return Math.ceil(this.trainBatch(p) * RULES.trainCostPerHoplite);
+    return Math.ceil(this.trainBatch(p) * RULES.trainCostPerHoplite * (1 - p.effects.train));
   }
 
   canTrain(p: PolisState): boolean {
@@ -539,6 +630,7 @@ export class Simulation {
       }
     }
     p.expedition = { settlers, initial: settlers, timer: 0, colony: false, frontier, queued };
+    this.mood(p, RULES.satisfactionSettle, true);
     this.emit('settle', idx);
   }
 
@@ -549,6 +641,62 @@ export class Simulation {
     p.drachmae -= this.trainCost(p);
     p.civilians -= batch;
     p.garrison += batch;
+    this.mood(p, RULES.satisfactionTrain, true);
+  }
+
+  /** Shifts satisfaction; unpopular acts also pause its natural recovery for a while. */
+  private mood(p: PolisState, delta: number, unpopular = false) {
+    p.satisfaction = Math.max(0, Math.min(100, p.satisfaction + delta));
+    if (unpopular) p.calmFrom = this.time + RULES.satisfactionCalm;
+  }
+
+  // ─── Polis buildings ──────────────────────────────────────────────────────
+
+  improvementState(p: PolisState, id: ImprovementId): 'built' | 'building' | 'available' | 'locked' {
+    if (p.built.has(id)) return 'built';
+    if (p.works.some(w => w.id === id)) return 'building';
+    const def = IMPROVEMENT_BY_ID.get(id)!;
+    const previous = [...IMPROVEMENT_BY_ID.values()].find(d => d.tree === def.tree && d.tier === def.tier - 1);
+    if (previous && !p.built.has(previous.id)) return 'locked';
+    if (p.works.some(w => w.tree === def.tree)) return 'locked';
+    return 'available';
+  }
+
+  canImprove(p: PolisState, id: ImprovementId): boolean {
+    const cost = improvementCost(IMPROVEMENT_BY_ID.get(id)!.tier);
+    return (
+      p.alive &&
+      this.improvementState(p, id) === 'available' &&
+      p.drachmae >= cost.drachmae &&
+      p.satisfaction >= cost.satisfaction
+    );
+  }
+
+  /** Lays the foundations of a building; it stands a year later. */
+  improve(idx: number, id: ImprovementId) {
+    const p = this.poleis[idx];
+    if (!this.canImprove(p, id)) return;
+    const def = IMPROVEMENT_BY_ID.get(id)!;
+    const cost = improvementCost(def.tier);
+    p.drachmae -= cost.drachmae;
+    this.mood(p, -cost.satisfaction, true);
+    p.works.push({ id, tree: def.tree, start: this.time, done: this.time + RULES.secondsPerYear });
+  }
+
+  private finishWorks(p: PolisState) {
+    const done = p.works.filter(w => this.time >= w.done);
+    if (!done.length) return;
+    p.works = p.works.filter(w => this.time < w.done);
+    for (const w of done) {
+      p.built.add(w.id);
+      p.prestige += IMPROVEMENT_BY_ID.get(w.id)!.effects.prestige ?? 0;
+    }
+    const fx: ImprovementEffects = { ...NO_EFFECTS };
+    for (const id of p.built) {
+      const effects = IMPROVEMENT_BY_ID.get(id)!.effects;
+      for (const key of Object.keys(effects) as (keyof ImprovementEffects)[]) fx[key] += effects[key] ?? 0;
+    }
+    p.effects = fx;
   }
 
   declareWar(a: number, b: number) {
@@ -604,6 +752,49 @@ export class Simulation {
     py.warStart.set(x, this.time);
     px.nextSpawn = Math.min(px.nextSpawn, this.time);
     py.nextSpawn = Math.min(py.nextSpawn, this.time + 1);
+    const enemy = x === this.player ? y : y === this.player ? x : -1;
+    if (enemy >= 0) {
+      this.playerWars.set(enemy, {
+        enemy,
+        start: this.time,
+        battlesWon: 0,
+        battlesLost: 0,
+        cellsGained: 0,
+        cellsLost: 0,
+        enemyLosses: 0,
+        ownLosses: 0,
+        gold: 0,
+        captives: 0
+      });
+    }
+  }
+
+  /** Closes the tally of one of the player's wars and queues its report. */
+  private endPlayerWar(enemy: number, outcome: WarOutcome) {
+    const stats = this.playerWars.get(enemy);
+    if (!stats || this.status !== 'playing') return;
+    this.playerWars.delete(enemy);
+    const me = this.poleis[this.player];
+    const balance = stats.cellsGained - stats.cellsLost + (stats.battlesWon - stats.battlesLost) * 20;
+    const satisfaction =
+      outcome === 'conquest' || balance > 0
+        ? RULES.satisfactionWarWon
+        : balance < 0
+          ? RULES.satisfactionWarLost
+          : 0;
+    this.mood(me, satisfaction);
+    this.warReports.push({
+      ...stats,
+      outcome,
+      years: Math.max(1, Math.round((this.time - stats.start) / RULES.secondsPerYear)),
+      satisfaction
+    });
+  }
+
+  takeWarReports(): WarReport[] {
+    const out = this.warReports;
+    this.warReports = [];
+    return out;
   }
 
   /** The player proposes peace; the enemy weighs the balance of power. Returns whether it was accepted. */
@@ -637,6 +828,8 @@ export class Simulation {
     pb.wars.delete(a);
     pa.warStart.delete(b);
     pb.warStart.delete(a);
+    if (a === this.player) this.endPlayerWar(b, 'peace');
+    if (b === this.player) this.endPlayerWar(a, 'peace');
     for (const battle of this.battles) {
       const owners = [battle.attacker.owner, battle.defenderIdx];
       if (owners.includes(a) && owners.includes(b)) {
@@ -792,6 +985,8 @@ export class Simulation {
 
     for (const p of this.poleis) {
       if (!p.alive) continue;
+      this.finishWorks(p);
+      this.contentment(p, dt);
       this.economy(p, dt);
       this.expedition(p, dt);
       if (p.idx !== this.player && this.time >= p.nextAi) {
@@ -819,18 +1014,28 @@ export class Simulation {
     this.checkEnd();
   }
 
+  /** Left in peace the citizens grow content; renown and buildings like vineyards help. */
+  private contentment(p: PolisState, dt: number) {
+    let rate = RULES.satisfactionPerPrestige * p.prestige + p.effects.regen;
+    if (this.time >= p.calmFrom) rate += RULES.satisfactionRecovery;
+    this.mood(p, rate * dt);
+  }
+
   private economy(p: PolisState, dt: number) {
     const capacity = this.capacity(p);
     const total = this.totalPopulation(p);
-    let growth = RULES.growthRate * p.prosperity * p.civilians * (1 - total / capacity);
+    const mood = this.moodFactor(p);
+    const rate = RULES.growthRate * p.prosperity * (1 + p.effects.growth) * mood;
+    let growth = rate * p.civilians * (1 - total / capacity);
     growth = Math.max(growth, -0.03 * p.civilians);
     p.civilians = Math.max(0, p.civilians + growth * dt);
 
     const avgFertility = p.fertility / Math.max(1, p.cells);
     const culture = 1 + RULES.cultureBonus * p.culture;
     const trade = 1 + RULES.portBonus * p.ports;
+    const bonus = (1 + p.effects.income) * mood;
     p.income =
-      this.workers(p) * RULES.incomePerWorker * p.prosperity * (0.7 + 0.3 * avgFertility) * culture * trade -
+      this.workers(p) * RULES.incomePerWorker * p.prosperity * (0.7 + 0.3 * avgFertility) * culture * trade * bonus -
       this.warriors(p) * RULES.upkeepPerWarrior;
     p.drachmae += p.income * dt;
     if (p.drachmae < 0) {
@@ -845,7 +1050,8 @@ export class Simulation {
     if (!e) return;
     e.timer += dt;
     const w = this.world;
-    while (e.timer >= 1 / RULES.settleRate && e.settlers >= RULES.settlersPerCell && this.wildCells > 0) {
+    const perCell = this.settlersPerCell(p);
+    while (e.timer >= 1 / RULES.settleRate && e.settlers >= perCell && this.wildCells > 0) {
       e.timer -= 1 / RULES.settleRate;
       let cell = e.frontier.pop();
       while (cell >= 0 && this.owner[cell] !== WILD) cell = e.frontier.pop();
@@ -859,7 +1065,7 @@ export class Simulation {
         }
       }
       this.setOwner(cell, p.idx, true);
-      e.settlers -= RULES.settlersPerCell;
+      e.settlers -= perCell;
       p.prosperity = Math.min(RULES.maxProsperity, p.prosperity + RULES.prosperityPerCell);
       const x = cell % w.cols;
       for (const n of w.neighbours4(x, (cell - x) / w.cols)) {
@@ -868,7 +1074,7 @@ export class Simulation {
         e.frontier.push(n, this.settleCost(p, n));
       }
     }
-    if (e.settlers < RULES.settlersPerCell || this.wildCells === 0) {
+    if (e.settlers < perCell || this.wildCells === 0) {
       // Whoever could not be given land returns home.
       p.civilians += Math.max(0, e.settlers);
       p.expedition = null;
@@ -908,6 +1114,11 @@ export class Simulation {
     // Vassals follow their overlord in war and peace.
     if (p.overlord >= 0 && this.poleis[p.overlord].alive) return;
     if (p.drachmae > this.developCost(p) * 1.5 && this.rand() < 0.08) this.develop(p.idx);
+    if (this.rand() < 0.06) {
+      const options = [...IMPROVEMENT_BY_ID.keys()].filter(id => this.canImprove(p, id));
+      const id = options[Math.floor(this.rand() * options.length)];
+      if (id && p.drachmae > improvementCost(IMPROVEMENT_BY_ID.get(id)!.tier).drachmae * 2) this.improve(p.idx, id);
+    }
 
     let worldWars = 0;
     for (const q of this.poleis) worldWars += q.wars.size;
@@ -966,7 +1177,7 @@ export class Simulation {
 
   /** Voyage income for a polis: the base fee raised by its culture. */
   tradeValue(p: PolisState): number {
-    return RULES.tradeIncome * (1 + RULES.cultureBonus * p.culture);
+    return RULES.tradeIncome * (1 + RULES.cultureBonus * p.culture) * (1 + p.effects.trade);
   }
 
   /** Sea cell beside the polis's coast closest to its port (or capital); -1 when landlocked. */
@@ -1002,7 +1213,7 @@ export class Simulation {
 
   /** Sends a merchant to a random friendly coastal polis, nearer ones more often. */
   private launchShip(p: PolisState) {
-    if (this.shipsOf(p.idx) >= Math.min(RULES.maxShips, 1 + p.ports)) return;
+    if (this.shipsOf(p.idx) >= Math.min(RULES.maxShips, 1 + p.ports) + p.effects.ships) return;
     const from = this.harbourOf(p);
     if (from < 0) return;
     const w = this.world;
@@ -1074,11 +1285,13 @@ export class Simulation {
     const amount = this.tradeValue(owner);
     owner.drachmae += amount;
     owner.tradeEarned += amount;
+    this.mood(owner, amount * RULES.satisfactionPerTrade);
     this.tradeFx.push({ x: s.x, y: s.y, t: this.time, amount, owner: owner.idx });
     // The receiving harbour profits too, though less than the shipowner.
     const share = amount * RULES.tradeReceiverShare;
     dest.drachmae += share;
     dest.tradeEarned += share;
+    this.mood(dest, share * RULES.satisfactionPerTrade);
     this.tradeFx.push({ x: s.x, y: s.y - 1.5, t: this.time, amount: share, owner: dest.idx });
   }
 
@@ -1174,7 +1387,7 @@ export class Simulation {
   private spawnArmy(p: PolisState) {
     let count = 0;
     for (const a of this.armies) if (a.owner === p.idx && !a.dead) count++;
-    const cap = Math.min(5, 1 + Math.floor(this.warriors(p) / 1500));
+    const cap = Math.min(5, 1 + Math.floor(this.warriors(p) / 1500)) + p.effects.armies;
     if (count >= cap || p.garrison < 100) return;
     const strength = Math.round(Math.max(50, p.garrison * 0.35));
     p.garrison -= strength;
@@ -1262,7 +1475,9 @@ export class Simulation {
     const atSea = cell < 0 || this.world.terrain[cell] === Terrain.Sea;
     const speed = atSea
       ? RULES.armySpeedSea
-      : RULES.armySpeedLand * (1 - Math.min(0.6, (this.world.elevation[cell] / 1000) * RULES.mountainSlowdown));
+      : RULES.armySpeedLand *
+        (1 + this.poleis[a.owner].effects.armySpeed) *
+        (1 - Math.min(0.6, (this.world.elevation[cell] / 1000) * RULES.mountainSlowdown));
     const step = Math.min(d, speed * dt);
     a.x += (dx / d) * step;
     a.y += (dy / d) * step;
@@ -1368,7 +1583,7 @@ export class Simulation {
 
       // Militarism tips the scales slightly; walls favour a defending garrison.
       const ma = this.battleMultiplier(att.owner);
-      const md = this.battleMultiplier(q.idx) * (def ? 1 : RULES.wallsBonus);
+      const md = this.battleMultiplier(q.idx) * (def ? 1 : RULES.wallsBonus * (1 + q.effects.walls));
       const sa = att.strength * ma;
       const sd = (def ? def.strength : q.garrison) * md;
       const pa = Math.pow(sa, 1.2) / (Math.pow(sa, 1.2) + Math.pow(sd, 1.2));
@@ -1404,7 +1619,25 @@ export class Simulation {
     w.drachmae += gold;
     w.slaves += slaves;
     w.prestige += RULES.prestigePerVictory;
+    this.mood(w, RULES.satisfactionBattleWon);
+    this.mood(this.poleis[loser], RULES.satisfactionBattleLost);
+    if (loser === this.player) {
+      const war = this.playerWars.get(winner);
+      if (war) {
+        war.battlesLost++;
+        war.ownLosses += enemyLosses;
+        war.enemyLosses += Math.max(0, ownLosses);
+      }
+    }
     if (winner !== this.player) return;
+    const war = this.playerWars.get(loser);
+    if (war) {
+      war.battlesWon++;
+      war.enemyLosses += enemyLosses;
+      war.ownLosses += Math.max(0, ownLosses);
+      war.gold += gold;
+      war.captives += slaves;
+    }
     let near = loser;
     let bestD = Infinity;
     for (const q of this.poleis) {
@@ -1467,6 +1700,14 @@ export class Simulation {
     const share = l.civilians / Math.max(1, l.cells);
     l.civilians -= share * 0.6;
     w.civilians += share * 0.3;
+    this.mood(l, RULES.satisfactionPerCellLost);
+    if (winner === this.player) {
+      const war = this.playerWars.get(loser);
+      if (war) war.cellsGained++;
+    } else if (loser === this.player) {
+      const war = this.playerWars.get(winner);
+      if (war) war.cellsLost++;
+    }
     this.setOwner(cell, winner, true);
     if (l.cells === 0) this.conquer(loser, winner);
   }
@@ -1475,6 +1716,8 @@ export class Simulation {
     const l = this.poleis[loser];
     const w = this.poleis[winner];
     if (!l.alive) return;
+    const war = winner === this.player ? this.playerWars.get(loser) : undefined;
+    if (war) war.cellsGained += l.cells;
     for (const c of this.world.greekCells) {
       if (this.owner[c] === loser) this.setOwner(c, winner, true);
     }
@@ -1491,6 +1734,8 @@ export class Simulation {
       this.poleis[e].wars.delete(loser);
       this.poleis[e].warStart.delete(loser);
     }
+    // A war of the player's ends with the fall of the enemy, whoever dealt the last blow.
+    if (l.wars.has(this.player)) this.endPlayerWar(loser, 'conquest');
     l.wars.clear();
     // Vassals of a fallen city go their own way; its treaties die with it.
     for (const v of this.poleis) {

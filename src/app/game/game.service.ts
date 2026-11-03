@@ -3,7 +3,8 @@ import { SplashService } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { polisName } from '../core/i18n/format';
 import { loadMapData } from './map-loader';
-import { DevelopmentOutcome, GameEvent, GameStatus, Simulation } from './simulation';
+import { IMPROVEMENTS, ImprovementId, ImprovementTree, improvementCost } from './data/improvements';
+import { DevelopmentOutcome, GameEvent, GameStatus, Simulation, WarReport } from './simulation';
 import { World } from './world';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
@@ -38,11 +39,28 @@ export interface PolisView {
   allies: number[];
   tradeValue: number;
   tradeEarned: number;
+  /** 0–100 contentment and the income/growth multiplier it gives. */
+  satisfaction: number;
+  mood: number;
+  /** Polis screen buildings (filled for the player only). */
+  improvements: ImprovementView[];
   vassals: number[];
   overlord: number;
   developCost: number;
   canDevelop: boolean;
   wars: number[];
+}
+
+export interface ImprovementView {
+  id: ImprovementId;
+  tree: ImprovementTree;
+  tier: number;
+  state: 'built' | 'building' | 'available' | 'locked';
+  /** 0–1 while under construction. */
+  progress: number;
+  drachmae: number;
+  satisfaction: number;
+  affordable: boolean;
 }
 
 /**
@@ -63,7 +81,8 @@ export type Notice =
       enemyLosses: number;
       ownLosses: number;
     }
-  | { kind: 'alliance'; from: number };
+  | { kind: 'alliance'; from: number }
+  | ({ kind: 'warEnd' } & WarReport);
 
 export type GameSpeed = 1 | 2 | 4;
 
@@ -184,6 +203,11 @@ export class GameService {
     if (!next) this.paused.set(this.pausedBeforeNotice);
   }
 
+  improve(id: ImprovementId) {
+    this.sim.improve(this.sim.player, id);
+    this.publish();
+  }
+
   acceptAlliance(from: number) {
     this.sim.ally(this.sim.player, from);
     this.publish();
@@ -277,6 +301,9 @@ export class GameService {
         ships: sim.shipsOf(p.idx),
         tradeValue: sim.tradeValue(p),
         tradeEarned: p.tradeEarned,
+        satisfaction: p.satisfaction,
+        mood: sim.moodFactor(p),
+        improvements: p.idx === sim.player ? this.improvementsOf(p.idx) : [],
         vassals: sim.vassalsOf(p.idx),
         overlord: p.overlord,
         developCost: sim.developCost(p),
@@ -288,12 +315,32 @@ export class GameService {
     this.collectNotices();
   }
 
+  private improvementsOf(idx: number): ImprovementView[] {
+    const sim = this.sim;
+    const p = sim.poleis[idx];
+    return IMPROVEMENTS.map(def => {
+      const cost = improvementCost(def.tier);
+      const work = p.works.find(w => w.id === def.id);
+      return {
+        id: def.id,
+        tree: def.tree,
+        tier: def.tier,
+        state: sim.improvementState(p, def.id),
+        progress: work ? Math.min(1, (sim.time - work.start) / (work.done - work.start)) : 0,
+        drachmae: cost.drachmae,
+        satisfaction: cost.satisfaction,
+        affordable: sim.canImprove(p, def.id)
+      };
+    });
+  }
+
   /** Turns fresh war declarations, embassies and the player's victories into notices that stop the clock. */
   private collectNotices() {
     const sim = this.sim;
     const fresh = sim.events.filter(e => e.id > this.lastEventId);
     if (fresh.length) this.lastEventId = fresh[fresh.length - 1].id;
     const reports = sim.takeReports();
+    const warReports = sim.takeWarReports();
     if (sim.status !== 'playing') return;
 
     const me = sim.poleis[sim.player];
@@ -324,6 +371,7 @@ export class GameService {
         ownLosses: sum('ownLosses')
       });
     }
+    for (const r of warReports) incoming.push({ kind: 'warEnd', ...r });
     if (!incoming.length) return;
     if (!this.notice()) {
       this.pausedBeforeNotice = this.paused();

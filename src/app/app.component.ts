@@ -15,7 +15,10 @@ import {
   Coins,
   Pickaxe,
   Flag,
-  Swords
+  Swords,
+  Hourglass,
+  MapIcon,
+  Smile
 } from 'lucide-angular';
 import {
   BrandComponent,
@@ -33,7 +36,7 @@ import {
 } from '@kmd/design-system';
 import { I18nService } from './core/i18n/i18n.service';
 import { Lang } from './core/i18n/i18n.types';
-import { formatNumber, formatYear, interpolate } from './core/i18n/format';
+import { formatNumber, formatYear, formatYears, interpolate } from './core/i18n/format';
 import { GameService } from './game/game.service';
 import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
@@ -77,8 +80,36 @@ export class AppComponent {
   @ViewChild('letterTpl', { static: true }) private letterTpl!: TemplateRef<unknown>;
   @ViewChild('reportTpl', { static: true }) private reportTpl!: TemplateRef<unknown>;
 
+  /** The open end-of-war report, localized (rendered with the battle report template). */
+  readonly warView = computed(() => {
+    const n = this.game.notice();
+    if (n?.kind !== 'warEnd') return null;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const num = (v: number) => formatNumber(v, lang);
+    const km2 = (cells: number) => num(Math.round((cells * this.game.world.cellKm * this.game.world.cellKm) / 10) * 10);
+    const mood = n.satisfaction > 0 ? `+${n.satisfaction}` : `${n.satisfaction}`;
+    return {
+      battles: '',
+      rows: [
+        { icon: this.icons.Hourglass, label: t.warDuration, value: formatYears(n.years, t) },
+        { icon: this.icons.Swords, label: t.warBattles, value: interpolate(t.warBattlesValue, { w: n.battlesWon, l: n.battlesLost }) },
+        { icon: this.icons.MapIcon, label: t.warLand, value: interpolate(t.warLandValue, { g: km2(n.cellsGained), l: km2(n.cellsLost) }) },
+        {
+          icon: this.icons.Flag,
+          label: t.reportLosses,
+          value: interpolate(t.reportLossesValue, { e: num(Math.round(n.enemyLosses)), o: num(Math.round(n.ownLosses)) })
+        },
+        { icon: this.icons.Coins, label: t.warSpoils, value: interpolate(t.warSpoilsValue, { g: num(n.gold), c: num(n.captives) }) },
+        { icon: this.icons.Smile, label: t.satisfaction, value: interpolate(t.warMoodValue, { n: mood }) }
+      ]
+    };
+  });
+
   /** The open victory report, localized. */
   readonly reportView = computed(() => {
+    const war = this.warView();
+    if (war) return war;
     const n = this.game.notice();
     if (n?.kind !== 'victory') return null;
     const t = this.i18n.t();
@@ -128,7 +159,7 @@ export class AppComponent {
     };
   });
 
-  readonly icons = { Globe, BookOpen, Play, Pause, FastForward, Maximize, RotateCcw, Coins, Pickaxe, Flag, Swords };
+  readonly icons = { Globe, BookOpen, Play, Pause, FastForward, Maximize, RotateCcw, Coins, Pickaxe, Flag, Swords, Hourglass, MapIcon, Smile };
 
   readonly currentView = signal<MapView>('political');
 
@@ -180,6 +211,7 @@ export class AppComponent {
       untracked(() => {
         if (n.kind === 'war') this.openLetter(n.from);
         else if (n.kind === 'alliance') this.openEmbassy(n.from);
+        else if (n.kind === 'warEnd') this.openWarEnd(n.enemy, n.outcome);
         else this.openReport(n.near);
       });
     });
@@ -259,6 +291,21 @@ export class AppComponent {
           onClick: () => this.game.acceptAlliance(from)
         }
       ]
+    });
+  }
+
+  private openWarEnd(enemy: number, outcome: 'conquest' | 'peace') {
+    const name = () => this.game.name(enemy);
+    this.popup.open({
+      id: 'war-end',
+      title: computed(() => interpolate(this.i18n.t().warEndTitle, { name: name() })),
+      subtitle: computed(() =>
+        outcome === 'conquest' ? interpolate(this.i18n.t().warEndConquest, { name: name() }) : this.i18n.t().warEndPeace
+      ),
+      template: this.reportTpl,
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => this.i18n.t().warEndAction), variant: 'play', hot: true }]
     });
   }
 

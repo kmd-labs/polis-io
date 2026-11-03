@@ -25,6 +25,13 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Sea trade**: coastal poleis send small merchant ships along sea routes to the harbours of coastal poleis
   they are not at war with. Each completed voyage earns the owner 1 drachma, raised by culture (+8% per point),
   and the receiving city 30% of that; every port lets one more ship sail at a time.
+- **Polis buildings**: the button with your city's name opens three trees — agriculture, trade and military —
+  of six buildings each (granary → sanctuary of Demeter, agora → treasury at Delphi, gymnasium → temple of Ares).
+  Each takes a year, costs drachmae and satisfaction, and grants a nationwide bonus.
+- **Satisfaction** (0–100%) scales income and growth from ×0.7 to ×1.3. It falls with lost battles and land,
+  settling, building and levies; it rises in quiet times, with trade, victories and power projection.
+- **War reports**: when one of your wars ends (peace or the enemy's fall) the game pauses with its balance —
+  duration, battles, land won and lost, the fallen, spoils and the effect on satisfaction.
 - **Victories**: every battle your army or garrison wins pauses the game with a report — a little gold
   (spoils), 15% of the beaten army taken captive as workers, and +1 power projection.
 - **Power projection**: makes your polis look stronger to would-be attackers, brings embassies offering a
@@ -36,7 +43,8 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   and only one walks out. Beating a capital's garrison annexes the whole polis.
 - **Win** by holding half of the Greek land or by being the last polis standing. You lose if your capital falls.
 
-The HUD shows total population, workers (able-bodied civilians) and warriors, plus treasury,
+The HUD is styled after classical Greece — parchment and marble panels, terracotta rules, meander friezes and
+Cinzel capitals for titles. It shows total population, workers (able-bodied civilians) and warriors, plus treasury,
 territory share and prosperity. Population follows Archaic densities: a few thousand to ten thousand people
 per city at the start, 25–35 people/km² on settled lowland, and roughly 2–3 million across a fully settled Hellas. <kbd>Space</kbd> pauses; the wheel or a pinch zooms; dragging pans.
 

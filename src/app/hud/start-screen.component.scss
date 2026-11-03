@@ -34,11 +34,11 @@
 
 .start {
   &__head {
-    padding: spacing("xl") spacing("xl") spacing("md");
+    padding: spacing("xl") spacing("xl") 26px;
     border-bottom: 1px solid color("line");
 
     @include respond-to("mobile") {
-      padding: spacing("md") spacing("lg") spacing("sm");
+      padding: spacing("md") spacing("lg") 22px;
     }
   }
 
