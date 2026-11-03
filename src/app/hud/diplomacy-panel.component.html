@@ -26,6 +26,15 @@
     }
 
     @if (target.alive) {
+      @if (relation(); as rel) {
+        <div class="relation" [class]="'relation relation--' + rel.level" [appTooltip]="t.relationHint">
+          <span class="relation__label">{{ t.relation }}</span>
+          <span class="relation__track">
+            <span class="relation__fill" [style.left.%]="rel.left" [style.width.%]="rel.width"></span>
+          </span>
+          <span class="relation__value">{{ rel.value }} · {{ rel.word }}</span>
+        </div>
+      }
       <div class="traits">
         <app-trait-pips kind="militarism" [label]="t.statMilitarism" [value]="target.militarism" [hint]="t.statMilitarismHint"></app-trait-pips>
         <app-trait-pips kind="culture" [label]="t.statCulture" [value]="target.culture" [hint]="t.statCultureHint"></app-trait-pips>

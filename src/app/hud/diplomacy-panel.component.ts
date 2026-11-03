@@ -55,6 +55,22 @@ export class DiplomacyPanelComponent {
     return interpolate(target.client ? this.i18n.t().clientOf : this.i18n.t().vassalOf, { b: this.name(target.overlord) });
   });
 
+  /** Reputation with the selected polis: −100…+100 mapped to a centred bar and a word. */
+  readonly relation = computed(() => {
+    const target = this.game.target();
+    if (!target) return null;
+    const t = this.i18n.t();
+    const v = Math.round(target.relation);
+    const level = v <= -50 ? 'hostile' : v < -15 ? 'unfriendly' : v <= 15 ? 'neutral' : v < 50 ? 'friendly' : 'cordial';
+    return {
+      value: v > 0 ? `+${v}` : `${v}`,
+      word: t.relationLevels[level],
+      level,
+      left: Math.min(50, 50 + v / 2),
+      width: Math.abs(v) / 2
+    };
+  });
+
   name(idx: number): string {
     this.i18n.t();
     return this.game.name(idx);

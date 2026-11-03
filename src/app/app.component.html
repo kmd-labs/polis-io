@@ -148,6 +148,23 @@
     }
   </ng-template>
 
+  <ng-template #conquestTpl>
+    <ul class="fates">
+      <li class="fate fate--raze">
+        <strong>{{ t.conquestRaze }}</strong>
+        <span>{{ t.conquestRazeDesc }}</span>
+      </li>
+      <li class="fate fate--subjugate">
+        <strong>{{ t.conquestSubjugate }}</strong>
+        <span>{{ t.conquestSubjugateDesc }}</span>
+      </li>
+      <li class="fate fate--alliance">
+        <strong>{{ t.conquestAlliance }}</strong>
+        <span>{{ t.conquestAllianceDesc }}</span>
+      </li>
+    </ul>
+  </ng-template>
+
   <app-popup [closeAriaLabel]="t.close"></app-popup>
   <app-tooltip></app-tooltip>
 </main>

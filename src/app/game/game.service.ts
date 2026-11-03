@@ -4,7 +4,7 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { polisName } from '../core/i18n/format';
 import { loadMapData } from './map-loader';
 import { IMPROVEMENTS, ImprovementId, ImprovementTree, improvementCost } from './data/improvements';
-import { DevelopmentOutcome, GameEvent, GameStatus, Simulation, WarReport } from './simulation';
+import { ConquestChoice, DevelopmentOutcome, GameEvent, GameStatus, Simulation, WarReport } from './simulation';
 import { World } from './world';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
@@ -48,6 +48,8 @@ export interface PolisView {
   overlord: number;
   client: boolean;
   besieged: number;
+  /** Diplomatic reputation between this polis and the player (−100…+100). */
+  relation: number;
   tributeGold: number;
   tributeWorkers: number;
   developCost: number;
@@ -86,7 +88,8 @@ export type Notice =
       ownLosses: number;
     }
   | { kind: 'alliance'; from: number }
-  | ({ kind: 'warEnd' } & WarReport);
+  | ({ kind: 'warEnd' } & WarReport)
+  | { kind: 'conquest'; from: number };
 
 export type GameSpeed = 1 | 2 | 4;
 
@@ -212,6 +215,11 @@ export class GameService {
     this.publish();
   }
 
+  resolveConquest(idx: number, choice: ConquestChoice) {
+    this.sim.resolveConquest(idx, choice);
+    this.publish();
+  }
+
   acceptAlliance(from: number) {
     this.sim.ally(this.sim.player, from);
     this.publish();
@@ -311,6 +319,7 @@ export class GameService {
         vassals: sim.vassalsOf(p.idx),
         client: p.client,
         besieged: p.besieged,
+        relation: sim.player >= 0 ? sim.relation(sim.player, p.idx) : 0,
         tributeGold: Math.round(p.tributeGold),
         tributeWorkers: Math.round(p.tributeWorkers),
         overlord: p.overlord,
@@ -349,6 +358,7 @@ export class GameService {
     if (fresh.length) this.lastEventId = fresh[fresh.length - 1].id;
     const reports = sim.takeReports();
     const warReports = sim.takeWarReports();
+    const conquests = sim.takeConquests();
     if (sim.status !== 'playing') return;
 
     const me = sim.poleis[sim.player];
@@ -379,6 +389,7 @@ export class GameService {
         ownLosses: sum('ownLosses')
       });
     }
+    for (const c of conquests) incoming.push({ kind: 'conquest', from: c });
     for (const r of warReports) incoming.push({ kind: 'warEnd', ...r });
     if (!incoming.length) return;
     if (!this.notice()) {

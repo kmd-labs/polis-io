@@ -136,6 +136,26 @@ export const RULES = {
   tributeWorkers: 0.003,
   /** Travel budget (cells) of the land a client state keeps around its capital. */
   clientReach: 12,
+  /** Fate chosen by the player for a conquered city: odds of the intended outcome. */
+  razeSuccess: 0.8,
+  subjugateSuccess: 0.6,
+  /** Diplomatic reputation (−100…+100 per pair of poleis): decay toward 0 per second… */
+  relationDecay: 0.01,
+  /** …and pressures per second. */
+  relationWar: -0.8,
+  relationNeighbour: -0.05,
+  relationPerMilitarism: -0.004,
+  relationPerArmy: -0.015,
+  relationPerCulture: 0.004,
+  relationPerPrestige: 0.003,
+  relationContent: 0.01,
+  relationDeclareWar: -30,
+  relationPeace: 5,
+  relationAlliance: 30,
+  /** Island poleis that do not feel the pull of border wars. */
+  islandPoleis: ['samos', 'naxos', 'korkyra', 'chios'] as readonly string[],
+  /** A bordering rival looks this much weaker to an ambitious neighbour. */
+  neighbourAggression: 1.35,
   /** Cells per second. */
   armySpeedLand: 6.5,
   armySpeedSea: 4.2,
@@ -232,6 +252,10 @@ export interface PolisState {
   remnant: 'city' | null;
   /** Armies camped before its walls (recounted every tick). */
   besieged: number;
+  /** Stormed by the player and waiting for its fate to be decided. */
+  captured: boolean;
+  /** Diplomatic reputation with every other polis, by index (−100…+100). */
+  relations: number[];
   /** Tribute received from client states so far. */
   tributeGold: number;
   tributeWorkers: number;
@@ -264,7 +288,9 @@ export interface WarStats {
 }
 
 export type WarOutcome = 'conquest' | 'peace';
-export type FallOutcome = 'razed' | 'city' | 'client';
+export type FallOutcome = 'razed' | 'city' | 'client' | 'revolt' | 'ransom' | 'alliance';
+/** What the player decides for a city whose walls they have breached. */
+export type ConquestChoice = 'raze' | 'subjugate' | 'alliance';
 
 export interface WarReport extends WarStats {
   outcome: WarOutcome;
@@ -359,7 +385,10 @@ export type GameEventKind =
   | 'siege'
   | 'client'
   | 'annexed'
-  | 'secession';
+  | 'secession'
+  | 'captured'
+  | 'revolt'
+  | 'ransom';
 
 export interface GameEvent {
   id: number;
@@ -389,6 +418,11 @@ export class Simulation {
   warReports: WarReport[] = [];
   /** Open wars of the player, by enemy. */
   private playerWars = new Map<number, WarStats>();
+  /** Cities the player has stormed, awaiting a decision. */
+  private conquests: number[] = [];
+  /** Pairs of poleis whose land touches (key: lower * 4096 + higher), refreshed every second. */
+  private borders = new Set<number>();
+  private nextDiplomacy = 0;
   claims: Claim[] = [];
   events: GameEvent[] = [];
   time = 0;
@@ -484,6 +518,8 @@ export class Simulation {
       calmFrom: 0,
       founded: this.time,
       client: false,
+      captured: false,
+      relations: [],
       remnant: null,
       besieged: 0,
       tributeGold: 0,
@@ -565,6 +601,9 @@ export class Simulation {
     this.reports = [];
     this.warReports = [];
     this.playerWars = new Map();
+    this.conquests = [];
+    this.borders = new Set();
+    this.nextDiplomacy = 0;
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
     this.floodClaim(
@@ -768,6 +807,7 @@ export class Simulation {
     // Overlords and vassals march together…
     const theirs = this.bloc(b);
     for (const x of mine) for (const y of theirs) this.link(x, y);
+    this.shiftRelation(a, b, RULES.relationDeclareWar);
     this.emit('war', a, b);
     // …and the defender's allies come to its aid.
     for (const d of theirs) {
@@ -790,7 +830,68 @@ export class Simulation {
     if (pa.wars.has(b)) this.makePeace(a, b);
     pa.allies.add(b);
     pb.allies.add(a);
+    this.shiftRelation(a, b, RULES.relationAlliance);
     this.emit('alliance', a, b);
+  }
+
+  /** Diplomatic reputation between two poleis (−100…+100). */
+  relation(a: number, b: number): number {
+    return this.poleis[a]?.relations[b] ?? 0;
+  }
+
+  private shiftRelation(a: number, b: number, delta: number) {
+    if (a === b) return;
+    const v = Math.max(-100, Math.min(100, this.relation(a, b) + delta));
+    this.poleis[a].relations[b] = v;
+    this.poleis[b].relations[a] = v;
+  }
+
+  /** Whether the lands of two poleis touch. */
+  bordering(a: number, b: number): boolean {
+    return this.borders.has(Math.min(a, b) * 4096 + Math.max(a, b));
+  }
+
+  private updateBorders() {
+    const w = this.world;
+    const own = this.owner;
+    const set = new Set<number>();
+    for (const c of w.greekCells) {
+      const o = own[c];
+      if (o < 0) continue;
+      const x = c % w.cols;
+      for (const n of [x < w.cols - 1 ? c + 1 : -1, c + w.cols < w.size ? c + w.cols : -1]) {
+        const q = n >= 0 ? own[n] : -1;
+        if (q >= 0 && q !== o) set.add(Math.min(o, q) * 4096 + Math.max(o, q));
+      }
+    }
+    this.borders = set;
+  }
+
+  /**
+   * Once a second every pair's reputation drifts back toward neutral while wars, shared borders and
+   * armies sour it, and culture, renown and contented citizens sweeten it — very slowly.
+   */
+  private driftRelations(dt: number) {
+    const alive = this.poleis.filter(p => p.alive);
+    const avgArmy = alive.reduce((s, p) => s + this.warriors(p), 0) / Math.max(1, alive.length);
+    const army = new Map(alive.map(p => [p.idx, Math.min(3, this.warriors(p) / Math.max(1, avgArmy))]));
+    const warmth = (p: PolisState) =>
+      RULES.relationPerCulture * p.culture +
+      Math.min(0.05, RULES.relationPerPrestige * p.prestige) +
+      (p.satisfaction > 70 ? RULES.relationContent : 0);
+    for (let i = 0; i < alive.length; i++) {
+      for (let j = i + 1; j < alive.length; j++) {
+        const a = alive[i];
+        const b = alive[j];
+        let delta = -this.relation(a.idx, b.idx) * RULES.relationDecay;
+        if (a.wars.has(b.idx)) delta += RULES.relationWar;
+        if (this.bordering(a.idx, b.idx)) delta += RULES.relationNeighbour;
+        delta += RULES.relationPerMilitarism * (a.militarism + b.militarism);
+        delta += RULES.relationPerArmy * (army.get(a.idx)! + army.get(b.idx)!);
+        delta += warmth(a) + warmth(b);
+        this.shiftRelation(a.idx, b.idx, delta * dt);
+      }
+    }
   }
 
   /** The player turned an embassy away; the city will not ask again for a while. */
@@ -862,7 +963,9 @@ export class Simulation {
     if (!this.canOfferPeace(pa, b)) return false;
     const ratio = this.warriors(pa) / Math.max(1, this.warriors(pb));
     const weary = this.time - (pa.warStart.get(b) ?? this.time) > 45;
-    const accept = ratio > 1.3 || (weary && this.rand() < 0.5) || this.rand() < 0.2;
+    // A city that thinks well of you is readier to sheathe the sword.
+    const goodwill = this.relation(a, b) / 200;
+    const accept = ratio > 1.3 - goodwill || (weary && this.rand() < 0.5 + goodwill) || this.rand() < 0.2 + goodwill;
     if (accept) {
       this.makePeace(a, b);
     } else {
@@ -875,6 +978,7 @@ export class Simulation {
   makePeace(a: number, b: number) {
     if (!this.poleis[a].wars.has(b)) return;
     for (const x of this.bloc(a)) for (const y of this.bloc(b)) this.unlink(x, y);
+    this.shiftRelation(a, b, RULES.relationPeace);
     this.emit('peace', a, b);
   }
 
@@ -1062,6 +1166,12 @@ export class Simulation {
       }
     }
 
+    if (this.time >= this.nextDiplomacy) {
+      this.updateBorders();
+      this.driftRelations(1);
+      this.nextDiplomacy = this.time + 1;
+    }
+
     this.sailShips(dt);
     this.tradeFx = this.tradeFx.filter(f => this.time - f.t < 2);
 
@@ -1185,6 +1295,7 @@ export class Simulation {
   }
 
   private think(p: PolisState) {
+    if (p.captured) return;
     if (this.canSettle(p) && this.rand() < 0.3) this.settle(p.idx);
     const militancy = 0.05 + 0.015 * p.militarism;
     if (this.canTrain(p) && this.warriors(p) < p.civilians * militancy && this.rand() < 0.6) this.train(p.idx);
@@ -1208,12 +1319,17 @@ export class Simulation {
       let bestRatio = crowded ? 1.05 : 1.4 - Math.min(0.3, this.time / 1200);
       const mine = this.warriors(p);
       const friends = this.bloc(p.idx);
+      const island = (x: PolisState) => RULES.islandPoleis.includes(x.def.id);
       for (const q of this.poleis) {
-        if (!q.alive || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0 || p.allies.has(q.idx)) continue;
+        if (!q.alive || q.captured || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0 || p.allies.has(q.idx)) continue;
         if (q.idx === this.player && this.time < RULES.aiPlayerGrace) continue;
         if (Math.hypot(q.cx - p.cx, q.cy - p.cy) > RULES.aiWarRange) continue;
         // A fearsome reputation makes a city look stronger than it is.
-        const ratio = mine / Math.max(1, this.warriors(q) * (1 + RULES.prestigeDeterrence * q.prestige));
+        let ratio = mine / Math.max(1, this.warriors(q) * (1 + RULES.prestigeDeterrence * q.prestige));
+        // Border quarrels make a neighbour a tempting target (islands keep to themselves)…
+        if (this.bordering(p.idx, q.idx) && !island(p) && !island(q)) ratio *= RULES.neighbourAggression;
+        // …and bad blood makes any rival look weaker than it is.
+        ratio *= 1 - this.relation(p.idx, q.idx) / 200;
         if (ratio > bestRatio) {
           bestRatio = ratio;
           target = q.idx;
@@ -1231,7 +1347,8 @@ export class Simulation {
       !p.allies.has(me.idx) &&
       !p.wars.has(me.idx) &&
       !this.bloc(me.idx).includes(p.idx) &&
-      this.rand() < RULES.allianceOfferChance * me.prestige
+      this.relation(p.idx, me.idx) > -20 &&
+      this.rand() < RULES.allianceOfferChance * me.prestige * (1 + this.relation(p.idx, me.idx) / 50)
     ) {
       p.embassyAt = this.time + 120;
       this.emit('allianceOffer', p.idx, me.idx);
@@ -1300,7 +1417,8 @@ export class Simulation {
       const harbour = this.harbourOf(q);
       if (harbour < 0) continue;
       const d = Math.hypot((harbour % w.cols) - (from % w.cols), Math.floor(harbour / w.cols) - Math.floor(from / w.cols));
-      const pull = (1 + RULES.prestigeTradePull * q.prestige) * (p.allies.has(q.idx) ? 2 : 1);
+      const pull =
+        (1 + RULES.prestigeTradePull * q.prestige) * (p.allies.has(q.idx) ? 2 : 1) * (1 + this.relation(p.idx, q.idx) / 200);
       options.push({ q, harbour, weight: pull / (d + 60) });
     }
     if (!options.length) return;
@@ -1835,14 +1953,41 @@ export class Simulation {
   private conquer(loser: number, winner: number) {
     const l = this.poleis[loser];
     const w = this.poleis[winner];
-    if (!l.alive) return;
+    if (!l.alive || l.captured) return;
+    if (winner === this.player && loser !== this.player) {
+      // The player decides the fate of the city; until then it is held, disarmed and at peace.
+      this.disarm(l);
+      l.captured = true;
+      l.garrison = 0;
+      this.conquests.push(loser);
+      this.emit('captured', loser, winner);
+      return;
+    }
     // The player's own fall always ends the game.
     const fate = loser === this.player ? 'city' : this.fallOutcome(l);
     const cellsBefore = l.cells;
+    const atWarWithPlayer = l.wars.has(this.player);
+    this.disarm(l);
 
+    if (this.rand() < RULES.secessionChance) this.secede(l);
+
+    if (fate === 'client') {
+      this.makeClient(l, winner);
+    } else {
+      this.raze(l, winner, fate === 'city' ? 'city' : null);
+    }
+
+    const war = winner === this.player ? this.playerWars.get(loser) : undefined;
+    if (war) war.cellsGained += cellsBefore - l.cells;
+    // A war of the player's ends with the fall of the enemy, whoever dealt the last blow.
+    if (atWarWithPlayer) this.endPlayerWar(loser, 'conquest', fate);
+  }
+
+  /** Disbands a fallen city's armies and expedition and dissolves its wars, treaties and vassalage. */
+  private disarm(l: PolisState) {
+    const loser = l.idx;
     for (const a of this.armies) if (a.owner === loser) a.dead = true;
     l.expedition = null;
-    const atWarWithPlayer = l.wars.has(this.player);
     for (const e of l.wars) {
       this.poleis[e].wars.delete(loser);
       this.poleis[e].warStart.delete(loser);
@@ -1857,60 +2002,128 @@ export class Simulation {
       v.allies.delete(loser);
     }
     l.allies.clear();
+  }
 
-    if (this.rand() < RULES.secessionChance) this.secede(l);
+  /** The city is gone: its land passes to the victor, and at most a town remains. */
+  private raze(l: PolisState, winner: number, remnant: 'city' | null) {
+    const w = this.poleis[winner];
+    const loser = l.idx;
+    for (const c of this.world.greekCells) {
+      if (this.owner[c] === loser) this.setOwner(c, winner, true);
+    }
+    w.civilians += l.civilians * 0.5;
+    w.slaves += l.slaves * 0.5;
+    l.civilians = 0;
+    l.slaves = 0;
+    l.garrison = 0;
+    l.alive = false;
+    l.conqueror = winner;
+    l.remnant = remnant;
+    this.emit(remnant === 'city' ? 'annexed' : 'fall', loser, winner);
+  }
 
-    if (fate === 'client') {
-      // Keep the heartland around the capital; the rest goes to the victor.
-      const keep = new Set<number>();
-      const heap = new MinHeap();
-      const cost = new Map<number, number>([[l.capital, 0]]);
-      heap.push(l.capital, 0);
-      const ww = this.world;
-      while (heap.size) {
-        const k = heap.peekKey();
-        const c = heap.pop();
-        if (keep.has(c) || k > (cost.get(c) ?? Infinity)) continue;
-        keep.add(c);
-        const x = c % ww.cols;
-        for (const n of ww.neighbours4(x, (c - x) / ww.cols)) {
-          const next = k + 1;
-          if (this.owner[n] !== loser || next > RULES.clientReach || next >= (cost.get(n) ?? Infinity)) continue;
-          cost.set(n, next);
-          heap.push(n, next);
-        }
+  /** The city keeps its heartland but serves the victor and pays tribute. */
+  private makeClient(l: PolisState, winner: number) {
+    const w = this.poleis[winner];
+    const loser = l.idx;
+    // Keep the heartland around the capital; the rest goes to the victor.
+    const keep = new Set<number>();
+    const heap = new MinHeap();
+    const cost = new Map<number, number>([[l.capital, 0]]);
+    heap.push(l.capital, 0);
+    const ww = this.world;
+    while (heap.size) {
+      const k = heap.peekKey();
+      const c = heap.pop();
+      if (keep.has(c) || k > (cost.get(c) ?? Infinity)) continue;
+      keep.add(c);
+      const x = c % ww.cols;
+      for (const n of ww.neighbours4(x, (c - x) / ww.cols)) {
+        const next = k + 1;
+        if (this.owner[n] !== loser || next > RULES.clientReach || next >= (cost.get(n) ?? Infinity)) continue;
+        cost.set(n, next);
+        heap.push(n, next);
       }
-      const share = keep.size / Math.max(1, l.cells);
-      for (const c of this.world.greekCells) {
-        if (this.owner[c] === loser && !keep.has(c)) this.setOwner(c, winner, true);
+    }
+    const share = keep.size / Math.max(1, l.cells);
+    for (const c of this.world.greekCells) {
+      if (this.owner[c] === loser && !keep.has(c)) this.setOwner(c, winner, true);
+    }
+    w.civilians += l.civilians * (1 - share) * 0.5;
+    l.civilians *= share;
+    l.slaves = 0;
+    l.garrison = l.civilians * RULES.startGarrison;
+    l.overlord = winner;
+    l.client = true;
+    l.satisfaction = Math.min(l.satisfaction, 40);
+    this.emit('client', loser, winner);
+  }
+
+  takeConquests(): number[] {
+    const out = this.conquests;
+    this.conquests = [];
+    return out;
+  }
+
+  /**
+   * Carries out the player's decision for a stormed city; every choice ends the war.
+   * Razing usually yields gold and slaves but may provoke a revolt; subjugation usually makes a
+   * client state, otherwise a ransom; a forced alliance always holds, with a little gold.
+   */
+  resolveConquest(idx: number, choice: ConquestChoice) {
+    const l = this.poleis[idx];
+    if (!l?.captured) return;
+    l.captured = false;
+    const me = this.poleis[this.player];
+    const war = this.playerWars.get(idx);
+    const cellsBefore = l.cells;
+    const pop = l.civilians + l.slaves;
+    let fate: FallOutcome;
+    let gold = 0;
+    let slaves = 0;
+
+    if (choice === 'raze') {
+      if (this.rand() < RULES.razeSuccess) {
+        gold = Math.round(l.drachmae * 0.5 + pop * 0.05);
+        slaves = Math.round(pop * 0.2);
+        l.civilians = Math.max(0, l.civilians - slaves);
+        this.raze(l, this.player, null);
+        fate = 'razed';
+      } else {
+        // The citizens rise and drive the occupiers out.
+        l.garrison = Math.round(l.civilians * 0.05);
+        l.satisfaction = 85;
+        this.shiftRelation(idx, this.player, -40);
+        this.mood(me, -4);
+        this.emit('revolt', idx, this.player);
+        fate = 'revolt';
       }
-      w.civilians += l.civilians * (1 - share) * 0.5;
-      l.civilians *= share;
-      l.slaves = 0;
-      l.garrison = l.civilians * RULES.startGarrison;
-      l.overlord = winner;
-      l.client = true;
-      l.satisfaction = Math.min(l.satisfaction, 40);
-      this.emit('client', loser, winner);
+    } else if (choice === 'subjugate') {
+      if (this.rand() < RULES.subjugateSuccess) {
+        this.makeClient(l, this.player);
+        fate = 'client';
+      } else {
+        gold = Math.round(l.drachmae * 0.6 + pop * 0.12);
+        l.drachmae *= 0.4;
+        l.garrison = Math.round(l.civilians * 0.02);
+        this.emit('ransom', idx, this.player);
+        fate = 'ransom';
+      }
     } else {
-      for (const c of this.world.greekCells) {
-        if (this.owner[c] === loser) this.setOwner(c, winner, true);
-      }
-      w.civilians += l.civilians * 0.5;
-      w.slaves += l.slaves * 0.5;
-      l.civilians = 0;
-      l.slaves = 0;
-      l.garrison = 0;
-      l.alive = false;
-      l.conqueror = winner;
-      l.remnant = fate === 'city' ? 'city' : null;
-      this.emit(fate === 'city' ? 'annexed' : 'fall', loser, winner);
+      gold = Math.round(40 + pop * 0.01);
+      l.garrison = Math.round(l.civilians * 0.02);
+      this.ally(this.player, idx);
+      fate = 'alliance';
     }
 
-    const war = winner === this.player ? this.playerWars.get(loser) : undefined;
-    if (war) war.cellsGained += cellsBefore - l.cells;
-    // A war of the player's ends with the fall of the enemy, whoever dealt the last blow.
-    if (atWarWithPlayer) this.endPlayerWar(loser, 'conquest', fate);
+    me.drachmae += gold;
+    me.slaves += slaves;
+    if (war) {
+      war.gold += gold;
+      war.captives += slaves;
+      war.cellsGained += cellsBefore - (l.alive ? l.cells : 0);
+    }
+    this.endPlayerWar(idx, 'conquest', fate);
   }
 
   /** In the chaos of a fall, an outlying town declares itself an independent polis. */

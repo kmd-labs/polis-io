@@ -287,6 +287,46 @@
   }
 }
 
+.fates {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: spacing("xs");
+}
+
+.fate {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: spacing("sm") spacing("md");
+  border-left: 3px solid var(--fate-color);
+  border-radius: radius("xs");
+  background: #{rgba(palette("warning-100"), 0.55)};
+  --fate-color: #{palette("danger-600")};
+
+  &--subjugate {
+    --fate-color: #{palette("warning-600")};
+  }
+
+  &--alliance {
+    --fate-color: #{palette("success-600")};
+  }
+
+  strong {
+    font-family: var(--font-family-display);
+    font-size: font-size("sm");
+    letter-spacing: 0.04em;
+    color: var(--fate-color);
+  }
+
+  span {
+    font-size: font-size("sm");
+    line-height: 1.45;
+    color: color("text-desc");
+  }
+}
+
 .report {
   margin: 0;
   display: grid;

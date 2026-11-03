@@ -21,7 +21,10 @@ const TEMPLATE_KEY = {
   siege: 'evSiege',
   client: 'evClient',
   annexed: 'evAnnexed',
-  secession: 'evSecession'
+  secession: 'evSecession',
+  captured: 'evCaptured',
+  revolt: 'evRevolt',
+  ransom: 'evRansom'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Floating feed of the latest wars, treaties, colonies and conquests (top-right, under the view switcher). */
@@ -55,7 +58,7 @@ export class ChronicleComponent {
         year: formatYear(e.year, t),
         text: interpolate(t[TEMPLATE_KEY[e.kind]], { a: name(e.a), b: name(e.b) }),
         mine: e.a === player || e.b === player,
-        hostile: ['war', 'fall', 'siege', 'client', 'annexed'].includes(e.kind)
+        hostile: ['war', 'fall', 'siege', 'client', 'annexed', 'revolt'].includes(e.kind)
       }));
   });
 }

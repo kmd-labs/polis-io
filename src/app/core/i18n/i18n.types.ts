@@ -107,6 +107,7 @@ export interface Dict {
 
   // Polis screen
   openPolis: string;
+  buildings: string;
   polisScreenIntro: string;
   trees: Record<ImprovementTree, string>;
   improvements: Record<ImprovementId, { name: string; desc: string }>;
@@ -121,6 +122,9 @@ export interface Dict {
   warEndConquest: string;
   warEndCity: string;
   warEndClient: string;
+  warEndRevolt: string;
+  warEndRansom: string;
+  warEndAlliance: string;
   warEndPeace: string;
   warDuration: string;
   yearsOne: string;
@@ -171,6 +175,24 @@ export interface Dict {
   evClient: string;
   evAnnexed: string;
   evSecession: string;
+  evCaptured: string;
+  evRevolt: string;
+  evRansom: string;
+
+  // Conquest decision
+  conquestTitle: string;
+  conquestSubtitle: string;
+  conquestRaze: string;
+  conquestRazeDesc: string;
+  conquestSubjugate: string;
+  conquestSubjugateDesc: string;
+  conquestAlliance: string;
+  conquestAllianceDesc: string;
+
+  // Diplomatic reputation
+  relation: string;
+  relationHint: string;
+  relationLevels: Record<'hostile' | 'unfriendly' | 'neutral' | 'friendly' | 'cordial', string>;
   evAllianceOffer: string;
 
   // Battle report

@@ -50,7 +50,7 @@ export const EN: Dict = {
     },
     {
       term: 'Polis buildings',
-      desc: 'Click your city’s name in the dock to open the polis: three trees — agriculture, trade and military — of six buildings each, unlocked in order. Every building takes a year to raise, costs drachmae and some of the citizens’ satisfaction, and grants a bonus to the whole polis.'
+      desc: 'The Buildings button in your panel opens three trees — agriculture, trade and military — of six buildings each, unlocked in order. Every building takes a year to raise, costs drachmae and some of the citizens’ satisfaction, and grants a bonus to the whole polis.'
     },
     {
       term: 'Satisfaction',
@@ -79,6 +79,14 @@ export const EN: Dict = {
     {
       term: 'Sieges and the fall of a polis',
       desc: 'An army reaching an enemy capital camps before its walls for about two and a half years before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
+    },
+    {
+      term: 'Conquest',
+      desc: 'When your army storms an enemy capital, the game stops and you decide its fate, ending the war: raze it (usually gold and slaves, sometimes a revolt that revives it), subjugate it (usually a tribute-paying client state, otherwise a large ransom) or force it into an alliance.'
+    },
+    {
+      term: 'Diplomatic reputation',
+      desc: 'Every pair of poleis has a reputation from −100 to +100 that drifts around neutral. Wars, shared borders and big armies lower it; culture, power projection and contented citizens raise it very slowly. Neighbours quarrel and go to war more often — except the island cities of Samos, Naxos, Corcyra and Chios.'
     },
     {
       term: 'Battle',
@@ -151,7 +159,8 @@ export const EN: Dict = {
     'Income and growth ×{m}. Falls when you lose battles or land, settle the wilderness, build or levy hoplites; rises in quiet times, with trade, victories and power projection.',
 
   // Polis screen
-  openPolis: 'Open the polis: buildings and bonuses',
+  openPolis: 'Open the polis buildings: three trees of improvements with nationwide bonuses',
+  buildings: 'Buildings',
   polisScreenIntro: 'every building takes a year to raise and costs drachmae and some of the citizens’ goodwill.',
   trees: { agriculture: 'Agriculture', trade: 'Trade', military: 'Military' },
   improvements: {
@@ -185,6 +194,9 @@ export const EN: Dict = {
   warEndConquest: '{name} has been razed',
   warEndCity: '{name} survives as a city within the victor’s borders',
   warEndClient: '{name} has become a client state',
+  warEndRevolt: '{name} rose in revolt and is free again',
+  warEndRansom: '{name} paid a ransom and remains free',
+  warEndAlliance: '{name} is now bound to you as an ally',
   warEndPeace: 'Peace has been sworn',
   warDuration: 'Duration',
   yearsOne: '{n} year',
@@ -236,6 +248,25 @@ export const EN: Dict = {
   evClient: '{a} became a client state of {b}',
   evAnnexed: '{a} now lies within the borders of {b}',
   evSecession: '{b} broke away from {a}',
+  evCaptured: '{b} stormed {a}',
+  evRevolt: '{a} rose in revolt against {b}',
+  evRansom: '{a} bought its freedom from {b}',
+
+  // Conquest decision
+  conquestTitle: '{name} lies at your feet',
+  conquestSubtitle: 'The walls are breached. Decide the fate of the city — this ends the war.',
+  conquestRaze: 'Raze the city',
+  conquestRazeDesc: '80%: the city is torn down; its gold and many slaves are yours. 20%: the citizens rise in revolt and the polis is reborn.',
+  conquestSubjugate: 'Subjugate',
+  conquestSubjugateDesc: '60%: it becomes your client state and pays tribute in drachmae and workers. 40%: it buys its freedom with a large ransom and stays independent.',
+  conquestAlliance: 'Force an alliance',
+  conquestAllianceDesc: 'It is bound to you as an ally for certain, with a little gold as consolation.',
+
+  // Diplomatic reputation
+  relation: 'Relations',
+  relationHint:
+    'Diplomatic reputation between your polis and this one (−100 to +100). It drifts back toward neutral; wars, shared borders and large armies sour it, while culture, power projection and contented citizens (over 70%) slowly sweeten it. Poor relations invite war; good ones bring peace, alliances and merchants.',
+  relationLevels: { hostile: 'hostile', unfriendly: 'unfriendly', neutral: 'neutral', friendly: 'friendly', cordial: 'cordial' },
   evAllianceOffer: '{a} sent envoys to {b}',
 
   // Battle report

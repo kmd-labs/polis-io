@@ -60,6 +60,65 @@
   }
 }
 
+.relation {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: spacing("xs");
+  width: 100%;
+  cursor: default;
+  --rel-color: var(--color-neutral-500);
+
+  &--hostile,
+  &--unfriendly {
+    --rel-color: var(--color-danger-500);
+  }
+
+  &--friendly,
+  &--cordial {
+    --rel-color: var(--color-success-500);
+  }
+
+  &__label {
+    font-size: font-size("xxs");
+    color: color("text-dim");
+  }
+
+  &__track {
+    position: relative;
+    height: 6px;
+    border-radius: radius("pill");
+    background: color("line");
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -2px;
+      bottom: -2px;
+      width: 1px;
+      background: color("line-strong");
+    }
+  }
+
+  &__fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: radius("pill");
+    background: var(--rel-color);
+    transition: left transition("slow"), width transition("slow");
+  }
+
+  &__value {
+    font-family: var(--font-family-mono);
+    font-size: font-size("xxs");
+    font-weight: font-weight("semibold");
+    color: var(--rel-color);
+    white-space: nowrap;
+  }
+}
+
 .traits {
   display: flex;
   gap: spacing("lg");

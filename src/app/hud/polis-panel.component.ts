@@ -4,7 +4,6 @@ import {
   LucideAngularModule,
   Anchor,
   Building2,
-  ChevronRight,
   Coins,
   Crown,
   Flag,
@@ -40,9 +39,16 @@ export class PolisPanelComponent {
   readonly i18n = inject(I18nService);
   readonly game = inject(GameService);
 
-  readonly icons = { Anchor, Building2, ChevronRight, Coins, Crown, Flag, Handshake, Landmark, Smile, MapIcon, Pickaxe, Sailboat, Shield, Sprout, Swords, TrendingUp, Users, Wheat };
+  readonly icons = { Anchor, Building2, Coins, Crown, Flag, Handshake, Landmark, Smile, MapIcon, Pickaxe, Sailboat, Shield, Sprout, Swords, TrendingUp, Users, Wheat };
 
   private readonly popup = inject(PopupService);
+
+  /** Buildings under construction, shown on the Buildings button (e.g. "1/3"). */
+  readonly building = computed(() => {
+    const me = this.game.me();
+    const works = me?.improvements.filter(b => b.state === 'building').length ?? 0;
+    return works ? `⚒ ${works}` : '';
+  });
 
   readonly moodLevel = computed(() => {
     const s = this.game.me()?.satisfaction ?? 0;

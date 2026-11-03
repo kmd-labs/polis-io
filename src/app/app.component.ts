@@ -40,6 +40,7 @@ import { formatNumber, formatYear, formatYears, interpolate } from './core/i18n/
 import { GameService } from './game/game.service';
 import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
+import { ConquestChoice, FallOutcome } from './game/simulation';
 import { PolisPanelComponent } from './hud/polis-panel.component';
 import { DiplomacyPanelComponent } from './hud/diplomacy-panel.component';
 import { ChronicleComponent } from './hud/chronicle.component';
@@ -79,6 +80,7 @@ export class AppComponent {
   @ViewChild('rulesTpl', { static: true }) private rulesTpl!: TemplateRef<unknown>;
   @ViewChild('letterTpl', { static: true }) private letterTpl!: TemplateRef<unknown>;
   @ViewChild('reportTpl', { static: true }) private reportTpl!: TemplateRef<unknown>;
+  @ViewChild('conquestTpl', { static: true }) private conquestTpl!: TemplateRef<unknown>;
 
   /** The open end-of-war report, localized (rendered with the battle report template). */
   readonly warView = computed(() => {
@@ -212,6 +214,7 @@ export class AppComponent {
         if (n.kind === 'war') this.openLetter(n.from);
         else if (n.kind === 'alliance') this.openEmbassy(n.from);
         else if (n.kind === 'warEnd') this.openWarEnd(n.enemy, n.outcome, n.fate);
+        else if (n.kind === 'conquest') this.openConquest(n.from);
         else this.openReport(n.near);
       });
     });
@@ -294,24 +297,64 @@ export class AppComponent {
     });
   }
 
-  private openWarEnd(enemy: number, outcome: 'conquest' | 'peace', fate: 'razed' | 'city' | 'client' | null) {
+  /** The walls are breached: the player decides the city's fate, which ends the war. */
+  private openConquest(from: number) {
+    const name = () => this.game.name(from);
+    let decided = false;
+    const decide = (choice: ConquestChoice) => () => {
+      decided = true;
+      this.game.resolveConquest(from, choice);
+    };
+    this.popup.open({
+      id: 'conquest',
+      title: computed(() => interpolate(this.i18n.t().conquestTitle, { name: name() })),
+      subtitle: computed(() => this.i18n.t().conquestSubtitle),
+      template: this.conquestTpl,
+      size: 'md',
+      onClose: () => {
+        // Dismissing the dialog leaves the city subjugated.
+        if (!decided) this.game.resolveConquest(from, 'subjugate');
+        this.game.closeNotice();
+      },
+      actions: [
+        { label: computed(() => this.i18n.t().conquestRaze), variant: 'play', hot: true, onClick: decide('raze') },
+        { label: computed(() => this.i18n.t().conquestSubjugate), variant: 'play', hot: true, onClick: decide('subjugate') },
+        { label: computed(() => this.i18n.t().conquestAlliance), variant: 'play', hot: true, onClick: decide('alliance') }
+      ]
+    });
+  }
+
+  private openWarEnd(enemy: number, outcome: 'conquest' | 'peace', fate: FallOutcome | null) {
     const name = () => this.game.name(enemy);
     this.popup.open({
       id: 'war-end',
       title: computed(() => interpolate(this.i18n.t().warEndTitle, { name: name() })),
       subtitle: computed(() =>
-        outcome === 'peace'
-          ? this.i18n.t().warEndPeace
-          : interpolate(
-              fate === 'city' ? this.i18n.t().warEndCity : fate === 'client' ? this.i18n.t().warEndClient : this.i18n.t().warEndConquest,
-              { name: name() }
-            )
+        outcome === 'peace' ? this.i18n.t().warEndPeace : interpolate(this.fateText(fate), { name: name() })
       ),
       template: this.reportTpl,
       size: 'sm',
       onClose: () => this.game.closeNotice(),
       actions: [{ label: computed(() => this.i18n.t().warEndAction), variant: 'play', hot: true }]
     });
+  }
+
+  private fateText(fate: FallOutcome | null): string {
+    const t = this.i18n.t();
+    switch (fate) {
+      case 'city':
+        return t.warEndCity;
+      case 'client':
+        return t.warEndClient;
+      case 'revolt':
+        return t.warEndRevolt;
+      case 'ransom':
+        return t.warEndRansom;
+      case 'alliance':
+        return t.warEndAlliance;
+      default:
+        return t.warEndConquest;
+    }
   }
 
   private openReport(near: number) {

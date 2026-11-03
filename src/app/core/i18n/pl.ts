@@ -50,7 +50,7 @@ export const PL: Dict = {
     },
     {
       term: 'Budowle polis',
-      desc: 'Kliknij nazwę swojego miasta w panelu, by otworzyć polis: trzy drzewa — rolnictwo, handel i wojsko — po sześć budowli, odblokowywanych po kolei. Każda budowla powstaje rok, kosztuje drachmy i część zadowolenia obywateli, a daje bonus całej polis.'
+      desc: 'Przycisk Budowle w twoim panelu otwiera trzy drzewa — rolnictwo, handel i wojsko — po sześć budowli, odblokowywanych po kolei. Każda budowla powstaje rok, kosztuje drachmy i część zadowolenia obywateli, a daje bonus całej polis.'
     },
     {
       term: 'Zadowolenie',
@@ -79,6 +79,14 @@ export const PL: Dict = {
     {
       term: 'Oblężenia i upadek polis',
       desc: 'Armia, która dotrze do stolicy wroga, obozuje pod jej murami przez mniej więcej dwa i pół roku, zanim przypuści szturm. W tym czasie oblężonemu miastu spada zadowolenie, ludność prawie nie przybywa, a garnizon głoduje — ale oblegający też topnieją. Upadła polis rzadko znika z mapy: może przetrwać jako miasto w granicach zwycięzcy albo zostać państwem klienckim, które płaci daninę w drachmach i robotnikach. Polis założycielskie trudno zrównać z ziemią, młode kolonie — łatwo. Czasem w chaosie oderwie się zupełnie nowa polis.'
+    },
+    {
+      term: 'Podbój',
+      desc: 'Gdy twoja armia zdobędzie stolicę wroga, gra się zatrzymuje, a ty decydujesz o losie miasta, kończąc wojnę: zburz je (zwykle złoto i niewolnicy, czasem rewolta, która je odradza), podporządkuj (zwykle państwo klienckie płacące daninę, w innym razie duży okup) albo wymuś sojusz.'
+    },
+    {
+      term: 'Reputacja dyplomatyczna',
+      desc: 'Każda para polis ma reputację od −100 do +100, która dryfuje wokół neutralności. Wojny, wspólne granice i duże armie ją obniżają; kultura, projekcja siły i zadowoleni obywatele bardzo powoli podnoszą. Sąsiedzi częściej się kłócą i wypowiadają sobie wojny — z wyjątkiem wyspiarskich Samos, Naksos, Korkyry i Chios.'
     },
     {
       term: 'Bitwa',
@@ -151,7 +159,8 @@ export const PL: Dict = {
     'Dochody i przyrost ×{m}. Spada, gdy przegrywasz bitwy lub tracisz ziemię, zasiedlasz dzicz, budujesz albo powołujesz hoplitów; rośnie w spokojnych czasach, dzięki handlowi, zwycięstwom i projekcji siły.',
 
   // Polis screen
-  openPolis: 'Otwórz polis: budowle i bonusy',
+  openPolis: 'Otwórz budowle polis: trzy drzewa ulepszeń z bonusami dla całego państwa',
+  buildings: 'Budowle',
   polisScreenIntro: 'każda budowla powstaje rok i kosztuje drachmy oraz część przychylności obywateli.',
   trees: { agriculture: 'Rolnictwo', trade: 'Handel', military: 'Wojsko' },
   improvements: {
@@ -185,6 +194,9 @@ export const PL: Dict = {
   warEndConquest: 'Polis {name} została zrównana z ziemią',
   warEndCity: 'Polis {name} przetrwała jako miasto w granicach zwycięzcy',
   warEndClient: 'Polis {name} stała się państwem klienckim',
+  warEndRevolt: 'Polis {name} wznieciła rewoltę i znów jest wolna',
+  warEndRansom: 'Polis {name} zapłaciła okup i pozostaje wolna',
+  warEndAlliance: 'Polis {name} jest teraz twoim sojusznikiem',
   warEndPeace: 'Zaprzysiężono pokój',
   warDuration: 'Czas trwania',
   yearsOne: '{n} rok',
@@ -236,6 +248,25 @@ export const PL: Dict = {
   evClient: 'Polis {a} staje się państwem klienckim polis {b}',
   evAnnexed: 'Polis {a} trwa odtąd w granicach polis {b}',
   evSecession: 'Polis {b} oderwała się od polis {a}',
+  evCaptured: 'Polis {b} zdobywa polis {a}',
+  evRevolt: 'Polis {a} buntuje się przeciw polis {b}',
+  evRansom: 'Polis {a} wykupuje wolność od polis {b}',
+
+  // Conquest decision
+  conquestTitle: 'Polis {name} u twoich stóp',
+  conquestSubtitle: 'Mury padły. Zdecyduj o losie miasta — to zakończy wojnę.',
+  conquestRaze: 'Zburz miasto',
+  conquestRazeDesc: '80%: miasto zostaje zburzone, a jego złoto i wielu niewolników przypada tobie. 20%: obywatele wzniecają rewoltę i polis odradza się.',
+  conquestSubjugate: 'Podporządkuj',
+  conquestSubjugateDesc: '60%: staje się twoim państwem klienckim i płaci daninę w drachmach i robotnikach. 40%: wykupuje wolność dużym okupem i pozostaje niezależna.',
+  conquestAlliance: 'Wymuś sojusz',
+  conquestAllianceDesc: 'Na pewno zostaje twoim sojusznikiem, a na pocieszenie dostajesz trochę złota.',
+
+  // Diplomatic reputation
+  relation: 'Relacje',
+  relationHint:
+    'Reputacja dyplomatyczna między twoją polis a tą (od −100 do +100). Z czasem wraca ku neutralności; wojny, wspólne granice i duże armie ją psują, a kultura, projekcja siły i zadowoleni obywatele (powyżej 70%) bardzo powoli poprawiają. Złe relacje zachęcają do wojny, dobre — do pokoju, sojuszy i handlu.',
+  relationLevels: { hostile: 'wrogie', unfriendly: 'chłodne', neutral: 'neutralne', friendly: 'przyjazne', cordial: 'serdeczne' },
   evAllianceOffer: 'Polis {a} wysyła posłów do polis {b}',
 
   // Battle report

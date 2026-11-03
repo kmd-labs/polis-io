@@ -7,11 +7,7 @@
       <span class="swatch" [style.background]="'var(--color-' + me.color + ')'"></span>
       <div class="panel__titles">
         <span class="panel__eyebrow">{{ t.yourPolis }}</span>
-        <button type="button" class="polis-btn" [appTooltip]="t.openPolis" (click)="openPolis()">
-          <lucide-icon [img]="icons.Landmark" [size]="15"></lucide-icon>
-          <span class="polis-btn__name">{{ name() }}</span>
-          <lucide-icon class="polis-btn__chevron" [img]="icons.ChevronRight" [size]="14"></lucide-icon>
-        </button>
+        <h2 class="panel__title">{{ name() }}</h2>
       </div>
       <div class="panel__traits">
         <app-trait-pips kind="militarism" [label]="t.statMilitarism" [value]="me.militarism" [hint]="t.statMilitarismHint"></app-trait-pips>
@@ -95,7 +91,7 @@
           <span class="action__cost">−{{ num(me.trainCost) }}</span>
         </app-button>
       </div>
-      <div class="action action--wide">
+      <div class="action">
         <app-button
           extraClass="action__btn"
           [disabled]="!me.canDevelop"
@@ -104,6 +100,21 @@
           <lucide-icon [img]="icons.Building2" [size]="14"></lucide-icon>
           <span>{{ t.develop }}</span>
           <span class="action__cost">−{{ num(me.developCost) }}</span>
+        </app-button>
+      </div>
+      <div class="action">
+        <app-button
+          variant="play"
+          extraClass="action__btn action__btn--buildings"
+          [hot]="true"
+          [active]="true"
+          [titleText]="t.openPolis"
+          (btnClick)="openPolis()">
+          <lucide-icon [img]="icons.Landmark" [size]="14"></lucide-icon>
+          <span>{{ t.buildings }}</span>
+          @if (building()) {
+            <span class="action__cost">{{ building() }}</span>
+          }
         </app-button>
       </div>
     </div>

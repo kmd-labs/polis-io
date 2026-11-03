@@ -25,7 +25,7 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Sea trade**: coastal poleis send small merchant ships along sea routes to the harbours of coastal poleis
   they are not at war with. Each completed voyage earns the owner 1 drachma, raised by culture (+8% per point),
   and the receiving city 30% of that; every port lets one more ship sail at a time.
-- **Polis buildings**: the button with your city's name opens three trees — agriculture, trade and military —
+- **Polis buildings**: the Buildings button in your panel opens three trees — agriculture, trade and military —
   of six buildings each (granary → sanctuary of Demeter, agora → treasury at Delphi, gymnasium → temple of Ares).
   Each takes a year, costs drachmae and satisfaction, and grants a nationwide bonus.
 - **Satisfaction** (0–100%) scales income and growth from ×0.7 to ×1.3. It falls with lost battles and land,
@@ -37,6 +37,13 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **The fall of a polis** rarely wipes it out: it may live on as a city within the victor's borders, or become a
   client state paying tribute in drachmae and workers. Founding cities are hard to raze, young colonies easy;
   sometimes a new polis breaks away in the chaos.
+- **Conquest**: when your army storms an enemy capital the game pauses and you decide its fate, which ends the
+  war — raze it (80%: gold and slaves, 20%: a revolt revives it), subjugate it (60%: a client state, 40%: a large
+  ransom and it stays free) or force an alliance (always, with a little gold).
+- **Diplomatic reputation**: every pair of poleis has a reputation from −100 to +100 drifting around neutral; wars,
+  shared borders and big armies sour it, culture, power projection and contented citizens slowly sweeten it.
+  It shapes AI wars, peace terms, alliance offers and trade. Neighbours fight more often (except the islands
+  Samos, Naxos, Corcyra and Chios).
 - **Victories**: every battle your army or garrison wins pauses the game with a report — a little gold
   (spoils), 15% of the beaten army taken captive as workers, and +1 power projection.
 - **Power projection**: makes your polis look stronger to would-be attackers, brings embassies offering a
