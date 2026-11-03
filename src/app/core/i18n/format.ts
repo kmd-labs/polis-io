@@ -63,3 +63,11 @@ export function formatEta(seconds: number, secondsPerYear: number, t: Dict, lang
   }
   return interpolate(t.etaYears, { n: years.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) });
 }
+
+/** Place in a ranking: 1st, 2nd, 3rd, 11th, 22nd… / 1., 2., 3. */
+export function formatOrdinal(n: number, lang: Lang): string {
+  if (lang === 'pl') return `${n}.`;
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  return `${n}${suffix}`;
+}

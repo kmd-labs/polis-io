@@ -13,7 +13,9 @@ export const HISTORY_FIELDS = [
   'prestige',
   'battlesWon',
   'battlesLost',
-  'tributePerMonth'
+  'tributePerMonth',
+  'capitalsTaken',
+  'warsWon'
 ] as const;
 export type HistoryField = (typeof HISTORY_FIELDS)[number];
 
@@ -89,6 +91,8 @@ export class GameHistory {
       data[o + COL.battlesWon] = p.battlesWon;
       data[o + COL.battlesLost] = p.battlesLost;
       data[o + COL.tributePerMonth] = tribute;
+      data[o + COL.capitalsTaken] = p.capitalsTaken;
+      data[o + COL.warsWon] = p.warsWon;
       BUDGET_KEYS.forEach((k, i) => (budgets[p.idx * BUDGET_KEYS.length + i] = p.budget[k]));
     }
     this.rows.push({ year, count: n, data, budgets });

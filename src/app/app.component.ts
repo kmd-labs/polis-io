@@ -203,6 +203,7 @@ export class AppComponent {
         else if (n.kind === 'warEnd') this.openWarEnd(n.enemy, n.outcome, n.fate);
         else if (n.kind === 'conquest') this.openConquest(n.from);
         else if (n.kind === 'develop') this.openDevelopment(n.work, n.months, n.site);
+        else if (n.kind === 'hegemon') this.openHegemon(n.hegemon);
         else this.openReport(n.near);
       });
     });
@@ -214,7 +215,7 @@ export class AppComponent {
     });
   }
 
-  /** Space pauses, 1–5 set the speed, B opens the budget, Esc folds the drawer. */
+  /** Space pauses, 1–5 set the speed, B opens the budget, H the hegemony, Esc folds the drawer. */
   @HostListener('document:keydown', ['$event'])
   onKey(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null;
@@ -233,6 +234,10 @@ export class AppComponent {
       if (this.isPopupOpen()) return;
       if (mobile) this.hud.toggleSheet('budget');
       else this.hud.toggleTab('budget');
+    } else if (event.key === 'h' || event.key === 'H') {
+      if (this.isPopupOpen()) return;
+      if (mobile) this.hud.toggleSheet('hegemony');
+      else this.hud.toggleTab('hegemony');
     } else if (event.key === 'Escape') {
       if (this.isPopupOpen()) return;
       if (mobile) this.hud.sheet.set(null);
@@ -349,6 +354,26 @@ export class AppComponent {
         { label: computed(() => this.i18n.t().conquestRaze), variant: 'play', hot: true, onClick: decide('raze') },
         { label: computed(() => this.i18n.t().conquestSubjugate), variant: 'play', hot: true, onClick: decide('subjugate') },
         { label: computed(() => this.i18n.t().conquestAlliance), variant: 'play', hot: true, onClick: decide('alliance') }
+      ]
+    });
+  }
+
+  /** A new Hegemon of Hellas: the clock stops for the news. */
+  private openHegemon(hegemon: number) {
+    const mine = hegemon === this.game.sim.player;
+    this.popup.open({
+      id: 'hegemon',
+      title: computed(() => (mine ? this.i18n.t().hegemonYouTitle : interpolate(this.i18n.t().hegemonTitle, { name: this.game.name(hegemon) }))),
+      description: computed(() => (mine ? this.i18n.t().hegemonYouText : interpolate(this.i18n.t().hegemonText, { name: this.game.name(hegemon) }))),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [
+        {
+          label: computed(() => this.i18n.t().hegemonOpen),
+          variant: 'default',
+          onClick: () => (this.bp.mobile() ? this.hud.sheet.set('hegemony') : (this.hud.tab.set('hegemony'), this.hud.drawerOpen.set(true)))
+        },
+        { label: computed(() => this.i18n.t().hegemonAction), variant: 'play', hot: true }
       ]
     });
   }

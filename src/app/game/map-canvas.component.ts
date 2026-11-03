@@ -289,6 +289,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         this.cam,
         {
           view: this.view(),
+          podium: this.game.hegemonyPodium(),
           hover: this.hover >= 0 ? this.hover : preview,
           selected: this.game.selected(),
           names: this.game.sim.poleis.map(p => polisName(t, p.def)),

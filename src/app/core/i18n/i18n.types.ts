@@ -2,6 +2,7 @@ import { PolisId, SiteId } from '../../game/data/poleis';
 import { ImprovementId, ImprovementTree } from '../../game/data/improvements';
 import { AllianceReason, BudgetKey, Purchase } from '../../game/simulation';
 import { PresetId } from '../../game/economy';
+import { HegemonyCategory } from '../../game/hegemony';
 
 export type Lang = 'en' | 'pl';
 
@@ -199,6 +200,8 @@ export interface Dict {
   evFarmPlanned: string;
   evPortPlanned: string;
   evBuilt: string;
+  evPodium: string;
+  evHegemon: string;
 
   // Conquest decision
   conquestTitle: string;
@@ -244,7 +247,7 @@ export interface Dict {
   drawerLabel: string;
   drawerCollapse: string;
   drawerExpand: string;
-  tabs: Record<'budget' | 'polis' | 'diplomacy' | 'chronicle', string>;
+  tabs: Record<'budget' | 'polis' | 'diplomacy' | 'hegemony' | 'chronicle', string>;
   outlinerTitle: string;
   outlinerToggle: string;
   outWars: string;
@@ -263,6 +266,30 @@ export interface Dict {
   chronicleEmpty: string;
   alertsLabel: string;
   etaNow: string;
+  viewHegemony: string;
+  hegemonyCats: Record<HegemonyCategory, { name: string; desc: string }>;
+  hegIntro: string;
+  hegHegemon: string;
+  hegNoHegemon: string;
+  hegYou: string;
+  hegYourPlace: string;
+  hegScore: string;
+  hegChart: string;
+  hegEmpty: string;
+  hegTrendUp: string;
+  hegTrendDown: string;
+  hegUnitFinance: string;
+  hegUnitArms: string;
+  topLaurel: string;
+  podUp: string;
+  podDown: string;
+  podOff: string;
+  hegemonTitle: string;
+  hegemonText: string;
+  hegemonYouTitle: string;
+  hegemonYouText: string;
+  hegemonOpen: string;
+  hegemonAction: string;
   chartIncome: string;
   chartBuilt: string;
   chartWar: string;
