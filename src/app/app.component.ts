@@ -35,11 +35,13 @@ import {
 } from '@kmd/design-system';
 import { I18nService } from './core/i18n/i18n.service';
 import { Lang } from './core/i18n/i18n.types';
-import { fmt1, formatNumber, formatPlural, formatYear, formatYears, interpolate } from './core/i18n/format';
+import { fmt1, formatNumber, formatOrdinal, formatPlural, formatYear, formatYears, interpolate } from './core/i18n/format';
+import { DecadeReport } from './game/decade';
+import { HEGEMONY_CATEGORIES } from './game/hegemony';
 import { GameService } from './game/game.service';
 import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
-import { ConquestChoice, FallOutcome } from './game/simulation';
+import { BUDGET_KEYS, ConquestChoice, FallOutcome } from './game/simulation';
 import { SiteId } from './game/data/poleis';
 import { StartScreenComponent } from './hud/start-screen.component';
 import { HudComponent } from './hud/hud.component';
@@ -78,6 +80,34 @@ export class AppComponent {
   @ViewChild('letterTpl', { static: true }) private letterTpl!: TemplateRef<unknown>;
   @ViewChild('reportTpl', { static: true }) private reportTpl!: TemplateRef<unknown>;
   @ViewChild('conquestTpl', { static: true }) private conquestTpl!: TemplateRef<unknown>;
+  @ViewChild('decadeTpl', { static: true }) private decadeTpl!: TemplateRef<unknown>;
+
+  /** The open decade report, localized. */
+  readonly decadeView = computed(() => {
+    const n = this.game.notice();
+    if (n?.kind !== 'decade') return null;
+    const r = n.report;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const pct = (v: number | null) => (v === null ? '—' : `${v < 0 ? '−' : '+'}${fmt1(Math.abs(v * 100), lang)}%`);
+    const tone = (v: number | null) => (v === null || Math.abs(v) < 0.005 ? '' : v > 0 ? 'up' : 'down');
+    const place = (p: number) => (p ? formatOrdinal(p, lang) : '—');
+    return {
+      rows: [
+        { label: t.statPopulation, value: pct(r.population), tone: tone(r.population) },
+        { label: t.chartIncome, value: pct(r.income), tone: tone(r.income) },
+        { label: t.statTerritory, value: pct(r.territory), tone: tone(r.territory) },
+        { label: t.decBattles, value: interpolate(t.decBattlesValue, { w: r.battlesWon, l: r.battlesLost }), tone: '' }
+      ],
+      places: HEGEMONY_CATEGORIES.map(c => ({
+        label: t.hegemonyCats[c].name,
+        value: `${place(r.places[c].then)} → ${place(r.places[c].now)}`,
+        tone: r.places[c].now && (!r.places[c].then || r.places[c].now < r.places[c].then) ? 'up' : r.places[c].now > r.places[c].then ? 'down' : ''
+      })),
+      budget: BUDGET_KEYS.map(k => ({ key: k, label: t.budgetKeys[k].name, share: r.budget[k] })),
+      verdict: t.decVerdicts[r.verdict]
+    };
+  });
 
   /** The open end-of-war report, localized (rendered with the battle report template). */
   readonly warView = computed(() => {
@@ -204,6 +234,7 @@ export class AppComponent {
         else if (n.kind === 'conquest') this.openConquest(n.from);
         else if (n.kind === 'develop') this.openDevelopment(n.work, n.months, n.site);
         else if (n.kind === 'hegemon') this.openHegemon(n.hegemon);
+        else if (n.kind === 'decade') this.openDecade(n.report);
         else this.openReport(n.near);
       });
     });
@@ -354,6 +385,23 @@ export class AppComponent {
         { label: computed(() => this.i18n.t().conquestRaze), variant: 'play', hot: true, onClick: decide('raze') },
         { label: computed(() => this.i18n.t().conquestSubjugate), variant: 'play', hot: true, onClick: decide('subjugate') },
         { label: computed(() => this.i18n.t().conquestAlliance), variant: 'play', hot: true, onClick: decide('alliance') }
+      ]
+    });
+  }
+
+  /** Ten years in review: the clock stops while the player reads it (it can be switched off here). */
+  private openDecade(report: DecadeReport) {
+    const t = () => this.i18n.t();
+    this.popup.open({
+      id: 'decade',
+      title: computed(() => interpolate(t().decTitle, { from: formatYear(report.fromYear, t()), to: formatYear(report.toYear, t()) })),
+      subtitle: computed(() => t().decSubtitle),
+      template: this.decadeTpl,
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [
+        { label: computed(() => t().decOff), variant: 'default', onClick: () => this.game.setDecadeReports(false) },
+        { label: computed(() => t().decAction), variant: 'play', hot: true }
       ]
     });
   }

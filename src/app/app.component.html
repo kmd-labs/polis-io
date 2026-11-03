@@ -61,6 +61,39 @@
     </dl>
   </ng-template>
 
+  <ng-template #decadeTpl>
+    @if (decadeView(); as d) {
+      <p class="decade__verdict">{{ d.verdict }}</p>
+      <dl class="report decade__rows">
+        @for (row of d.rows; track row.label) {
+          <div class="report__row">
+            <dt>{{ row.label }}</dt>
+            <dd [class]="'decade__value decade__value--' + row.tone">{{ row.value }}</dd>
+          </div>
+        }
+      </dl>
+      <h3 class="decade__heading">{{ t.hegemonyTab }}</h3>
+      <dl class="report decade__rows">
+        @for (row of d.places; track row.label) {
+          <div class="report__row">
+            <dt>{{ row.label }}</dt>
+            <dd [class]="'decade__value decade__value--' + row.tone">{{ row.value }}</dd>
+          </div>
+        }
+      </dl>
+      <h3 class="decade__heading">{{ t.decBudget }}</h3>
+      <div class="decade__budget" role="img" [attr.aria-label]="t.decBudget">
+        @for (b of d.budget; track b.key) {
+          <div class="decade__bar" [class]="'decade__bar decade__bar--' + b.key">
+            <span class="decade__bar-label">{{ b.label }}</span>
+            <span class="decade__bar-track"><span [style.width.%]="b.share"></span></span>
+            <span class="decade__bar-value">{{ b.share }}%</span>
+          </div>
+        }
+      </div>
+    }
+  </ng-template>
+
   <ng-template #letterTpl>
     @if (letterView(); as letter) {
       <figure class="letter" [style.--letter-color]="'var(--color-' + letter.color + ')'">

@@ -45,6 +45,7 @@ describe('coalition against the Hegemon (autoplay)', () => {
   it.each([2, 6])('caps a dominant reign over 200 years (seed %i)', seed => {
     const sim = new Simulation(world, { seed, autoplay: true });
     sim.choose(0);
+    sim.step(0.1);
     const annals = new Annals();
     let holder = -1;
     let streak = 0;

@@ -4,6 +4,7 @@ import {
   Handshake,
   Crown,
   Hammer,
+  Mail,
   LucideIconData,
   PiggyBank,
   ScrollText,
@@ -14,8 +15,9 @@ import {
 } from 'lucide-angular';
 import { BreakpointService, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
-import { formatOrdinal, formatYear, interpolate } from '../core/i18n/format';
-import { GameService } from '../game/game.service';
+import { formatEta, formatOrdinal, formatYear, interpolate } from '../core/i18n/format';
+import { EMBASSY_TTL, GameService } from '../game/game.service';
+import { RULES } from '../game/simulation';
 import { BUDGET_KEYS } from '../game/simulation';
 import { HudStateService } from './hud-state.service';
 
@@ -88,6 +90,16 @@ export class AlertsComponent {
       });
     }
 
+    for (const e of this.game.embassies()) {
+      const left = formatEta(EMBASSY_TTL - (this.game.sim.time - e.time), RULES.secondsPerYear, t, this.i18n.lang());
+      out.push({
+        key: `embassy-${e.id}`,
+        icon: Mail,
+        tone: 'info',
+        text: interpolate(t.alertEmbassy, { name: name(e.from), t: left }),
+        act: () => this.game.openEmbassy(e.id)
+      });
+    }
     if (this.game.hegemony() && this.game.sim.coalitionTarget === me.idx) {
       out.push({ key: 'coalition', icon: Crown, tone: 'danger', text: t.alertCoalition, act: () => (this.bp.mobile() ? this.hud.sheet.set('hegemony') : (this.hud.tab.set('hegemony'), this.hud.drawerOpen.set(true))) });
     }

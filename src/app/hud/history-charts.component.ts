@@ -32,6 +32,10 @@ import { ChartMarker, LineChartComponent } from './line-chart.component';
         }
       </div>
       <p class="legend">{{ i18n.t().chartsLegend }}</p>
+      <label class="toggle">
+        <input type="checkbox" [checked]="game.decadeReports()" (change)="toggleDecade($event)" />
+        {{ i18n.t().decToggle }}
+      </label>
     } @else {
       <p class="legend">{{ i18n.t().chartsEmpty }}</p>
     }
@@ -40,7 +44,11 @@ import { ChartMarker, LineChartComponent } from './line-chart.component';
 })
 export class HistoryChartsComponent {
   readonly i18n = inject(I18nService);
-  private readonly game = inject(GameService);
+  readonly game = inject(GameService);
+
+  toggleDecade(event: Event) {
+    this.game.setDecadeReports((event.target as HTMLInputElement).checked);
+  }
 
   readonly charts = computed(() => {
     this.game.historyVersion();

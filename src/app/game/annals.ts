@@ -44,7 +44,8 @@ export class Annals {
 
   /** Records and ranks the current year if it has not been yet; returns null otherwise. */
   update(sim: Simulation): AnnalsYear | null {
-    if (sim.status === 'choosing' || this.history.years.at(-1) === sim.year) return null;
+    // Wait for the first tick: at time zero no income has been earned yet.
+    if (sim.status === 'choosing' || sim.time <= 0 || this.history.years.at(-1) === sim.year) return null;
     this.history.record(sim);
     const before = this.current;
     const now = rankHegemony(this.history.recent(HEGEMONY_RULES.armsYears + 1), sim.year, before?.hegemon ?? -1);

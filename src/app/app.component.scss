@@ -251,6 +251,86 @@
   }
 }
 
+.decade {
+  &__verdict {
+    @include greek.display-type(0.02em);
+    margin: 0 0 spacing("md");
+    font-size: font-size("md");
+    font-style: italic;
+    line-height: 1.4;
+    color: color("warning-900");
+  }
+
+  &__heading {
+    @include greek.display-type(0.05em);
+    margin: spacing("md") 0 spacing("xs");
+    font-size: font-size("sm");
+    color: color("text-bright");
+  }
+
+  &__value--up {
+    color: color("success-700") !important;
+  }
+
+  &__value--down {
+    color: color("danger") !important;
+  }
+
+  &__budget {
+    display: grid;
+    gap: 4px;
+  }
+
+  &__bar {
+    --bar: var(--color-danger-600);
+    display: grid;
+    grid-template-columns: 110px 1fr 36px;
+    align-items: center;
+    gap: 8px;
+    font-size: font-size("xs");
+
+    &--colonization {
+      --bar: var(--color-success-600);
+    }
+
+    &--agriculture {
+      --bar: var(--color-warning-600);
+    }
+
+    &--trade {
+      --bar: var(--color-info-600);
+    }
+
+    &--culture {
+      --bar: var(--color-purple-500);
+    }
+  }
+
+  &__bar-label {
+    color: color("text-main");
+  }
+
+  &__bar-track {
+    height: 8px;
+    border-radius: radius("pill");
+    background: color("line");
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      border-radius: radius("pill");
+      background: var(--bar);
+    }
+  }
+
+  &__bar-value {
+    font-family: var(--font-family-mono);
+    text-align: right;
+    color: color("text-bright");
+  }
+}
+
 .fates {
   margin: 0;
   padding: 0;

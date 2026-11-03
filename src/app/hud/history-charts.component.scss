@@ -9,6 +9,20 @@
   gap: spacing("md");
 }
 
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: spacing("sm");
+  font-size: font-size("xs");
+  color: color("text-main");
+  cursor: pointer;
+
+  input {
+    accent-color: var(--color-accent);
+  }
+}
+
 .legend {
   margin: spacing("sm") 0 0;
   font-size: font-size("xxs");

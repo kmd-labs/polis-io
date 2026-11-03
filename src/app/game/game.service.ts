@@ -24,6 +24,7 @@ import { BUDGET_PRESETS, FundForecast, PresetId, forecastFund } from './economy'
 import { budgetChanged } from './history';
 import { HEGEMONY_CATEGORIES, HEGEMONY_RULES, HegemonyCategory, HegemonyStanding } from './hegemony';
 import { Annals, AnnalsYear } from './annals';
+import { DecadeReport, decadeReport } from './decade';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
 export interface PolisView {
@@ -121,6 +122,7 @@ export type Notice =
   | ({ kind: 'warEnd' } & WarReport)
   | { kind: 'conquest'; from: number }
   | { kind: 'hegemon'; hegemon: number; previous: number }
+  | { kind: 'decade'; report: DecadeReport }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
 /** Clock multipliers behind the five speed keys (1–5). */
@@ -132,6 +134,20 @@ export interface ReportItem {
   year: number;
   time: number;
 }
+
+/** Envoys waiting for an answer; they leave after EMBASSY_TTL. */
+export interface Embassy {
+  id: number;
+  from: number;
+  reason: AllianceReason;
+  enemy: number;
+  year: number;
+  time: number;
+}
+
+/** Envoys wait two years (game seconds) for an answer before going home. */
+export const EMBASSY_TTL = 8;
+const DECADE_KEY = 'polis-io.decade';
 
 /** A change on a hegemony podium that concerns the player (shown in the alerts row). */
 export interface PodiumNews {
@@ -197,6 +213,10 @@ export class GameService {
   readonly podiumNews = signal<PodiumNews[]>([]);
   /** Rankings ten years ago, for the trend arrows. */
   readonly hegemonyPast = signal<HegemonyStanding | null>(null);
+  /** Embassies waiting in the alerts row for the player's answer. */
+  readonly embassies = signal<Embassy[]>([]);
+  /** Whether the decade report stops the game every ten years (remembered per browser). */
+  readonly decadeReports = signal(GameService.loadDecadeSetting());
   /** Battle, war and survey reports waiting in the alerts row. */
   readonly reports = signal<ReportItem[]>([]);
 
@@ -291,6 +311,15 @@ export class GameService {
       }
     }
     if (news.length) this.podiumNews.update(list => [...list.filter(n => sim.time - n.time < REPORT_TTL), ...news].slice(-REPORTS_MAX));
+    // Every ten years, the decade in review (if the player wants it).
+    const years = this.history.length;
+    if (years > 10 && (years - 1) % 10 === 0 && this.decadeReports()) {
+      const rows = this.history.recent(11).map(r => r[me]).filter(s => s?.alive);
+      if (rows.length === 11) {
+        const report = decadeReport(rows, this.annals.tenYearsAgo?.places[me] ?? null, now.places[me] ?? null);
+        this.enqueue([{ kind: 'decade', report }]);
+      }
+    }
     // A new Hegemon of Hellas stops the game — but not in the first decade, while the rankings settle.
     if (year.announce) {
       sim.note('hegemon', year.announce.hegemon, year.announce.previous);
@@ -347,7 +376,35 @@ export class GameService {
     return !next || (next.kind === 'expedition' && !this.sim.canSettle(p));
   }
 
-    /** Opens a report from the alerts row (the game waits while it is read). */
+    private static loadDecadeSetting(): boolean {
+    try {
+      return localStorage.getItem(DECADE_KEY) !== 'off';
+    } catch {
+      return true;
+    }
+  }
+
+  setDecadeReports(on: boolean) {
+    this.decadeReports.set(on);
+    try {
+      localStorage.setItem(DECADE_KEY, on ? 'on' : 'off');
+    } catch {
+      // localStorage unavailable
+    }
+  }
+
+  /** Receives the envoys of a waiting embassy (opens the decision); stale ones are sent home. */
+  openEmbassy(id: number) {
+    const e = this.embassies().find(x => x.id === id);
+    if (!e) return;
+    this.embassies.update(list => list.filter(x => x.id !== id));
+    const from = this.sim.poleis[e.from];
+    const me = this.sim.poleis[this.sim.player];
+    if (!from?.alive || !me || from.wars.has(me.idx) || from.allies.has(me.idx)) return;
+    this.enqueue([{ kind: 'alliance', from: e.from, reason: e.reason, enemy: e.enemy }]);
+  }
+
+  /** Opens a report from the alerts row (the game waits while it is read). */
   openReport(id: number) {
     const item = this.reports().find(r => r.id === id);
     if (!item) return;
@@ -451,6 +508,7 @@ export class GameService {
     this.sim.reset();
     this.notice.set(null);
     this.reports.set([]);
+    this.embassies.set([]);
     this.annals.clear();
     this.historyVersion.update(v => v + 1);
     this.hegemony.set(null);
@@ -588,7 +646,9 @@ export class GameService {
         const ratio = sim.warriors(sim.poleis[e.a]) / Math.max(1, sim.warriors(me));
         incoming.push({ kind: 'war', from: e.a, tone: ratio > 1.4 || sim.treasury(me) < 100 ? 'taunt' : 'challenge' });
       } else if (e.kind === 'allianceOffer' && e.b === sim.player) {
-        incoming.push({ kind: 'alliance', from: e.a, reason: (e.tag as AllianceReason) ?? 'goodwill', enemy: e.n ?? -1 });
+        // Envoys wait in the alerts row rather than stopping the game.
+        const embassy = { id: ++this.reportId, from: e.a, reason: (e.tag as AllianceReason) ?? 'goodwill', enemy: e.n ?? -1, year: e.year, time: sim.time };
+        this.embassies.update(list => [...list.filter(x => x.from !== e.a), embassy]);
       }
     }
     // Several battles won in one breath make a single report.
@@ -615,6 +675,13 @@ export class GameService {
       if (owner === sim.player) filed.push({ kind: 'develop', work: plan.kind, months: plan.months, site: plan.site });
     }
     this.enqueue(incoming);
+    // Unanswered envoys go home after two years: the offer is taken as declined.
+    const waiting = this.embassies();
+    const gone = waiting.filter(x => sim.time - x.time >= EMBASSY_TTL);
+    if (gone.length) {
+      for (const x of gone) sim.declineAlliance(x.from);
+      this.embassies.set(waiting.filter(x => sim.time - x.time < EMBASSY_TTL));
+    }
     const live = this.reports().filter(r => sim.time - r.time < REPORT_TTL);
     const added = filed.map(notice => ({ id: ++this.reportId, notice, year: sim.year, time: sim.time }));
     if (added.length || live.length !== this.reports().length) this.reports.set([...live, ...added].slice(-REPORTS_MAX));

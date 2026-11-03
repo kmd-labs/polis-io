@@ -3,6 +3,7 @@ import { ImprovementId, ImprovementTree } from '../../game/data/improvements';
 import { AllianceReason, BudgetKey, Purchase } from '../../game/simulation';
 import { PresetId } from '../../game/economy';
 import { HegemonyCategory } from '../../game/hegemony';
+import { DecadeVerdict } from '../../game/decade';
 
 export type Lang = 'en' | 'pl';
 
@@ -278,6 +279,18 @@ export interface Dict {
   hegScore: string;
   hegChart: string;
   hegEmpty: string;
+  hegemonyTab: string;
+  decTitle: string;
+  decSubtitle: string;
+  decBattles: string;
+  decBattlesValue: string;
+  decBudget: string;
+  decVerdicts: Record<DecadeVerdict, string>;
+  decOff: string;
+  decAction: string;
+  decToggle: string;
+  alertEmbassy: string;
+  incTreasuryNote: string;
   hegCoalition: string;
   hegCoalitionYou: string;
   alertCoalition: string;
