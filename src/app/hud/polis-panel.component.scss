@@ -124,15 +124,6 @@
   }
 }
 
-.swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: radius("xs");
-  outline: 2px solid color("accent");
-  outline-offset: 2px;
-  flex-shrink: 0;
-}
-
 .stats {
   margin: 0;
   display: grid;

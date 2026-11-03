@@ -4,7 +4,7 @@
 <section class="panel glass-panel" [attr.aria-label]="t.yourPolis">
   @if (me) {
     <header class="panel__head">
-      <span class="swatch" [style.background]="'var(--color-' + me.color + ')'"></span>
+      <app-polis-flag class="panel__flag" [def]="game.sim.poleis[me.idx].def" [size]="26" [label]="name()"></app-polis-flag>
       <div class="panel__titles">
         <span class="panel__eyebrow">{{ t.yourPolis }}</span>
         <h2 class="panel__title">{{ name() }}</h2>

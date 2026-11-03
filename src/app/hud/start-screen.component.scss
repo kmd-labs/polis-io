@@ -124,12 +124,8 @@
     }
   }
 
-  &__swatch {
-    flex-shrink: 0;
-    width: 12px;
-    height: 12px;
-    margin-top: 3px;
-    border-radius: radius("xs");
+  &__flag {
+    margin-top: 1px;
   }
 
   &__body {

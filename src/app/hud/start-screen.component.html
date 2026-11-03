@@ -22,7 +22,7 @@
           (pointerleave)="game.preview.set(-1)"
           (focus)="game.preview.set(c.idx)"
           (blur)="game.preview.set(-1)">
-          <span class="card__swatch" [style.background]="'var(--color-' + c.color + ')'"></span>
+          <app-polis-flag class="card__flag" [def]="c.def" [size]="24" [label]="c.flag"></app-polis-flag>
           <span class="card__body">
             <span class="card__top">
               <span class="card__name">{{ c.name }}</span>

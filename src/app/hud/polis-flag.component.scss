@@ -1,0 +1,55 @@
+@use "variables" as *;
+
+:host {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-self: flex-start;
+  line-height: 0;
+}
+
+.flag {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 1px 1.5px color("shadow-heavy"));
+
+  &__pole {
+    fill: color("warning-800");
+  }
+
+  &__cloth {
+    stroke: color("neutral-800");
+    stroke-width: 1;
+    stroke-linejoin: round;
+  }
+
+  // Thin ivory border inside the cloth, like a painted rim.
+  &__trim {
+    fill: none;
+    stroke: color("warning-50");
+    stroke-width: 0.6;
+    opacity: 0.7;
+  }
+
+  &__device {
+    fill: color("warning-50");
+  }
+
+  &__stroke {
+    fill: none;
+    stroke: color("warning-50");
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    &--thin {
+      stroke-width: 1.3;
+    }
+  }
+
+  // Greek capitals: Cinzel has no Greek glyphs, so fall back to a serif that does.
+  &__letter {
+    font-family: "Times New Roman", "Noto Serif", Georgia, serif;
+    font-weight: 700;
+    fill: color("warning-50");
+  }
+}

@@ -23,12 +23,13 @@ import { formatNumber, formatRate, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { TraitPipsComponent } from './trait-pips.component';
 import { PolisScreenComponent } from './polis-screen.component';
+import { PolisFlagComponent } from './polis-flag.component';
 
 /** Bottom-dock panel: the player's polis figures and its domestic actions. */
 @Component({
   selector: 'app-polis-panel',
   standalone: true,
-  imports: [LucideAngularModule, ButtonComponent, TooltipDirective, TraitPipsComponent],
+  imports: [LucideAngularModule, ButtonComponent, TooltipDirective, TraitPipsComponent, PolisFlagComponent],
   templateUrl: './polis-panel.component.html',
   styleUrl: './polis-panel.component.scss'
 })

@@ -113,6 +113,7 @@ export const PL: Dict = {
 
   // Start screen
   chooseTitle: 'Wybierz swoją polis',
+  flagOf: 'Chorągiew polis {name}',
   startEyebrow: 'Hellada · 600 p.n.e.',
   startIntro:
     'Wieki ciemne minęły. Wśród gór i wysp Grecji stoi osiemnaście miast-państw, a dzika ziemia między nimi czeka na tego, kto ją zajmie.',

@@ -5,12 +5,13 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { TraitPipsComponent } from './trait-pips.component';
+import { PolisFlagComponent } from './polis-flag.component';
 
 /** Bottom-dock panel: the selected foreign polis (declare war / offer peace) or the list of ongoing wars. */
 @Component({
   selector: 'app-diplomacy-panel',
   standalone: true,
-  imports: [LucideAngularModule, BadgeComponent, ButtonComponent, TooltipDirective, TraitPipsComponent],
+  imports: [LucideAngularModule, BadgeComponent, ButtonComponent, TooltipDirective, TraitPipsComponent, PolisFlagComponent],
   templateUrl: './diplomacy-panel.component.html',
   styleUrl: './diplomacy-panel.component.scss'
 })

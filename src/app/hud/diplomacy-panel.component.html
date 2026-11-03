@@ -5,7 +5,7 @@
 <section class="panel glass-panel">
   @if (target) {
     <header class="panel__head">
-      <span class="swatch" [style.background]="'var(--color-' + target.color + ')'"></span>
+      <app-polis-flag [def]="game.sim.poleis[target.idx].def" [size]="22" [label]="name(target.idx)"></app-polis-flag>
       <h2 class="panel__title">{{ name(target.idx) }}</h2>
       @if (statusBadge(); as badge) {
         <app-badge [text]="badge.text" [backgroundColor]="badge.color"></app-badge>

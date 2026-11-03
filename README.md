@@ -11,7 +11,10 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 
 ## Gameplay
 
-- **Choose a polis** on the start screen (or click it on the map), then press *Lead*.
+- **Choose a polis** on the start screen (or click it on the map), then press *Lead*. Each city flies a banner
+  with its coin or shield device — the owl of Athens, the Boeotian shield of Thebes, the wheel of Chalcis, the
+  labyrinth of Knossos… — or the Greek initial it used (Λ for Sparta, Ϙ for Corinth); poleis founded during the
+  game get one generated from their name.
 - **Settle the wilderness** is driven by the colonization share of the budget: once the city has filled 70% of
   its land, the fund pays for an expedition that takes 10% of the workers away for good. The settlers slowly claim
   wild pixels next to your borders, flowing over low plains and valleys first and climbing hills last

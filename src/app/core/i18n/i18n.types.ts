@@ -61,6 +61,7 @@ export interface Dict {
 
   // Start screen
   chooseTitle: string;
+  flagOf: string;
   startEyebrow: string;
   startIntro: string;
   startHint: string;

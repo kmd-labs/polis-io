@@ -113,6 +113,7 @@ export const EN: Dict = {
 
   // Start screen
   chooseTitle: 'Choose your polis',
+  flagOf: 'Banner of {name}',
   startEyebrow: 'Hellas · 600 BC',
   startIntro:
     'The Dark Ages are over. Eighteen city-states stand among the mountains and islands of Greece, and the wild land between them is up for grabs.',
