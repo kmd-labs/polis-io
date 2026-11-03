@@ -97,7 +97,10 @@ The in-game HUD sits on the edges of the map, grand-strategy style:
   won 1, capital taken 5, war won 3) earn 3/2/1 points. The most points (of 9) makes the **Hegemon of Hellas**
   (a reigning Hegemon keeps the title on a tie). The laurel in the top bar shows your points; the hegemony map mode
   paints the leading three gold, silver and bronze. Podium changes go to the chronicle and the alerts row; a new
-  Hegemon who has held the title for three years is announced with a popup.
+  Hegemon who has held the title for three years is announced with a popup. Each point brings +0.1 power projection a
+  year; the Hegemon earns 5% more from sea trade and draws more ships. A city holding 7+ points for ten years unites
+  Hellas against it — everyone's regard for it sinks 2 a year, rivals pair up and attack more readily — until its
+  score drops below 6 (the coalition's pacts then lapse).
 - **History**: every year the game records a snapshot of every polis. The *Chronicle & charts* tab plots your
   population, income per month, territory and hoplites on one time axis, with markers where you changed the budget
   (by 5 points or more), went to war or made peace, and completed a building. Hover the drachmae in the top bar for

@@ -16,6 +16,10 @@
     }
   </div>
 
+  @if (v.coalition) {
+    <p class="coalition" role="status">{{ v.coalition }}</p>
+  }
+
   @for (c of v.categories; track c.cat) {
     <section class="cat" [attr.aria-label]="c.name">
       <h3 class="cat__name" [appTooltip]="c.desc">{{ c.name }}</h3>

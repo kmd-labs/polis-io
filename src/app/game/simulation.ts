@@ -264,6 +264,23 @@ export const RULES = {
   /** A stray pocket of land this small, cut off from its capital, goes back to the wild after this many seconds (4 years). */
   strayPocket: 4,
   strayDecay: 16,
+  /** Power projection gained each year per hegemony point. */
+  hegemonyPrestige: 0.1,
+  /** The Hegemon of Hellas earns this much more from sea trade, and ships favour its harbours as much. */
+  hegemonTradeBonus: 0.05,
+  /** A polis scoring at least this many hegemony points for this many years in a row unites Hellas against it… */
+  coalitionScore: 7,
+  coalitionYears: 10,
+  /** …and the coalition breaks up once its score falls below this. */
+  coalitionEnds: 6,
+  /** Every year of the coalition, every other city's regard for it sinks this much. */
+  coalitionRelation: -2,
+  /** Coalition cities look on the dominant polis as this much weaker when choosing whom to attack… */
+  coalitionAggression: 1.6,
+  /** …think of war more often… */
+  coalitionWarChance: 0.25,
+  /** …and seek one ally against it (chance per AI decision); these pacts lapse when the coalition ends. */
+  coalitionAllyChance: 0.05,
   /** Cells more than the enemy a side must have taken for a war ending in peace to count as won. */
   warWonMargin: 5,
   /** At war a polis fields between this many armies… */
@@ -403,6 +420,9 @@ export interface PolisState {
   upkeep: number;
   /** Smoothed drachmae per second reaching the funds from every source (taxes, trade, tribute, spoils). */
   inflow: number;
+  /** Hegemony points (0–9) this year, and years in a row at or above the coalition threshold. */
+  hegemonyScore: number;
+  dominantYears: number;
   /** The military fund ran dry this tick: unpaid hoplites are going home. */
   unpaid: boolean;
   /** Battles won and lost, capitals taken and wars won, for the history and the hegemony rankings. */
@@ -596,7 +616,9 @@ export type GameEventKind =
   | 'portPlanned'
   | 'built'
   | 'podium'
-  | 'hegemon';
+  | 'hegemon'
+  | 'coalition'
+  | 'coalitionEnd';
 
 export interface GameEvent {
   id: number;
@@ -658,6 +680,13 @@ export class Simulation {
   private nextId = 1;
   /** Math.random by default; a fixed seed makes runs reproducible (tests, autoplay). */
   private readonly rand: () => number;
+  /** Autoplay: the chosen polis is run by the AI too (headless balance runs). */
+  private readonly autoplay: boolean;
+  /** The Hegemon of Hellas (-1 if none) and the polis the rest of Hellas has united against (-1 if none). */
+  hegemon = -1;
+  coalitionTarget = -1;
+  /** Alliances made against the dominant polis, as "a-b" pairs; they lapse with the coalition. */
+  private coalitionPacts = new Set<string>();
   /** Greek land cell of every vassal site, resolved once. */
   private readonly siteCells: { id: SiteId; lon: number; lat: number; cell: number }[];
   private usedSites = new Set<SiteId>();
@@ -670,9 +699,10 @@ export class Simulation {
 
   constructor(
     readonly world: World,
-    options: { seed?: number } = {}
+    options: { seed?: number; autoplay?: boolean } = {}
   ) {
     this.rand = options.seed === undefined ? Math.random : seededRandom(options.seed);
+    this.autoplay = !!options.autoplay;
     this.owner = new Int16Array(world.size);
     this.siteCells = SITES.map(site => ({ ...site, cell: this.landCellAt(site.lon, site.lat) }));
     const k = RULES.routeCoarse;
@@ -746,6 +776,8 @@ export class Simulation {
       captured: false,
       relations: [],
       unpaid: false,
+      hegemonyScore: 0,
+      dominantYears: 0,
       gross: 0,
       upkeep: 0,
       inflow: 0,
@@ -848,6 +880,9 @@ export class Simulation {
     this.nextDiplomacy = 0;
     this.nextEmbassy = 0;
     this.nextTidy = 0;
+    this.hegemon = -1;
+    this.coalitionTarget = -1;
+    this.coalitionPacts = new Set();
     this.strayAt = new Float64Array(this.world.size);
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
@@ -1140,6 +1175,70 @@ export class Simulation {
     pb.allies.add(a);
     this.shiftRelation(a, b, RULES.relationAlliance);
     this.emit('alliance', a, b);
+  }
+
+  /**
+   * The year's hegemony rankings come back to the cities: renown for every point, the Hegemon's
+   * pull on trade, and — when one city has towered over Hellas for a decade — a coalition against it.
+   */
+  applyHegemony(scores: Record<number, number>, hegemon: number) {
+    this.hegemon = hegemon;
+    for (const p of this.poleis) {
+      const score = p.alive ? (scores[p.idx] ?? 0) : 0;
+      p.hegemonyScore = score;
+      p.prestige += RULES.hegemonyPrestige * score;
+      p.dominantYears = score >= RULES.coalitionScore ? p.dominantYears + 1 : 0;
+    }
+    const target = this.coalitionTarget >= 0 ? this.poleis[this.coalitionTarget] : null;
+    if (target && (!target.alive || target.hegemonyScore < RULES.coalitionEnds)) {
+      this.emit('coalitionEnd', target.idx);
+      this.coalitionTarget = -1;
+      // Friends of convenience go their own ways.
+      for (const pact of this.coalitionPacts) {
+        const [a, b] = pact.split('-').map(Number);
+        this.poleis[a].allies.delete(b);
+        this.poleis[b].allies.delete(a);
+      }
+      this.coalitionPacts.clear();
+    }
+    if (this.coalitionTarget < 0) {
+      const dominant = this.poleis.find(p => p.alive && p.dominantYears >= RULES.coalitionYears);
+      if (dominant) {
+        this.coalitionTarget = dominant.idx;
+        this.emit('coalition', dominant.idx);
+      }
+    }
+    if (this.coalitionTarget >= 0) {
+      const t = this.poleis[this.coalitionTarget];
+      for (const q of this.poleis) if (q.alive && this.inCoalition(q, t.idx)) this.shiftRelation(q.idx, t.idx, RULES.coalitionRelation);
+    }
+  }
+
+  /** Whether a city stands with Hellas against the dominant polis (not the polis itself, its bloc or its allies). */
+  private inCoalition(p: PolisState, target: number): boolean {
+    return p.idx !== target && !this.bloc(target).includes(p.idx) && !this.poleis[target].allies.has(p.idx);
+  }
+
+  /** A coalition city looks for a partner against the dominant polis: someone already fighting it, or a neighbour. */
+  private seekCoalitionAlly(p: PolisState, target: number) {
+    const pacted = (q: PolisState) => [...this.coalitionPacts].some(k => k.split('-').map(Number).includes(q.idx));
+    if (pacted(p) || p.overlord >= 0 || this.rand() >= RULES.coalitionAllyChance) return;
+    let best: PolisState | null = null;
+    let bestD = Infinity;
+    for (const q of this.poleis) {
+      if (!q.alive || q.idx === p.idx || q.overlord >= 0 || pacted(q) || p.allies.has(q.idx) || p.wars.has(q.idx)) continue;
+      if (q.idx === this.player && !this.autoplay) continue;
+      if (!this.inCoalition(q, target) || this.relation(p.idx, q.idx) < -20) continue;
+      const d = Math.hypot(q.cx - p.cx, q.cy - p.cy) * (q.wars.has(target) ? 0.5 : 1);
+      if (d < bestD) {
+        bestD = d;
+        best = q;
+      }
+    }
+    if (best) {
+      this.ally(p.idx, best.idx);
+      this.coalitionPacts.add(`${p.idx}-${best.idx}`);
+    }
   }
 
   /** Diplomatic reputation between two poleis (−100…+100). */
@@ -1548,7 +1647,7 @@ export class Simulation {
       this.contentment(p, dt);
       this.economy(p, dt);
       this.expedition(p, dt);
-      if (p.idx !== this.player && this.time >= p.nextAi) {
+      if ((p.idx !== this.player || this.autoplay) && this.time >= p.nextAi) {
         this.think(p);
         p.nextAi = this.time + 2.5 + this.rand() * 1.5;
       }
@@ -1855,7 +1954,11 @@ export class Simulation {
     for (const q of this.poleis) worldWars += q.wars.size;
     worldWars /= 2;
 
-    if (this.time > RULES.aiWarGrace && p.wars.size === 0 && worldWars < RULES.maxWorldWars && this.rand() < 0.12) {
+    const rival = this.coalitionTarget;
+    const leagued = rival >= 0 && rival !== p.idx && this.inCoalition(p, rival);
+    if (leagued) this.seekCoalitionAlly(p, rival);
+    const warChance = leagued ? RULES.coalitionWarChance : 0.12;
+    if (this.time > RULES.aiWarGrace && p.wars.size === 0 && worldWars < RULES.maxWorldWars && this.rand() < warChance) {
       // Ambitions grow as the wilderness runs out and the years pass.
       const crowded = this.wildCells < this.world.greekCells.length * 0.1;
       let target = -1;
@@ -1873,6 +1976,8 @@ export class Simulation {
         if (this.bordering(p.idx, q.idx) && !island(p) && !island(q)) ratio *= RULES.neighbourAggression;
         // …and bad blood makes any rival look weaker than it is.
         ratio *= 1 - this.relation(p.idx, q.idx) / 200;
+        // All Hellas eyes the overbearing Hegemon.
+        if (leagued && q.idx === rival) ratio *= RULES.coalitionAggression;
         if (ratio > bestRatio) {
           bestRatio = ratio;
           target = q.idx;
@@ -1900,7 +2005,7 @@ export class Simulation {
       this.emit('allianceOffer', p.idx, me.idx, enemy, reason);
     }
 
-    const playerBloc = this.player >= 0 ? this.bloc(this.player) : [];
+    const playerBloc = this.player >= 0 && !this.autoplay ? this.bloc(this.player) : [];
     for (const e of [...p.wars]) {
       if (playerBloc.includes(e) || !p.wars.has(e)) continue;
       if (this.time - (p.warStart.get(e) ?? this.time) > 40 && this.rand() < 0.08) this.makePeace(p.idx, e);
@@ -1917,7 +2022,8 @@ export class Simulation {
 
   /** Voyage income for a polis: the base fee raised by its culture. */
   tradeValue(p: PolisState): number {
-    return RULES.tradeIncome * (1 + RULES.cultureBonus * p.culture) * (1 + p.effects.trade);
+    const hegemon = p.idx === this.hegemon ? 1 + RULES.hegemonTradeBonus : 1;
+    return RULES.tradeIncome * (1 + RULES.cultureBonus * p.culture) * (1 + p.effects.trade) * hegemon;
   }
 
   /** Sea cell beside the polis's coast closest to its port (or capital); -1 when landlocked. */
@@ -1964,7 +2070,10 @@ export class Simulation {
       if (harbour < 0) continue;
       const d = Math.hypot((harbour % w.cols) - (from % w.cols), Math.floor(harbour / w.cols) - Math.floor(from / w.cols));
       const pull =
-        (1 + RULES.prestigeTradePull * q.prestige) * (p.allies.has(q.idx) ? 2 : 1) * (1 + this.relation(p.idx, q.idx) / 200);
+        (1 + RULES.prestigeTradePull * q.prestige) *
+        (p.allies.has(q.idx) ? 2 : 1) *
+        (1 + this.relation(p.idx, q.idx) / 200) *
+        (q.idx === this.hegemon ? 1 + RULES.hegemonTradeBonus : 1);
       options.push({ q, harbour, weight: pull / (d + 60) });
     }
     if (!options.length) return;

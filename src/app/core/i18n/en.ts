@@ -30,7 +30,7 @@ export const EN: Dict = {
     },
     {
       term: 'Hegemony',
-      desc: 'Every year the three best cities in silver (average income over 10 years, tribute included), people (today’s population; vassals count for themselves) and arms (last 25 years: battle won 1, capital taken 5, war won 3) earn 3, 2 and 1 points. The most points (out of 9) makes the Hegemon of Hellas. See the Hegemony tab, the laurel in the top bar and the hegemony map mode.'
+      desc: 'Every year the three best cities in silver (average income over 10 years, tribute included), people (today’s population; vassals count for themselves) and arms (last 25 years: battle won 1, capital taken 5, war won 3) earn 3, 2 and 1 points. The most points (out of 9) makes the Hegemon of Hellas. Each point brings +0.1 power projection a year; the Hegemon earns 5% more from sea trade and draws more ships. A city holding 7 or more points for ten years running unites Hellas against it: everyone’s regard for it sinks by 2 a year, and its rivals ally and attack more readily, until its score falls below 6. See the Hegemony tab, the laurel in the top bar and the hegemony map mode.'
     },
     {
       term: 'Polis',
@@ -307,6 +307,8 @@ export const EN: Dict = {
   evBuilt: '{a} completed: {w}',
   evPodium: '{a} overtakes {b} — {w}',
   evHegemon: '{a} is the new Hegemon of Hellas',
+  evCoalition: 'Hellas fears the power of {a}: the cities draw together against it',
+  evCoalitionEnd: 'The coalition against {a} falls apart',
 
   // Conquest decision
   conquestTitle: '{name} lies at your feet',
@@ -395,6 +397,9 @@ export const EN: Dict = {
   hegScore: '{s}/9 points',
   hegChart: 'Your hegemony points',
   hegEmpty: 'The first rankings come at the end of the first year.',
+  hegCoalition: 'Hellas fears {name}: the other cities are drawing together against it — their goodwill sinks every year, they ally and go to war more readily.',
+  hegCoalitionYou: 'Hellas fears your power: the other cities are drawing together against you. Their goodwill sinks every year until your score drops below 6.',
+  alertCoalition: 'All Hellas is uniting against us: expect enemies and fewer friends while we dominate.',
   hegTrendUp: 'up on ten years ago',
   hegTrendDown: 'down on ten years ago',
   hegUnitFinance: '{n} dr/mo',

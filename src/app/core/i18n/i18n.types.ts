@@ -202,6 +202,8 @@ export interface Dict {
   evBuilt: string;
   evPodium: string;
   evHegemon: string;
+  evCoalition: string;
+  evCoalitionEnd: string;
 
   // Conquest decision
   conquestTitle: string;
@@ -276,6 +278,9 @@ export interface Dict {
   hegScore: string;
   hegChart: string;
   hegEmpty: string;
+  hegCoalition: string;
+  hegCoalitionYou: string;
+  alertCoalition: string;
   hegTrendUp: string;
   hegTrendDown: string;
   hegUnitFinance: string;
