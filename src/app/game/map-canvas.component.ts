@@ -447,7 +447,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     let best: (typeof this.game.sim.armies)[number] | null = null;
     let bestD = r;
     for (const a of this.game.sim.armies) {
-      if (a.dead || a.battle || a.siege >= 0) continue;
+      if (a.dead || a.battle || a.siege >= 0 || a.raid < 0) continue;
       const d = Math.hypot(this.cam.ox + a.x * this.cam.scale - px, this.cam.oy + a.y * this.cam.scale - py);
       if (d < bestD) {
         bestD = d;

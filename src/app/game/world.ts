@@ -60,6 +60,8 @@ export class World {
   readonly fertility: Float32Array;
   /** Sea cell touching land — rendered as surf. */
   readonly shallow: Uint8Array;
+  /** Which body of land each cell belongs to (−1 for the sea): cities on the same one can march on each other. */
+  landmass: Int32Array = new Int32Array(0);
   /** Flat indices of every Greek land cell that touches the sea (where a harbour can be). */
   coastalGreek: Int32Array = new Int32Array(0);
   /** Flat indices of every Greek land cell. */
@@ -126,6 +128,7 @@ export class World {
       }
     }
     this.greekCells = Int32Array.from(greek);
+    this.labelLandmasses();
     this.coastalGreek = Int32Array.from(greek.filter(i => [0, 1, 2, 3].some(k => {
       const n = this.neighbour(i, k);
       return n >= 0 && terrain[n] === Terrain.Sea;
@@ -170,6 +173,29 @@ export class World {
       x: (lon - GREECE_MAP.lon0) / GREECE_MAP.cellLon,
       y: (GREECE_MAP.lat1 - lat) / GREECE_MAP.cellLat
     };
+  }
+
+  /** Numbers every connected body of land (4-neighbours), so armies need no ships within one. */
+  private labelLandmasses() {
+    const mass = new Int32Array(this.size).fill(-1);
+    const stack: number[] = [];
+    let next = 0;
+    for (let i = 0; i < this.size; i++) {
+      if (mass[i] >= 0 || this.terrain[i] === Terrain.Sea) continue;
+      mass[i] = next;
+      stack.push(i);
+      while (stack.length) {
+        const c = stack.pop()!;
+        for (let k = 0; k < 4; k++) {
+          const n = this.neighbour(c, k);
+          if (n < 0 || mass[n] >= 0 || this.terrain[n] === Terrain.Sea) continue;
+          mass[n] = next;
+          stack.push(n);
+        }
+      }
+      next++;
+    }
+    this.landmass = mass;
   }
 
   /** The k-th (0–3: west, east, north, south) neighbour of a cell, or -1 off the map. Allocation-free for hot loops. */

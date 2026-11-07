@@ -1,0 +1,214 @@
+@use "variables" as *;
+@use "app/theme/strategy" as strategy;
+
+:host {
+  display: block;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__weary {
+    margin: 0;
+    font-size: font-size("xxs");
+    font-style: italic;
+    color: #{palette("danger-700")};
+  }
+}
+
+.balance,
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__label,
+  &__text {
+    font-size: font-size("xs");
+    font-weight: 600;
+    color: strategy.$bronze;
+    white-space: nowrap;
+  }
+
+  &__track {
+    position: relative;
+    flex: 1;
+    height: 8px;
+    border: 1px solid rgba(strategy.$bronze, 0.6);
+    border-radius: 1px;
+    background: #{palette("danger-200")};
+    overflow: hidden;
+  }
+
+  &__fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: linear-gradient(90deg, #{palette("success-500")}, #{palette("success-600")});
+  }
+
+  &__value {
+    font-family: var(--font-family-mono);
+    font-size: font-size("xs");
+    min-width: 34px;
+    text-align: right;
+  }
+}
+
+.verdict {
+  padding: 8px 10px;
+  border: 1px solid rgba(strategy.$bronze, 0.4);
+  border-radius: 2px;
+  background: rgba(palette("danger-100"), 0.6);
+
+  &__fill {
+    background: linear-gradient(90deg, #{palette("warning-400")}, #{palette("warning-500")});
+  }
+
+  // The point where they would accept.
+  &__mark {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    left: 50%;
+    width: 2px;
+    background: strategy.$bronze;
+  }
+
+  &--yes {
+    background: rgba(palette("success-100"), 0.7);
+
+    .verdict__fill {
+      background: linear-gradient(90deg, #{palette("success-500")}, #{palette("success-600")});
+    }
+  }
+}
+
+.sides {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+
+  @include respond-to("mobile") {
+    grid-template-columns: 1fr;
+  }
+}
+
+.side {
+  min-width: 0;
+  padding: 8px 10px 10px;
+  border: 1px solid rgba(strategy.$bronze, 0.45);
+  border-radius: 2px;
+  background: rgba(palette("neutral-0"), 0.45);
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 8px;
+    font-family: var(--font-family-display);
+    font-size: font-size("sm");
+    color: strategy.$bronze;
+    @include strategy.title-rule;
+  }
+
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+.term {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  &__name {
+    font-size: font-size("xs");
+    font-weight: 600;
+    color: color("text-main");
+  }
+
+  &__levels {
+    display: flex;
+    gap: 3px;
+  }
+
+  &__level,
+  &__toggle {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 6px;
+    @include strategy.tile;
+    font: inherit;
+    font-size: font-size("xxs");
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      @include strategy.tile-hover;
+    }
+
+    &--on,
+    &--on:hover:not(:disabled) {
+      @include strategy.tile-active;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  &__toggle {
+    text-align: left;
+    font-size: font-size("xs");
+  }
+
+  &--off .term__name {
+    color: color("text-dim");
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.act {
+  padding: 6px 12px;
+  @include strategy.tile;
+  font: inherit;
+  font-size: font-size("xs");
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    @include strategy.tile-hover;
+  }
+
+  &--main {
+    @include strategy.cartouche;
+    font-family: var(--font-family-display);
+    letter-spacing: 0.05em;
+
+    &:hover:not(:disabled) {
+      @include strategy.cartouche;
+      filter: brightness(1.15);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}

@@ -30,6 +30,7 @@ import { DecadeReport, decadeReport } from './decade';
 import { olympiadOf } from './olympics';
 import { Fortune } from './fortune';
 import { DilemmaChoice, DilemmaId } from './data/dilemmas';
+import { CampaignReport, PeaceItem, Posture } from './war';
 import { GREAT_WORKS, GreatWorkId } from './data/frontier';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
@@ -155,6 +156,10 @@ export type Notice =
   | { kind: 'greatWork'; id: GreatWorkId }
   | { kind: 'raidChoice'; band: number; tribe: number; men: number; cost: number; treasury: number }
   | { kind: 'dilemma'; id: DilemmaId; year: number; choices: DilemmaChoice[] }
+  | { kind: 'warPosture'; enemy: number }
+  | { kind: 'peaceOffer'; from: number; deal: PeaceItem[] }
+  | { kind: 'peaceTable'; enemy: number; deal: PeaceItem[] }
+  | { kind: 'campaign'; report: CampaignReport }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
 /** Clock multipliers behind the five speed keys (1–5). */
@@ -162,7 +167,7 @@ export const SPEEDS = [1, 2, 4, 8, 16] as const;
 /** A report the player may read when they like (it does not stop the game). */
 export interface ReportItem {
   id: number;
-  notice: Extract<Notice, { kind: 'victory' | 'warEnd' | 'develop' | 'fortune' }>;
+  notice: Extract<Notice, { kind: 'victory' | 'warEnd' | 'develop' | 'fortune' | 'campaign' }>;
   year: number;
   time: number;
 }
@@ -209,7 +214,17 @@ const UI_REFRESH_MS = 200;
 /** At most this many letters a year stop the game. */
 const NOTICES_PER_YEAR = 10;
 /** Threats and choices that always come through (they still count towards the year's letters). */
-const ESSENTIAL_NOTICES = new Set<Notice['kind']>(['war', 'conquest', 'raidChoice', 'dilemma', 'olympicsInvite', 'alliance']);
+const ESSENTIAL_NOTICES = new Set<Notice['kind']>([
+  'war',
+  'conquest',
+  'raidChoice',
+  'dilemma',
+  'olympicsInvite',
+  'alliance',
+  'warPosture',
+  'peaceOffer',
+  'peaceTable'
+]);
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
@@ -485,8 +500,62 @@ export class GameService {
     this.publish();
   }
 
-  offerPeace(target: number) {
-    this.sim.offerPeace(this.sim.player, target);
+  /** Opens the peace table with an enemy (the game waits while terms are weighed). */
+  offerPeace(target: number, deal: PeaceItem[] = []) {
+    if (!this.sim.poleis[this.sim.player]?.wars.has(target)) return;
+    this.enqueue([{ kind: 'peaceTable', enemy: target, deal }]);
+  }
+
+  /** The player's posture in a war (how boldly to fight it). */
+  posture(enemy: number): Posture {
+    return this.sim.posture(this.sim.player, enemy);
+  }
+
+  canChangePosture(enemy: number): boolean {
+    return this.sim.canChangePosture(this.sim.player, enemy);
+  }
+
+  setPosture(enemy: number, posture: Posture) {
+    this.sim.setPosture(this.sim.player, enemy, posture);
+    this.publish();
+  }
+
+  /** The balance of a war from the player's side (−100…+100). */
+  warScore(enemy: number): number {
+    return this.sim.warScore(this.sim.player, enemy);
+  }
+
+  /** What suing for peace costs right now (a year's income). */
+  buyPeaceCost(): number {
+    const me = this.sim.poleis[this.sim.player];
+    return me ? this.sim.buyPeaceCost(me) : 0;
+  }
+
+  buyPeace(enemy: number): boolean {
+    const ok = this.sim.buyPeace(this.sim.player, enemy);
+    this.publish();
+    return ok;
+  }
+
+  /** Whether the enemy would accept a deal, and how far off it is. */
+  peaceVerdict(enemy: number, deal: readonly PeaceItem[]) {
+    return this.sim.peaceVerdict(enemy, this.sim.player, deal);
+  }
+
+  /** The terms the enemy would want (or offer) right now. */
+  peaceDemand(enemy: number): PeaceItem[] {
+    return this.sim.peaceDemand(enemy, this.sim.player);
+  }
+
+  proposePeace(enemy: number, deal: readonly PeaceItem[]): boolean {
+    const ok = this.sim.proposePeace(this.sim.player, enemy, deal);
+    this.publish();
+    return ok;
+  }
+
+  /** Accepts terms the enemy put forward. */
+  acceptPeace(enemy: number, deal: readonly PeaceItem[]) {
+    if (this.sim.peaceVerdict(enemy, this.sim.player, deal).accept || deal.length) this.sim.concludePeace(this.sim.player, enemy, deal);
     this.publish();
   }
 
@@ -794,6 +863,10 @@ export class GameService {
       incoming.push({ kind: 'raidChoice', band: c.band, tribe: c.tribe, men: Math.round(band?.strength ?? 0), cost: c.cost, treasury: sim.treasury(me) });
     }
     for (const r of warReports) filed.push({ kind: 'warEnd', ...r });
+    // Dispatches from the fronts wait in the alerts row; new wars ask how to fight them; envoys bring terms.
+    for (const r of sim.takeCampaignReports()) filed.push({ kind: 'campaign', report: r });
+    for (const enemy of sim.takePostureChoices()) incoming.push({ kind: 'warPosture', enemy });
+    for (const o of sim.takePeaceOffers()) incoming.push({ kind: 'peaceOffer', from: o.from, deal: o.deal });
     // The player's budget founded a colony: say where and when.
     for (const { owner, plan } of sim.takePlans()) {
       if (owner === sim.player) filed.push({ kind: 'develop', work: plan.kind, months: plan.months, site: plan.site });

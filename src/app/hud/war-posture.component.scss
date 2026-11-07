@@ -1,0 +1,81 @@
+@use "variables" as *;
+@use "app/theme/strategy" as strategy;
+
+:host {
+  display: block;
+}
+
+.posture {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__opt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 12px;
+    @include strategy.tile;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      @include strategy.tile-hover;
+    }
+
+    &--on,
+    &--on:hover:not(:disabled) {
+      @include strategy.tile-active;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  &__icon {
+    flex: none;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__name {
+    font-family: var(--font-family-display);
+    font-size: font-size("sm");
+    font-weight: 600;
+    color: strategy.$bronze;
+  }
+
+  &__hint {
+    font-size: font-size("xxs");
+    line-height: 1.4;
+    color: color("text-main");
+  }
+
+  &__note {
+    margin: 6px 0 0;
+    font-size: font-size("xxs");
+    font-style: italic;
+    color: color("text-dim");
+  }
+
+  // In the city card: a row of five tiles.
+  &--compact {
+    flex-direction: row;
+    gap: 4px;
+
+    .posture__opt {
+      justify-content: center;
+      width: 34px;
+      height: 30px;
+      padding: 0;
+    }
+  }
+}

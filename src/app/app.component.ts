@@ -50,6 +50,11 @@ import { GreatWorkId } from './game/data/frontier';
 import { SiteId } from './game/data/poleis';
 import { StartScreenComponent } from './hud/start-screen.component';
 import { EventCardComponent } from './hud/event-card.component';
+import { WarPostureComponent } from './hud/war-posture.component';
+import { PeaceTableComponent } from './hud/peace-table.component';
+import { describeTerms } from './hud/peace-terms';
+import { CampaignReport, PeaceItem } from './game/war';
+import { GREECE_MAP } from './game/data/greece-map';
 import { DilemmaChoice, DilemmaId } from './game/data/dilemmas';
 import { HudComponent } from './hud/hud.component';
 import { HudStateService } from './hud/hud-state.service';
@@ -285,6 +290,10 @@ export class AppComponent {
         else if (n.kind === 'built') this.openBuilt(n.what, n.id);
         else if (n.kind === 'greatWork') this.openGreatWork(n.id);
         else if (n.kind === 'raidChoice') this.openRaidChoice(n.band, n.tribe, n.men, n.cost, n.treasury);
+        else if (n.kind === 'warPosture') this.openWarPosture(n.enemy);
+        else if (n.kind === 'peaceOffer') this.openPeaceOffer(n.from, n.deal);
+        else if (n.kind === 'peaceTable') this.openPeaceTable(n.enemy, n.deal);
+        else if (n.kind === 'campaign') this.openCampaign(n.report);
         else this.openReport(n.near);
       });
     });
@@ -358,6 +367,9 @@ export class AppComponent {
 
   private openLetter(from: number) {
     const name = () => this.game.name(from);
+    // Suing for peace at once costs a year's income, paid to the aggressor.
+    const cost = this.game.buyPeaceCost();
+    const affordable = this.game.sim.treasury(this.game.sim.poleis[this.game.player()]) >= cost;
     this.popup.open({
       id: 'war-letter',
       title: computed(() => interpolate(this.i18n.t().letterTitle, { name: name() })),
@@ -365,7 +377,101 @@ export class AppComponent {
       template: this.letterTpl,
       size: 'sm',
       onClose: () => this.game.closeNotice(),
-      actions: [{ label: computed(() => this.i18n.t().letterAction), variant: 'play', hot: true }]
+      actions: [
+        {
+          label: computed(() => interpolate(this.i18n.t().letterSuePeace, { d: formatNumber(cost, this.i18n.lang()) })),
+          variant: 'default',
+          disabled: !affordable,
+          onClick: () => this.game.buyPeace(from)
+        },
+        { label: computed(() => this.i18n.t().letterAction), variant: 'play', hot: true }
+      ]
+    });
+  }
+
+  /** A war has begun: how boldly shall the city fight it? */
+  private openWarPosture(enemy: number) {
+    if (!this.game.sim.poleis[this.game.player()]?.wars.has(enemy)) {
+      this.game.closeNotice();
+      return;
+    }
+    const name = () => this.game.name(enemy);
+    this.popup.open({
+      id: 'war-posture',
+      title: computed(() => interpolate(this.i18n.t().postureTitle, { name: name() })),
+      description: computed(() => this.i18n.t().postureIntro),
+      component: WarPostureComponent,
+      componentInputs: { enemy, done: () => this.popup.close() },
+      size: 'md',
+      onClose: () => this.game.closeNotice()
+    });
+  }
+
+  /** Envoys come with terms: accept them, refuse, or sit down at the table. */
+  private openPeaceOffer(from: number, deal: PeaceItem[]) {
+    if (!this.game.sim.poleis[this.game.player()]?.wars.has(from)) {
+      this.game.closeNotice();
+      return;
+    }
+    const t = () => this.i18n.t();
+    const name = () => this.game.name(from);
+    let talk = false;
+    this.popup.open({
+      id: 'peace-offer',
+      title: computed(() => interpolate(t().peaceOfferTitle, { name: name() })),
+      description: computed(() => {
+        const terms = describeTerms(this.game.sim, deal, t(), this.i18n.lang(), i => this.game.name(i), [from, this.game.player()]);
+        return `${interpolate(t().peaceOfferText, { name: name() })} ${terms.length ? terms.join(' · ') : t().peaceOfferNone}`;
+      }),
+      size: 'sm',
+      onClose: () => {
+        this.game.closeNotice();
+        if (talk) this.game.offerPeace(from, deal);
+      },
+      actions: [
+        { label: computed(() => t().peaceOfferRefuse), variant: 'default' },
+        { label: computed(() => t().peaceOfferTalk), variant: 'default', onClick: () => (talk = true) },
+        { label: computed(() => t().peaceOfferAccept), variant: 'play', hot: true, onClick: () => this.game.acceptPeace(from, deal) }
+      ]
+    });
+  }
+
+  /** The peace table with an enemy. */
+  private openPeaceTable(enemy: number, deal: PeaceItem[]) {
+    const name = () => this.game.name(enemy);
+    this.popup.open({
+      id: 'peace-table',
+      title: computed(() => interpolate(this.i18n.t().peaceTitle, { name: name() })),
+      subtitle: computed(() => this.i18n.t().peaceIntro),
+      component: PeaceTableComponent,
+      componentInputs: { enemy, initial: deal, close: () => this.popup.close() },
+      size: 'lg',
+      onClose: () => this.game.closeNotice()
+    });
+  }
+
+  /** A dispatch from the front: what happened, where, and what it cost. */
+  private openCampaign(r: CampaignReport) {
+    const t = () => this.i18n.t();
+    const lang = () => this.i18n.lang();
+    const kind = () => t().campaignKinds[r.kind];
+    this.popup.open({
+      id: 'campaign',
+      title: computed(() => kind().title),
+      subtitle: computed(() => `${formatYear(r.year, t())} · ${interpolate(t().reportNear, { place: this.game.name(r.near) })}`),
+      description: computed(() => {
+        const lines = [interpolate(r.won ? kind().won : kind().lost, { name: this.game.name(r.enemy), place: this.game.name(r.near) })];
+        const km2 = Math.round(r.cells * GREECE_MAP.cellKm * GREECE_MAP.cellKm);
+        if (km2 > 0) lines.push(interpolate(r.won ? t().campaignGained : t().campaignLost, { n: formatNumber(km2, lang()) }));
+        if (r.ownLosses || r.enemyLosses) {
+          lines.push(interpolate(t().reportLossesValue, { e: formatNumber(r.enemyLosses, lang()), o: formatNumber(r.ownLosses, lang()) }));
+        }
+        if (r.gold) lines.push(interpolate(t().reportGoldValue, { n: formatNumber(r.gold, lang()) }));
+        return lines.join(' ');
+      }),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => t().reportAction), variant: 'play', hot: true }]
     });
   }
 

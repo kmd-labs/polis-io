@@ -1,7 +1,9 @@
+import { WAR_EN } from './war.en';
 import { DILEMMAS_EN, WORLD_NOTES_EN } from './dilemmas.en';
 import { Dict } from './i18n.types';
 
 export const EN: Dict = {
+  ...WAR_EN,
   htmlLang: 'en',
   docTitle: 'KMD · Polis',
   langName: 'English',
@@ -107,19 +109,19 @@ export const EN: Dict = {
     },
     {
       term: 'War',
-      desc: 'Declare war on a polis and your armies roam on their own, seizing enemy pixels one by one. Hostile territory is striped. Storming an enemy capital means beating its garrison — and annexing the whole polis.'
+      desc: 'No armies march across the map: a war is a front, and only the border moves. The front between warring cities is drawn as a dark red line. Every month of the campaigning season (April to October; winters are quiet) the war may bring an event: a pitched battle of the phalanxes (the winner takes a strip of land and renown), fields ravaged while the defenders sit behind their walls, a border fort taken, a town betrayed, a skirmish, sickness in the camp, allies arriving, a raid from the sea or a landing on the coast where the sea divides the two. Each side’s chance rests on its hoplites and mercenaries, its militarism and strategos (1–3 stars), the distance of the fighting from its home — and a little luck. Choose a posture when the war begins (all-out offensive, offensive, balanced, defensive, behind the walls) and change it at most once a month. During the Olympic truce every front is frozen. After four years a war weighs on the citizens every month. No city fights more than three wars at once.'
     },
     {
-      term: 'Main army and raiders',
-      desc: 'At war a polis fields two to five armies. The main army (the larger shield) takes about half the spare hoplites and seeks out the enemy’s main army; the smaller raiding parties plunder the countryside and run from any force near their size. A main army weaker than the enemy’s halts and digs in (a ring of stakes): within a couple of months its fighting power grows to 150%, and it falls on any enemy army that comes within 30 cells. A few hoplites always stay behind the walls. Every army has a general of one to three stars (60% / 35% / 5%) — click an army to see them: each star above one adds 5% fighting power, better generals seek battle and besiege cities more readily, and armies under lesser generals march to join a better one of their city nearby. Cities only pick wars with their three nearest neighbours (by border or by capital). An army gives up a chase after three seconds, and armies keep to the valleys, skirting hills and mountains.'
+      term: 'Peace',
+      desc: 'Peace is made at a table, as in Civilization: put terms on it for either side — gold (3, 6 or 12 months of the giver’s income), a strip of land, a forced alliance, clientship (the giver serves and pays tribute) or a public humiliation (renown passes from one to the other) — and a gauge shows whether the enemy will accept; “What would make this work?” shows their terms. The side ahead in the balance of the war asks more; a long war softens both. Enemies send envoys with terms of their own. When war is declared on you, you may sue for peace at once for a year of your income. A peace treaty holds five years.'
     },
     {
       term: 'Mercenaries and the war fleet',
       desc: 'Levies are small and frequent. Once the army reaches the size the Military slider aims for, choose what the military fund does with the rest: save it (it flows to the other funds), hire mercenaries in wartime (no citizens lost, but dear to hire, double pay, and they leave at peace), or build war galleys. With savings in hand you can also hire a double band of mercenaries at once in wartime, or send an extra settlers’ expedition before the city is crowded — the buttons under the Military and Colonization rows — dearly: twice and four times the usual price, never less than three months of income. At war the fleet rows to the nearest enemy harbour and blockades it — no trade, no port bonus, no harbour dues — sinking enemy merchantmen and fighting enemy fleets.'
     },
     {
-      term: 'Sieges and the fall of a polis',
-      desc: 'An army reaching an enemy capital camps before its walls for a couple of months before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
+      term: 'The fall of a polis',
+      desc: 'Greek walls seldom fell. Only a city far ahead in a war, on the offensive, may try to storm the enemy’s walls — and most such assaults fail. A fallen city may live on within the victor’s borders, become a client state or be razed; a city that loses all its land falls too.'
     },
     {
       term: 'Conquest',
@@ -131,7 +133,7 @@ export const EN: Dict = {
     },
     {
       term: 'Battle',
-      desc: 'When two hostile armies meet, they vanish into a brawl cloud, and armies passing nearby join their friends in it. Only one side walks out; the larger usually wins, but not always. An army facing an enemy two and a half times its size falls back instead, losing stragglers, and sometimes scatters into two smaller armies. Land an army overruns is not always kept — 20% of it, and up to half far from home, is simply left as wilderness. In wartime a patch of fewer than 20 pixels (not the capital) that touches the enemy and does not grow to 20 within two years passes to that enemy; other stray scraps of land (four pixels or fewer) cut off from their capital go back to the wild after about four years.'
+      desc: 'A pitched battle is the decisive event of a war: the stronger side — hoplites and mercenaries, militarism, strategos, nearness to home, posture — usually wins, but not always. The loser leaves its dead on the field, loses a strip of land around the battlefield and falls back in the balance of the war; the victor sets up a trophy and gains renown.'
     },
     {
       term: 'Victory',

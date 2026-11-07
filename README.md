@@ -34,12 +34,22 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   armies and garrison in battle (+4% per point); culture raises income (+8% per point).
 - **Countryside works**: farms (the land feeds 2,500 more) and ports (+12% income) appear 1–12 months after
   their fund commissions them — more often on low ground near the sea, rarely right under the walls.
-- **Armies in the field**: battles draw in nearby armies of both sides (up to four a side); an army facing an
-  enemy 2.5× its size falls back, losing stragglers, and may scatter into two; 20% of overrun land — up to
-  half far from home — is simply left as wilderness. In wartime, a patch of fewer than 20 pixels (not the capital)
-  that touches the enemy and does not grow to 20 within two years passes to that enemy. A polis at war keeps at least 100 hoplites at home; armies under 200 do not lay
-  siege; armies near a besieged friendly capital march to its relief, and an army with a 50% edge in power or
-  numbers hunts down nearby enemy armies.
+- **War is a front**: no armies march across the map — only the border moves, and the front between warring cities is
+  drawn as a dark red line. Every month of the campaigning season (April–October; winters are quiet) a war may bring an
+  event: a pitched battle of the phalanxes (the loser cedes a strip of land around the battlefield), fields ravaged while
+  the defenders sit behind their walls, a border fort taken, a town betrayed, a skirmish, sickness in the camp, allies
+  arriving, a raid from the sea or a landing where the sea divides the two. Each side's chance rests on its hoplites and
+  mercenaries, militarism and strategos (1–3 stars), the distance of the fighting from its home, its posture, and a little
+  luck. Where wilderness still lies between two cities, the fighting happens at the edge of the defender's land.
+- **Posture**: chosen when a war begins and changeable once a month — all-out offensive (the citizens grumble),
+  offensive, balanced, defensive, or behind the walls (hard to beat, but the fields burn).
+- **Olympic truce** freezes every front for its three months. After four years a war weighs on the citizens every month
+  and peace comes easier. No city fights more than three wars at once; a peace treaty holds five years.
+- **Peace table** in the manner of Civilization: gold (3/6/12 months of income), a strip of land, a forced alliance,
+  clientship or a public humiliation, for either side, with a live gauge of whether the enemy will accept and "What
+  would make this work?". Enemies send envoys with terms. When war is declared on you, you may sue for peace for a year
+  of your income.
+- **Assaults**: walls seldom fell — only a city far ahead and on the offensive may storm them, and most assaults fail.
 - **Polis buildings**: the Buildings button shows three trees — agriculture, trade and military —
   of six buildings each (granary → sanctuary of Demeter, agora → treasury at Delphi, gymnasium → temple of Ares).
   Each is bought by its tree's budget fund, takes a year, costs satisfaction, and grants a nationwide bonus.
@@ -47,8 +57,6 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   settling, building and levies; it rises in quiet times, with trade, victories and power projection.
 - **War reports**: when one of your wars ends (peace or the enemy's fall) the game pauses with its balance —
   duration, battles, land won and lost, the fallen, spoils and the effect on satisfaction.
-- **Sieges**: an army reaching an enemy capital camps before its walls for about 2.5 years before storming
-  them; the besieged city loses satisfaction, barely grows and starves its garrison, while the besiegers waste away.
 - **The fall of a polis** rarely wipes it out: it may live on as a city within the victor's borders, or become a
   client state paying tribute in drachmae and workers. Founding cities are hard to raze, young colonies easy;
   sometimes a new polis breaks away in the chaos.
@@ -68,13 +76,6 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   and the receiving city 30% of that; every port lets one more ship sail at a time.
 - **War letters**: when a rival declares war on you, the game pauses and a short letter arrives in the voice
   of that city (Solon of Athens, Chilon of Sparta, Periander of Corinth…) — scornful if they think you weak.
-- **Declare war**: click another polis, then *Declare war*. Small armies march out on their own and
-  seize enemy pixels one by one. When two hostile armies meet they disappear into a cartoon brawl cloud
-  and only one walks out. Beating a capital's garrison annexes the whole polis.
-- **Main army and raiders**: at war a polis fields two to five armies. The main army (about half the spare hoplites,
-  drawn with a larger shield) seeks out the enemy's main army; smaller raiding parties of varied size plunder the
-  countryside and run from any force near their size. A main army weaker than its rival halts and digs in — its
-  power climbs to 150% over a few years and it engages any enemy army within 30 cells.
 - **Time**: a year of the calendar lasts 64 game seconds; population grows at half the earlier rate.
 - **Olympic Games** every fourth year (counted from 776 BC) with the historical programme of the time — twelve contests
   in 600 BC, more later (races, wrestling, boxing, pankration, pentathlon, chariots, race in armour, heralds…). The
@@ -121,8 +122,7 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Mountains**: no land above 1500 m can be taken, settled, laid waste or handed over.
 - **Colonies**: settlers' expeditions only claim wilderness along the city's own borders; a colony is always one new
   city on a historical site, founded at most once in 40 years (down to 16 with a large colonization share).
-- **Levies and settlers** go out in small, frequent portions. Armies give up any chase after three seconds (and leave
-  that foe alone for a while; marching to lift a siege is not a chase) and keep to the valleys.
+- **Levies and settlers** go out in small, frequent portions.
 - **Surplus of the military fund** (once the army is full): save it, hire **mercenaries** in wartime (no citizens,
   dear, double pay, gone at peace) or build **war galleys**. A fleet at war rows to the nearest enemy harbour and
   **blockades** it — no trade, no port bonus, no harbour dues — sinks enemy merchantmen and fights enemy fleets.

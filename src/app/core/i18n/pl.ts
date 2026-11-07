@@ -1,7 +1,9 @@
+import { WAR_PL } from './war.pl';
 import { DILEMMAS_PL, WORLD_NOTES_PL } from './dilemmas.pl';
 import { Dict } from './i18n.types';
 
 export const PL: Dict = {
+  ...WAR_PL,
   htmlLang: 'pl',
   docTitle: 'KMD · Polis',
   langName: 'Polski',
@@ -107,19 +109,19 @@ export const PL: Dict = {
     },
     {
       term: 'Wojna',
-      desc: 'Wypowiedz wojnę polis, a twoje armie same ruszą w pole, zagarniając wrogie piksele jeden po drugim. Wrogie terytorium jest prążkowane. Zdobycie stolicy wroga wymaga pokonania jej garnizonu — i oznacza aneksję całej polis.'
+      desc: 'Po mapie nie maszerują armie: wojna to front, a przesuwa się tylko granica. Front między walczącymi miastami jest zaznaczony ciemnoczerwoną linią. Co miesiąc w sezonie kampanii (od kwietnia do października; zimy są spokojne) wojna może przynieść zdarzenie: bitwę falang (zwycięzca zabiera pas ziemi i sławę), spustoszenie pól, gdy obrońcy siedzą za murami, zdobycie fortu granicznego, zdradę, potyczkę, chorobę w obozie, przybycie sojuszników, napad od morza albo desant na wybrzeże, gdy dzieli ich morze. Szanse każdej strony zależą od hoplitów i najemników, militaryzmu i stratega (1–3 gwiazdki), odległości walk od domu — i odrobiny szczęścia. Na początku wojny wybierz postawę (pełna ofensywa, ofensywa, równowaga, obrona, za murami) i zmieniaj ją najwyżej raz w miesiącu. W czasie rozejmu olimpijskiego wszystkie fronty są zamrożone. Po czterech latach wojna co miesiąc obciąża obywateli. Żadne miasto nie prowadzi więcej niż trzech wojen naraz.'
     },
     {
-      term: 'Armia główna i oddziały łupieżcze',
-      desc: 'Na wojnie polis wystawia od dwóch do pięciu armii. Armia główna (większa tarcza) bierze mniej więcej połowę wolnych hoplitów i szuka starcia z armią główną wroga; mniejsze oddziały łupią ziemie przeciwnika i uciekają przed każdą siłą zbliżoną do swojej. Armia główna słabsza od wrogiej zatrzymuje się i okopuje (pierścień palisady): w ciągu paru miesięcy jej siła rośnie do 150%, a każda wroga armia, która podejdzie na 30 pól, zostaje zaatakowana. Kilku hoplitów zawsze zostaje za murami. Każda armia ma generała od jednej do trzech gwiazdek (60% / 35% / 5%) — kliknij armię, by je zobaczyć: każda gwiazdka ponad jedną daje 5% siły, lepsi generałowie chętniej szukają bitwy i oblegają miasta, a armie słabszych generałów dołączają do lepszego generała swojego miasta w pobliżu. Miasta wypowiadają wojny tylko trzem najbliższym sąsiadom (według granic lub stolic). Armia rezygnuje z pościgu po trzech sekundach, a armie trzymają się dolin, omijając wzgórza i góry.'
+      term: 'Pokój',
+      desc: 'Pokój zawiera się przy stole, jak w Civilization: połóż warunki dla każdej ze stron — złoto (3, 6 lub 12 miesięcy dochodu dającego), pas ziemi, przymusowy sojusz, państwo klienckie (dający służy i płaci trybut) albo publiczne ośmieszenie (prestiż przechodzi z jednego na drugiego) — a wskaźnik pokaże, czy wróg przyjmie; „Czego chcą?” pokazuje ich warunki. Strona z przewagą w bilansie wojny żąda więcej; długa wojna łagodzi obie. Wrogowie przysyłają posłów z własnymi warunkami. Gdy ktoś wypowie ci wojnę, możesz od razu prosić o pokój za roczny dochód. Traktat pokojowy obowiązuje pięć lat.'
     },
     {
       term: 'Najemnicy i flota wojenna',
       desc: 'Pobory są małe i częste. Gdy armia osiągnie liczebność, do której dąży suwak Wojsko, wybierz, co fundusz wojskowy robi z resztą: oszczędza (przechodzi do innych funduszy), najmuje najemników w czasie wojny (bez utraty obywateli, ale drodzy w najmie, podwójny żołd, odchodzą po pokoju) albo buduje galery wojenne. Mając oszczędności, możesz też od razu nająć podwójną bandę najemników w czasie wojny albo wysłać dodatkową ekspedycję osadników, zanim miasto się zapełni — przyciski pod wierszami Wojsko i Kolonizacja — drogo: dwa i cztery razy drożej niż zwykle, nigdy mniej niż trzy miesiące dochodu. Na wojnie flota płynie do najbliższego portu wroga i go blokuje — bez handlu, premii portowej i opłat portowych — zatapiając wrogie statki kupieckie i walcząc z wrogimi flotami.'
     },
     {
-      term: 'Oblężenia i upadek polis',
-      desc: 'Armia, która dotrze do stolicy wroga, obozuje pod jej murami kilka miesięcy, zanim przypuści szturm. W tym czasie oblężonemu miastu spada zadowolenie, ludność prawie nie przybywa, a garnizon głoduje — ale oblegający też topnieją. Upadła polis rzadko znika z mapy: może przetrwać jako miasto w granicach zwycięzcy albo zostać państwem klienckim, które płaci daninę w drachmach i robotnikach. Polis założycielskie trudno zrównać z ziemią, młode kolonie — łatwo. Czasem w chaosie oderwie się zupełnie nowa polis.'
+      term: 'Upadek polis',
+      desc: 'Greckie mury rzadko padały. Tylko miasto z dużą przewagą w wojnie, prowadzące ofensywę, może spróbować szturmu na mury wroga — a większość takich szturmów się nie udaje. Upadłe miasto może przetrwać w granicach zwycięzcy, zostać państwem klienckim albo zostać zrównane z ziemią; upada też miasto, które straci całą ziemię.'
     },
     {
       term: 'Podbój',
@@ -131,7 +133,7 @@ export const PL: Dict = {
     },
     {
       term: 'Bitwa',
-      desc: 'Gdy spotkają się dwie wrogie armie, znikają w chmurze bójki, a przechodzące obok armie dołączają do swoich. Wychodzi z niej tylko jedna strona; zwykle silniejsza, ale nie zawsze. Armia, która napotka wroga dwa i pół raza silniejszego, wycofuje się, gubiąc maruderów, a czasem rozpada się na dwie mniejsze. Ziemia zajęta przez armię nie zawsze zostaje przy zdobywcy — 20% jej, a daleko od domu nawet połowa, pustoszeje i wraca do dziczy. W czasie wojny obszar mniejszy niż 20 pikseli (poza stolicą), który styka się z wrogiem i przez dwa lata nie urośnie do 20, przechodzi do tego wroga; inne samotne skrawki ziemi (do czterech pikseli) odcięte od stolicy po około czterech latach wracają do dziczy.'
+      desc: 'Bitwa w polu to decydujące zdarzenie wojny: zwykle wygrywa silniejszy — hoplici i najemnicy, militaryzm, strateg, bliskość domu, postawa — ale nie zawsze. Przegrany zostawia poległych na polu, traci pas ziemi wokół pobojowiska i cofa się w bilansie wojny; zwycięzca stawia tropajon i zyskuje sławę.'
     },
     {
       term: 'Zwycięstwo',

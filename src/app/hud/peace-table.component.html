@@ -1,0 +1,56 @@
+@let t = i18n.t();
+@let v = verdict();
+
+<div class="table">
+  <div class="balance" [appTooltip]="t.warScoreHint">
+    <span class="balance__label">{{ t.warScoreLabel }}</span>
+    <span class="balance__track"><span class="balance__fill" [style.width.%]="score().fill"></span></span>
+    <span class="balance__value">{{ score().value }}</span>
+  </div>
+  @if (years() >= 4) {
+    <p class="table__weary">{{ t.peaceWeary }}</p>
+  }
+
+  <div class="sides">
+    @for (side of sides(); track side.from) {
+      <section class="side">
+        <h3 class="side__title">
+          <app-polis-flag [def]="game.sim.poleis[side.from].def" [size]="16" [label]="game.name(side.from)"></app-polis-flag>
+          {{ side.title }}
+        </h3>
+        <ul class="side__items">
+          @for (row of side.rows; track row.kind) {
+            <li class="term" [class.term--on]="row.on" [class.term--off]="row.disabled">
+              @if (row.levels.length) {
+                <span class="term__name" [appTooltip]="row.hint">{{ row.name }}</span>
+                <span class="term__levels">
+                  @for (l of row.levels; track l.level) {
+                    <button type="button" class="term__level" [class.term__level--on]="l.on" [disabled]="l.disabled" (click)="toggle(row.kind, side.from, l.level)">
+                      {{ l.label }}
+                    </button>
+                  }
+                </span>
+              } @else {
+                <button type="button" class="term__toggle" [class.term__toggle--on]="row.on" [appTooltip]="row.hint" (click)="toggle(row.kind, side.from)">
+                  {{ row.name }}
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+
+  <div class="verdict" [class.verdict--yes]="v.accept" role="status">
+    <span class="verdict__track"><span class="verdict__fill" [style.width.%]="v.fill * 100"></span><span class="verdict__mark"></span></span>
+    <span class="verdict__text">{{ refused() ? t.peaceRefused : v.text }}</span>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="act" (click)="back()">{{ t.peaceBack }}</button>
+    <button type="button" class="act" (click)="white()">{{ t.peaceWhite }}</button>
+    <button type="button" class="act" (click)="ask()">{{ t.peaceWhat }}</button>
+    <button type="button" class="act act--main" [disabled]="!v.accept" (click)="propose()">{{ t.peacePropose }}</button>
+  </div>
+</div>
