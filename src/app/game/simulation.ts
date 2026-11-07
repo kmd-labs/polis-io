@@ -1,6 +1,6 @@
 import { Delegation, OlympicResults, holdGames, isOlympicYear, isTriumph, olympiadOf } from './olympics';
 import { Fortune, rollFortune } from './fortune';
-import { GREAT_WORKS, GreatWorkId, NEUTRAL_PORTS, NeutralPortId, TRIBES } from './data/frontier';
+import { GREAT_WORKS, GreatWorkId, NEUTRAL_PORTS, TRADERS, NeutralPortId, TRIBES } from './data/frontier';
 import { POLEIS, PolisDef, SITES, SiteId } from './data/poleis';
 import {
   IMPROVEMENT_BY_ID,
@@ -299,6 +299,13 @@ export const RULES = {
   neutralPortBonus: 1.3,
   /** …and are drawn to one as much as to a city with no renown. */
   neutralPortPull: 1,
+  /** Neutral merchant cities: the largest island one may hold (cells), their extra merchantmen, how much more
+   * often they sail, how strongly they draw other cities' ships, and the share a city receiving their ship keeps. */
+  traderIsland: 200,
+  traderShips: 3,
+  traderSailing: 0.5,
+  traderPull: 2,
+  traderReceiverShare: 0.5,
   /** Every this many years a twist of fortune befalls each city: a windfall for one budget branch (in
    * months of its income) or a misfortune costing up to fortuneMaxMonths of its full income. */
   fortuneYears: 2,
@@ -535,6 +542,8 @@ export interface PolisState {
   inflow: number;
   /** A people beyond the frontier rather than a Greek city: it raids, it cannot be taken. */
   tribe: boolean;
+  /** A neutral merchant city on its island: never at war, lives by the sea trade. */
+  trader: boolean;
   /** Raiders: when the next warband sets out. */
   nextRaid: number;
   /** Where spare silver goes (a great work, or null to share it among the other funds), the silver
@@ -1029,6 +1038,7 @@ export class Simulation {
       hegemonyScore: 0,
       dominantYears: 0,
       tribe: def.kind === 'tribe',
+      trader: def.kind === 'trader',
       nextRaid: 0,
       greatWork: null,
       greatFund: 0,
@@ -1191,32 +1201,24 @@ export class Simulation {
       }
       this.tribeBorders.set(idx, border);
     }
+    // Neutral merchant cities hold their whole (small) island.
+    for (const def of TRADERS) {
+      const found = this.smallIsland(def.lon, def.lat, RULES.traderIsland);
+      if (!found) continue;
+      const idx = this.poleis.length;
+      const trader = this.createPolis(def, idx, found.land, -1);
+      this.poleis.push(trader);
+      for (const c of found.island) this.setOwner(c, idx, false);
+      this.populate(trader);
+      trader.budget = this.traderBudget();
+    }
     this.neutralPorts = [];
     for (const spec of NEUTRAL_PORTS) {
       const p = w.project(spec.lon, spec.lat);
-      let land = -1;
+      const found = this.smallIsland(spec.lon, spec.lat, 70);
+      if (!found) continue;
+      const { land, island } = found;
       let best = Infinity;
-      for (let dy = -4; dy <= 4; dy++) {
-        for (let dx = -4; dx <= 4; dx++) {
-          const c = w.cellAt(p.x + dx, p.y + dy);
-          if (c < 0 || w.terrain[c] !== Terrain.Greek || Math.hypot(dx, dy) >= best) continue;
-          best = Math.hypot(dx, dy);
-          land = c;
-        }
-      }
-      if (land < 0) continue;
-      // The whole island, if it is small and nobody's.
-      const island = [land];
-      const seen = new Set(island);
-      for (let i = 0; i < island.length && island.length <= 70; i++) {
-        const x = island[i] % w.cols;
-        for (const n of w.neighbours4(x, (island[i] - x) / w.cols)) {
-          if (seen.has(n) || w.terrain[n] === Terrain.Sea) continue;
-          seen.add(n);
-          island.push(n);
-        }
-      }
-      if (island.length > 70 || island.some(c => this.owner[c] !== WILD || w.terrain[c] !== Terrain.Greek)) continue;
       let harbour = -1;
       best = Infinity;
       for (const c of island) {
@@ -1235,6 +1237,43 @@ export class Simulation {
       this.wildCells -= island.length;
       this.neutralPorts.push({ id: spec.id, cell: land, harbour });
     }
+  }
+
+  /**
+   * The Greek land cell nearest a point (within a few cells) and the whole island it lies on, if that
+   * island is no bigger than maxCells and all of it is unclaimed.
+   */
+  private smallIsland(lon: number, lat: number, maxCells: number): { land: number; island: number[] } | null {
+    const w = this.world;
+    const p = w.project(lon, lat);
+    let land = -1;
+    let best = Infinity;
+    for (let dy = -4; dy <= 4; dy++) {
+      for (let dx = -4; dx <= 4; dx++) {
+        const c = w.cellAt(p.x + dx, p.y + dy);
+        if (c < 0 || w.terrain[c] !== Terrain.Greek || Math.hypot(dx, dy) >= best) continue;
+        best = Math.hypot(dx, dy);
+        land = c;
+      }
+    }
+    if (land < 0) return null;
+    const island = [land];
+    const seen = new Set(island);
+    for (let i = 0; i < island.length && island.length <= maxCells; i++) {
+      const x = island[i] % w.cols;
+      for (const n of w.neighbours4(x, (island[i] - x) / w.cols)) {
+        if (seen.has(n) || w.terrain[n] === Terrain.Sea) continue;
+        seen.add(n);
+        island.push(n);
+      }
+    }
+    if (island.length > maxCells || island.some(c => this.owner[c] !== WILD || w.terrain[c] !== Terrain.Greek)) return null;
+    return { land, island };
+  }
+
+  /** A merchant city's purse: mostly the harbour, a little of everything else, nothing for colonies. */
+  private traderBudget(): Budget {
+    return normalizeBudget({ military: 8, colonization: 5, agriculture: 22, trade: 45, culture: 20 });
   }
 
   /** The non-Greek land cell nearest a point (the seat of a people beyond the frontier). */
@@ -1593,7 +1632,7 @@ export class Simulation {
   declareWar(a: number, b: number) {
     const pa = this.poleis[a];
     const pb = this.poleis[b];
-    if (a === b || !pa?.alive || !pb?.alive || pa.wars.has(b) || this.truce) return;
+    if (a === b || !pa?.alive || !pb?.alive || pa.wars.has(b) || this.truce || pa.trader || pb.trader) return;
     const mine = this.bloc(a);
     if (mine.includes(b)) return;
     // Attacking an ally tears up the treaty.
@@ -1678,7 +1717,7 @@ export class Simulation {
     let best: PolisState | null = null;
     let bestD = Infinity;
     for (const q of this.poleis) {
-      if (!q.alive || q.tribe || q.idx === p.idx || q.overlord >= 0 || pacted(q) || p.allies.has(q.idx) || p.wars.has(q.idx)) continue;
+      if (!q.alive || q.tribe || q.trader || q.idx === p.idx || q.overlord >= 0 || pacted(q) || p.allies.has(q.idx) || p.wars.has(q.idx)) continue;
       if (q.idx === this.player && !this.autoplay) continue;
       if (!this.inCoalition(q, target) || this.relation(p.idx, q.idx) < -20) continue;
       const d = Math.hypot(q.cx - p.cx, q.cy - p.cy) * (q.wars.has(target) ? 0.5 : 1);
@@ -2126,7 +2165,7 @@ export class Simulation {
       }
       if (this.time >= p.nextShip) {
         this.launchShip(p);
-        p.nextShip = this.time + RULES.shipInterval * (0.6 + this.rand() * 0.8);
+        p.nextShip = this.time + RULES.shipInterval * (0.6 + this.rand() * 0.8) * (p.trader ? RULES.traderSailing : 1);
       }
     }
 
@@ -2303,7 +2342,7 @@ export class Simulation {
         if (this.canTrain(p) && this.levySize(p) >= RULES.levyMinimum) return { kind: 'hoplites', cost: this.trainCost(p) };
         return this.surplusPurchase(p);
       case 'colonization':
-        if (p.expedition) return null;
+        if (p.expedition || p.trader) return null;
         // Once a generation (sooner with a bigger share) the city founds a colony: one new city on a historical site…
         if (this.time >= p.nextColonyAt && this.vassalSite(p)) {
           return {
@@ -2414,6 +2453,10 @@ export class Simulation {
 
   private think(p: PolisState) {
     if (p.captured) return;
+    if (p.trader) {
+      p.budget = this.traderBudget();
+      return;
+    }
     // The AI steers through its budget: arm in wartime, settle while land is free.
     p.budget = normalizeBudget({
       military: 15 + 6 * p.militarism + (p.wars.size ? 25 : 0),
@@ -2459,7 +2502,7 @@ export class Simulation {
       const island = (x: PolisState) => RULES.islandPoleis.includes(x.def.id);
       const near = this.nearestNeighbours(p);
       for (const q of this.poleis) {
-        if (!q.alive || q.tribe || q.captured || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0 || p.allies.has(q.idx)) continue;
+        if (!q.alive || q.tribe || q.trader || q.captured || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0 || p.allies.has(q.idx)) continue;
         // Only the nearest neighbours — except that the leagued cities of Hellas may march on the dominant one.
         if (!near.has(q.idx) && !(leagued && q.idx === rival)) continue;
         if (q.idx === this.player && this.time < RULES.aiPlayerGrace) continue;
@@ -2554,7 +2597,7 @@ export class Simulation {
   /** Sends a merchant to a random friendly coastal polis, nearer ones more often. */
   private launchShip(p: PolisState) {
     if (p.blockadedBy >= 0) return;
-    if (this.shipsOf(p.idx) >= Math.min(RULES.maxShips, 1 + p.ports) + p.effects.ships) return;
+    if (this.shipsOf(p.idx) >= Math.min(RULES.maxShips, 1 + p.ports) + p.effects.ships + (p.trader ? RULES.traderShips : 0)) return;
     const from = this.harbourOf(p);
     if (from < 0) return;
     const w = this.world;
@@ -2568,7 +2611,8 @@ export class Simulation {
         (1 + RULES.prestigeTradePull * q.prestige) *
         (p.allies.has(q.idx) ? 2 : 1) *
         (1 + this.relation(p.idx, q.idx) / 200) *
-        (q.idx === this.hegemon ? 1 + RULES.hegemonTradeBonus : 1);
+        (q.idx === this.hegemon ? 1 + RULES.hegemonTradeBonus : 1) *
+        (q.trader ? RULES.traderPull : 1);
       options.push({ q, harbour, weight: pull / (d + 60) });
     }
     // Neutral island harbours trade with anyone.
@@ -2781,7 +2825,7 @@ export class Simulation {
    * warNeighbours nearest by capital.
    */
   nearestNeighbours(p: PolisState): Set<number> {
-    const others = this.poleis.filter(q => q.alive && !q.tribe && q.idx !== p.idx);
+    const others = this.poleis.filter(q => q.alive && !q.tribe && !q.trader && q.idx !== p.idx);
     const radius = (x: PolisState) => Math.sqrt(Math.max(1, x.cells) / Math.PI);
     const capital = (q: PolisState) => Math.hypot(q.cx - p.cx, q.cy - p.cy);
     const border = (q: PolisState) => (this.bordering(p.idx, q.idx) ? 0 : Math.max(0, capital(q) - radius(p) - radius(q)));
@@ -2805,7 +2849,7 @@ export class Simulation {
     if (!border.length) return;
     const w = this.world;
     const targets = this.poleis
-      .filter(q => q.alive && !q.tribe && !q.captured && q.cells > 0)
+      .filter(q => q.alive && !q.tribe && !q.trader && !q.captured && q.cells > 0)
       .map(q => ({ q, d: Math.hypot(q.cx - t.cx, q.cy - t.cy) }))
       .filter(x => x.d <= RULES.raidReach)
       .map(x => ({ ...x, weight: (1 + this.treasury(x.q) / 500) / ((1 + x.q.garrison / 800) * (1 + x.d / 60)) }));
@@ -2961,7 +3005,7 @@ export class Simulation {
     if (choice === 'bribe' && this.spend(victim, cost)) {
       this.emit('raidBribed', victim.idx, band.owner, cost);
       const next = this.poleis
-        .filter(q => q.alive && !q.tribe && !q.captured && q.cells > 0 && q.idx !== victim.idx)
+        .filter(q => q.alive && !q.tribe && !q.trader && !q.captured && q.cells > 0 && q.idx !== victim.idx)
         .map(q => ({ q, d: Math.hypot(q.cx - band.x, q.cy - band.y) }))
         .filter(x => x.d <= RULES.raidReach)
         .sort((x, y) => x.d - y.d)[0];
@@ -3262,7 +3306,7 @@ export class Simulation {
     this.mood(owner, amount * RULES.satisfactionPerTrade);
     this.tradeFx.push({ x: s.x, y: s.y, t: this.time, amount, owner: owner.idx });
     // The receiving harbour profits too, though less than the shipowner.
-    const share = amount * RULES.tradeReceiverShare;
+    const share = amount * (owner.trader ? RULES.traderReceiverShare : RULES.tradeReceiverShare);
     dest.drachmae += share;
     dest.tradeEarned += share;
     this.mood(dest, share * RULES.satisfactionPerTrade);
@@ -3913,6 +3957,7 @@ export class Simulation {
     if (a === b) return false;
     const pa = this.poleis[a];
     const pb = this.poleis[b];
+    if (pa.trader || pb.trader) return false;
     if (pa.tribe || pb.tribe) return pa.tribe !== pb.tribe;
     return !this.truce && pa.wars.has(b);
   }
@@ -4518,7 +4563,7 @@ export class Simulation {
     }
     const mine = this.bloc(this.player);
     const cells = mine.reduce((sum, i) => sum + this.poleis[i].cells, 0);
-    const rivals = this.poleis.some(p => p.alive && !p.tribe && !mine.includes(p.idx));
+    const rivals = this.poleis.some(p => p.alive && !p.tribe && !p.trader && !mine.includes(p.idx));
     if (!rivals || cells >= this.world.greekCells.length * RULES.victoryShare) this.status = 'won';
   }
 

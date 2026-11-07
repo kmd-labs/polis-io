@@ -5,7 +5,7 @@ import { PresetId } from '../../game/economy';
 import { HegemonyCategory } from '../../game/hegemony';
 import { DecadeVerdict } from '../../game/decade';
 import { Bane } from '../../game/fortune';
-import { GreatWorkId, NeutralPortId, TribeId } from '../../game/data/frontier';
+import { GreatWorkId, NeutralPortId, TraderId, TribeId } from '../../game/data/frontier';
 
 export type Lang = 'en' | 'pl';
 
@@ -222,6 +222,9 @@ export interface Dict {
   raidTextPoor: string;
   raidBribe: string;
   raidFight: string;
+  traderNames: Record<TraderId, string>;
+  traderNeutral: string;
+  hoverTrader: string;
   buyMercenaries: string;
   buyMercenariesIdle: string;
   buyMercenariesHint: string;

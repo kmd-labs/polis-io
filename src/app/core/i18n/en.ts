@@ -38,7 +38,7 @@ export const EN: Dict = {
     },
     {
       term: 'Great works and neutral harbours',
-      desc: 'Silver no fund can spend can raise a great work (Polis tab): a treasury at Delphi, a great temple, city walls or a water tunnel. Small islands with neutral harbours (Delos, Syros, Thera, Aegina…) belong to no one and cannot be taken; merchantmen sell there at a premium. No land above 1500 metres can be taken, settled or laid waste.'
+      desc: 'Silver no fund can spend can raise a great work (Polis tab): a treasury at Delphi, a great temple, city walls or a water tunnel. Small islands with neutral harbours (Delos, Syros, Ios…) belong to no one and cannot be taken; merchantmen sell there at a premium. Four neutral merchant cities — Aegina, Siphnos, Thera and Keos — hold their islands and go to war with no one: their many ships call at every harbour, and a city receiving one keeps half of what it brings. No land above 1500 metres can be taken, settled or laid waste.'
     },
     {
       term: 'Twists of fortune',
@@ -339,10 +339,7 @@ export const EN: Dict = {
     delos: 'Delos',
     syros: 'Syros',
     seriphos: 'Seriphos',
-    siphnos: 'Siphnos',
-    thera: 'Thera',
     ios: 'Ios',
-    aegina: 'Aegina',
     skiathos: 'Skiathos',
     peparethos: 'Peparethos',
     psara: 'Psara',
@@ -361,6 +358,9 @@ export const EN: Dict = {
   raidTextPoor: 'A warband of {n} {name} has crossed into our fields to carry off our people and our silver. Their chief asks {d} drachmae — more than we have. We must fight them in the name of Hellas: all Greeks will honour us for it.',
   raidBribe: 'Pay {d} dr',
   raidFight: 'Fight for Hellas',
+  traderNames: { aegina: 'Aegina', siphnos: 'Siphnos', thera: 'Thera', keos: 'Keos' },
+  traderNeutral: 'A neutral merchant city: it holds its island, goes to war with no one and lives by the sea trade. Its ships call at every harbour — the city receiving one keeps half of what it brings.',
+  hoverTrader: 'neutral merchant city',
   buyMercenaries: 'Hire {n} mercenaries now · {d} dr',
   buyMercenariesIdle: 'Hire mercenaries now',
   buyMercenariesHint: 'Paid at once out of all our savings, at twice the price the military fund pays (and never less than three months of income). They march out today and serve until the peace.',

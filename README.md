@@ -93,8 +93,12 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Great works** for spare silver (Polis tab): money no fund can spend goes to the chosen work instead of the other
   funds — a treasury at Delphi (repeatable), a great temple, city walls or a water tunnel.
 - **Small islands and neutral harbours**: islets missing from the coastline data are added (Delos, Rheneia, Donousa…);
-  fifteen small unclaimed islands carry neutral harbours (Delos, Syros, Thera, Aegina, Ithaca…) that belong to no one,
+  twelve small unclaimed islands carry neutral harbours (Delos, Syros, Ios, Ithaca…) that belong to no one,
   cannot be settled or taken, and pay merchantmen 30% more.
+- **Neutral merchant cities**: Aegina, Siphnos, Thera and Keos each hold their whole small island, go to war with no
+  one (nor do barbarians raid them), found no colonies and stand outside the hegemony and victory reckoning. They spend
+  mostly on their harbours, keep three extra merchantmen at sea, sail twice as often and draw other cities' ships twice
+  as strongly; a city their ship calls at keeps half of what it brings (30% for an ordinary city's ship).
 - **Mountains**: no land above 1500 m can be taken, settled, laid waste or handed over.
 - **Colonies**: settlers' expeditions only claim wilderness along the city's own borders; a colony is always one new
   city on a historical site, founded at most once in 40 years (down to 16 with a large colonization share).

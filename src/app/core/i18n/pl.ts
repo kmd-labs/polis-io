@@ -38,7 +38,7 @@ export const PL: Dict = {
     },
     {
       term: 'Wielkie dzieła i neutralne porty',
-      desc: 'Srebro, którego żaden fundusz nie ma na co wydać, może wznosić wielkie dzieło (zakładka Polis): skarbiec w Delfach, wielką świątynię, mury miejskie albo tunel wodny. Małe wyspy z neutralnymi portami (Delos, Syros, Tera, Egina…) nie należą do nikogo i nie da się ich zająć; statki kupieckie sprzedają tam z zyskiem. Ziemi powyżej 1500 metrów nie da się zdobyć, zasiedlić ani spustoszyć.'
+      desc: 'Srebro, którego żaden fundusz nie ma na co wydać, może wznosić wielkie dzieło (zakładka Polis): skarbiec w Delfach, wielką świątynię, mury miejskie albo tunel wodny. Cztery neutralne miasta kupieckie — Egina, Sifnos, Thera i Keos — trzymają swoje wyspy i z nikim nie wojują: ich liczne statki zawijają do każdego portu, a miasto, które przyjmie taki statek, zatrzymuje połowę tego, co przywiózł. Małe wyspy z neutralnymi portami (Delos, Syros, Ios…) nie należą do nikogo i nie da się ich zająć; statki kupieckie sprzedają tam z zyskiem. Ziemi powyżej 1500 metrów nie da się zdobyć, zasiedlić ani spustoszyć.'
     },
     {
       term: 'Zrządzenia losu',
@@ -339,10 +339,7 @@ export const PL: Dict = {
     delos: 'Delos',
     syros: 'Syros',
     seriphos: 'Serifos',
-    siphnos: 'Sifnos',
-    thera: 'Tera',
     ios: 'Ios',
-    aegina: 'Egina',
     skiathos: 'Skiatos',
     peparethos: 'Peparetos',
     psara: 'Psara',
@@ -361,6 +358,9 @@ export const PL: Dict = {
   raidTextPoor: 'Banda {n} wojowników — {name} — wkroczyła na nasze pola, by porywać ludzi i rabować srebro. Ich wódz żąda {d} drachm — więcej, niż mamy. Musimy walczyć w imię Hellady: wszyscy Grecy nas za to uczczą.',
   raidBribe: 'Zapłać {d} dr',
   raidFight: 'Walcz za Helladę',
+  traderNames: { aegina: 'Egina', siphnos: 'Sifnos', thera: 'Thera', keos: 'Keos' },
+  traderNeutral: 'Neutralne miasto kupieckie: trzyma swoją wyspę, z nikim nie wojuje i żyje z handlu morskiego. Jego statki zawijają do każdego portu — miasto, które przyjmie taki statek, zatrzymuje połowę tego, co przywiózł.',
+  hoverTrader: 'neutralne miasto kupieckie',
   buyMercenaries: 'Najmij {n} najemników teraz · {d} dr',
   buyMercenariesIdle: 'Najmij najemników teraz',
   buyMercenariesHint: 'Płatne od razu ze wszystkich oszczędności, dwa razy drożej niż z funduszu wojskowego (i nigdy mniej niż trzy miesiące dochodu). Wyruszają dziś i służą do zawarcia pokoju.',

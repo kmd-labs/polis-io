@@ -63,6 +63,8 @@
             <lucide-icon [img]="icons.Handshake" [size]="14"></lucide-icon>
             <span>{{ t.offerPeace }}</span>
           </app-button>
+        } @else if (target.trader) {
+          <p class="panel__hint">{{ t.traderNeutral }}</p>
         } @else if (target.overlord !== game.player()) {
           <app-button
             variant="toggle"

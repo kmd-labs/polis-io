@@ -27,6 +27,32 @@ export const TRIBES: readonly TribeDef[] = [
   { kind: 'tribe', id: 'thracians', lon: 23.9, lat: 41.3, color: 'neutral-700', militarism: 4, culture: 0 }
 ];
 
+/** Neutral merchant cities on small islands: they hold their island, never go to war and live by the sea trade. */
+export type TraderId = 'aegina' | 'siphnos' | 'thera' | 'keos';
+
+export interface TraderDef {
+  kind: 'trader';
+  id: TraderId;
+  lon: number;
+  lat: number;
+  color: string;
+  militarism: number;
+  culture: number;
+}
+
+/**
+ * Aegina — the great carrying trader of the Archaic Aegean, first to strike silver coins, a partner
+ * in the Greek emporion at Naucratis; Siphnos — rich from its silver and gold mines; Thera — the
+ * Dorian island that sent out the founders of Cyrene (c. 630 BC); Keos — four small poleis trading
+ * across the Saronic and Cycladic waters.
+ */
+export const TRADERS: readonly TraderDef[] = [
+  { kind: 'trader', id: 'aegina', lon: 23.43, lat: 37.75, color: 'warning-500', militarism: 1, culture: 3 },
+  { kind: 'trader', id: 'siphnos', lon: 24.71, lat: 36.98, color: 'warning-300', militarism: 1, culture: 2 },
+  { kind: 'trader', id: 'thera', lon: 25.43, lat: 36.4, color: 'warning-700', militarism: 1, culture: 2 },
+  { kind: 'trader', id: 'keos', lon: 24.33, lat: 37.63, color: 'warning-400', militarism: 1, culture: 2 }
+];
+
 /** Islets too small for the map's coastline data: added as land where the raster shows only sea. */
 export const ISLETS: readonly { id: string; lon: number; lat: number; r: number }[] = [
   { id: 'delos', lon: 25.27, lat: 37.4, r: 1 },
@@ -61,10 +87,7 @@ export type NeutralPortId =
   | 'delos'
   | 'syros'
   | 'seriphos'
-  | 'siphnos'
-  | 'thera'
   | 'ios'
-  | 'aegina'
   | 'skiathos'
   | 'peparethos'
   | 'psara'
@@ -78,10 +101,7 @@ export const NEUTRAL_PORTS: readonly { id: NeutralPortId; lon: number; lat: numb
   { id: 'delos', lon: 25.27, lat: 37.4 },
   { id: 'syros', lon: 24.92, lat: 37.44 },
   { id: 'seriphos', lon: 24.47, lat: 37.15 },
-  { id: 'siphnos', lon: 24.71, lat: 36.98 },
-  { id: 'thera', lon: 25.43, lat: 36.4 },
   { id: 'ios', lon: 25.28, lat: 36.73 },
-  { id: 'aegina', lon: 23.43, lat: 37.75 },
   { id: 'skiathos', lon: 23.48, lat: 39.17 },
   { id: 'peparethos', lon: 23.72, lat: 39.13 },
   { id: 'psara', lon: 25.57, lat: 38.55 },

@@ -496,6 +496,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         pop: formatNumber(this.game.sim.totalPopulation(p), lang)
       });
       if (p.overlord >= 0) text += ` · ${interpolate(t.vassalOf, { b: this.game.name(p.overlord) })}`;
+      if (p.trader) text += ` · ${t.hoverTrader}`;
       text += ` · ${altitude}`;
     } else if (owner === WILD) {
       text = `${t.hoverWild} · ${altitude}`;

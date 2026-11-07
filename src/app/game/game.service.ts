@@ -89,6 +89,8 @@ export interface PolisView {
   expeditionOffer: { settlers: number; cost: number } | null;
   /** A people beyond the frontier rather than a city. */
   tribe: boolean;
+  /** A neutral merchant city on its island (never at war). */
+  trader: boolean;
   /** Player only: the great work receiving spare silver, saved so far, and cost / completions / availability of each. */
   greatWork: GreatWorkId | null;
   greatFund: number;
@@ -662,6 +664,7 @@ export class GameService {
         colonyBlocked: p.idx === sim.player && this.colonyBlocked(p),
         colonyIn: Math.max(0, p.nextColonyAt - sim.time),
         tribe: p.tribe,
+        trader: p.trader,
         greatWork: p.greatWork,
         greatFund: p.greatFund,
         greatWorks:
