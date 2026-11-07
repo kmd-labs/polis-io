@@ -41,7 +41,7 @@ export const PL: Dict = {
     },
     {
       term: 'Wybory i szeroki świat',
-      desc: 'Od czasu do czasu miasto musi wybrać: list z malowaną sceną, opowieścią i dwiema lub trzema odpowiedziami, z których każda mówi, ile kosztuje i co przyniesie. Niektóre przychodzą w swoim historycznym roku — prawa Solona, wojna święta, zaćmienie Talesa, złoto Krezusa, upadek Sardes, wojny perskie — inne w dowolnym czasie. Na początku gry są częste, później coraz rzadsze; odłożenie listu oznacza ostatnią odpowiedź. Najwyżej dziesięć listów rocznie zatrzymuje grę, a po stu latach najwyżej jedno zdarzenie losowe na rok. Kronika odnotowuje w swoim roku, co dzieje się w szerokim świecie.'
+      desc: 'Od czasu do czasu miasto musi wybrać: list z malowaną sceną, opowieścią i dwiema lub trzema odpowiedziami, z których każda mówi, ile kosztuje i co przyniesie. Niektóre przychodzą w swoim historycznym roku — prawa Solona, wojna święta, zaćmienie Talesa, złoto Krezusa, upadek Sardes, wojny perskie — inne w dowolnym czasie. Na początku gry są częste, później coraz rzadsze. Listu wymagającego decyzji nie można odłożyć: trzeba odpowiedzieć. Najwyżej dziesięć listów rocznie zatrzymuje grę, a po stu latach najwyżej jedno zdarzenie losowe na rok. Kronika odnotowuje w swoim roku, co dzieje się w szerokim świecie.'
     },
     {
       term: 'Wielkie dzieła i neutralne porty',
@@ -113,7 +113,7 @@ export const PL: Dict = {
     },
     {
       term: 'Pokój',
-      desc: 'Pokój zawiera się przy stole, jak w Civilization: połóż warunki dla każdej ze stron — złoto (3, 6 lub 12 miesięcy dochodu dającego), pas ziemi, przymusowy sojusz, państwo klienckie (dający służy i płaci trybut) albo publiczne ośmieszenie (prestiż przechodzi z jednego na drugiego) — a wskaźnik pokaże, czy wróg przyjmie; „Czego chcą?” pokazuje ich warunki. Strona z przewagą w bilansie wojny żąda więcej; długa wojna łagodzi obie. Wrogowie przysyłają posłów z własnymi warunkami. Gdy ktoś wypowie ci wojnę, możesz od razu prosić o pokój za roczny dochód. Traktat pokojowy obowiązuje pięć lat.'
+      desc: 'Pokój zawiera się przy stole, jak w Civilization: połóż warunki dla każdej ze stron — złoto (3, 6 lub 12 miesięcy dochodu dającego), pas ziemi, przymusowy sojusz, państwo klienckie (dający służy i płaci trybut) albo publiczne ośmieszenie (prestiż przechodzi z jednego na drugiego) — a wskaźnik pokaże, czy wróg przyjmie; „Czego chcą?” pokazuje ich warunki. Strona z przewagą w bilansie wojny żąda więcej; długa wojna łagodzi obie. Liczą się też nastroje: niezadowolony lud osłabia miasto przy stole, a miasto ogarnięte niepokojami samo szuka pokoju. Wrogowie przysyłają posłów z własnymi warunkami. Gdy ktoś wypowie ci wojnę, możesz od razu prosić o pokój za roczny dochód. Traktat pokojowy obowiązuje pięć lat.'
     },
     {
       term: 'Najemnicy i flota wojenna',
@@ -366,7 +366,7 @@ export const PL: Dict = {
   raidBribe: 'Zapłać {d} dr',
   raidFight: 'Walcz za Helladę',
   dilemmas: DILEMMAS_PL,
-  dilemmaPutAside: 'Odłożenie listu oznacza ostatnią odpowiedź.',
+  dilemmaPutAside: 'Trzeba podjąć decyzję: listu nie można odłożyć.',
   worldNotes: WORLD_NOTES_PL,
   evDilemma: '{a}: {w}',
   evWorld: '{w}',

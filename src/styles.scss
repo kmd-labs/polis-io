@@ -148,3 +148,8 @@ app-tooltip .ui-tooltip.ui-tooltip {
     inset 0 0 0 1px #{rgba(palette("warning-500"), 0.6)},
     0 4px 14px #{rgba(palette("neutral-900"), 0.25)};
 }
+
+// A letter that demands a decision has no close button.
+body.popup-forced .popup-dialog__close {
+  display: none !important;
+}

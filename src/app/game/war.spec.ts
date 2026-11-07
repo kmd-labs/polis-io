@@ -202,3 +202,40 @@ describe('making peace', () => {
     expect(treaties).toBeGreaterThan(2);
   }, 300_000);
 });
+
+describe('contentment at the peace table', () => {
+  it('weakens a city whose citizens are discontented', () => {
+    const sim = game();
+    const me = sim.poleis[sim.player];
+    const thebes = byId(sim, 'thebes');
+    sim.declareWar(thebes.idx, me.idx);
+    sim.time += RULES.secondsPerYear;
+    me.satisfaction = 60;
+    thebes.satisfaction = 60;
+    const calm = sim.peaceNeed(thebes.idx, me.idx);
+    expect(sim.peaceBalance(me.idx, thebes.idx)).toBeCloseTo(sim.warScore(me.idx, thebes.idx));
+    thebes.satisfaction = 20;
+    expect(sim.peaceBalance(me.idx, thebes.idx)).toBeGreaterThan(sim.warScore(me.idx, thebes.idx));
+    // Unrest in Thebes: it asks for less (or offers more) to end the war.
+    expect(sim.peaceNeed(thebes.idx, me.idx)).toBeLessThan(calm);
+  }, 30_000);
+});
+
+describe('settled land', () => {
+  it('has no holes: a small patch of wilderness enclosed by one city is taken in', () => {
+    const sim = game();
+    const athens = sim.poleis[0];
+    const w = world;
+    // Cut a small hole well inside Athens' land.
+    const inner = w.greekCells.find(c => {
+      if (sim.owner[c] !== athens.idx || c === athens.capital) return false;
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (sim.owner[c + dy * w.cols + dx] !== athens.idx) return false;
+      return true;
+    })!;
+    const hole = [inner, inner + 1, inner + w.cols, inner + w.cols + 1];
+    for (const c of hole) (sim as any).release(c);
+    expect(hole.every(c => sim.owner[c] === -1)).toBe(true);
+    (sim as any).fillHoles();
+    expect(hole.every(c => sim.owner[c] === athens.idx)).toBe(true);
+  }, 30_000);
+});

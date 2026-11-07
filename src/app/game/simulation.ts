@@ -282,6 +282,10 @@ export const RULES = {
   generalMergeRadius: 3 * L,
   /** A city only picks a war with one of its nearest neighbours: this many nearest by border and by capital. */
   warNeighbours: 3,
+  /** Settlers favour a cell this much more for every side of it already the city's (keeps land compact). */
+  settleCompact: 0.12,
+  /** Wilderness pockets of at most this many cells, enclosed by a single city's land, are taken in by it. */
+  holeMax: 25 * A,
   /** Seconds over which a city's cash inflow is smoothed (spoils and trade arrive in lumps). */
   inflowSmoothing: 4,
   /** No land above this height (metres) can be taken, settled, laid waste or handed over. */
@@ -502,6 +506,12 @@ export const RULES = {
   /** After this many years a war weighs on the citizens every month, and peace comes easier. */
   wearyYears: 4,
   wearyMood: -1.5,
+  /** At the peace table each point of contentment one city has over the other counts this much in the
+   * balance of the war; a city whose citizens are less content than peaceMoodLow presses for peace. */
+  peaceMoodWeight: 0.4,
+  /** A city leagued against the Hegemon fights it this much harder. */
+  coalitionStrength: 1.3,
+  peaceMoodLow: 40,
   /** No city fights more than this many wars at once; a peace holds this many years. */
   maxWars: 3,
   treatyYears: 5,
@@ -1755,7 +1765,9 @@ export class Simulation {
     const pa = this.poleis[a];
     const pb = this.poleis[b];
     if (!pa || !pb) return false;
-    return pa.wars.size < RULES.maxWars && pb.wars.size < RULES.maxWars && (pa.treaties.get(b) ?? 0) <= this.time;
+    // The cities leagued against the Hegemon are not held back by a treaty with it.
+    const leagued = b === this.coalitionTarget && this.inCoalition(pa, b);
+    return pa.wars.size < RULES.maxWars && pb.wars.size < RULES.maxWars && (leagued || (pa.treaties.get(b) ?? 0) <= this.time);
   }
 
   allied(a: number, b: number): boolean {
@@ -2110,7 +2122,10 @@ export class Simulation {
   /** A city's fighting strength in a war: citizens under arms and mercenaries, their mettle and their strategos. */
   private warStrength(f: Front, idx: number): number {
     const p = this.poleis[idx];
-    return (p.garrison + p.mercs) * this.battleMultiplier(idx) * (1 + RULES.generalPower * (f.stars[this.side(f, idx)] - 1));
+    const enemy = idx === f.a ? f.b : f.a;
+    // All Hellas against the Hegemon: each leagued city fights it the harder.
+    const league = enemy === this.coalitionTarget && this.inCoalition(p, enemy) ? RULES.coalitionStrength : 1;
+    return (p.garrison + p.mercs) * this.battleMultiplier(idx) * (1 + RULES.generalPower * (f.stars[this.side(f, idx)] - 1)) * league;
   }
 
   /** Away from home a city fights at a disadvantage: food, reinforcements and nerve run thin. */
@@ -2554,16 +2569,28 @@ export class Simulation {
     }
   }
 
+  /**
+   * The balance of a war as it weighs at the peace table: the fighting, shifted by how content each
+   * city's citizens are — a discontented city negotiates from weakness.
+   */
+  peaceBalance(idx: number, enemy: number): number {
+    const mine = this.poleis[idx]?.satisfaction ?? 50;
+    const theirs = this.poleis[enemy]?.satisfaction ?? 50;
+    return Math.max(-100, Math.min(100, this.warScore(idx, enemy) + (mine - theirs) * RULES.peaceMoodWeight));
+  }
+
   /** What `ai` must come away with to make peace (negative: what it is willing to give up). */
   peaceNeed(ai: number, other: number): number {
     const f = this.front(ai, other);
     if (!f) return 0;
-    const s = this.warScore(ai, other);
+    const s = this.peaceBalance(ai, other);
     const years = (this.time - f.start) / RULES.secondsPerYear;
     let need = s > 0 ? s * 0.4 : s * 0.5;
     // Long wars weigh on both: the winner asks less, the loser gives more readily.
     if (years >= RULES.wearyYears) need = need > 0 ? need * Math.max(0.2, 1 - 0.25 * (years - RULES.wearyYears + 1)) : need * (1 + 0.15 * (years - RULES.wearyYears + 1));
     need -= this.relation(ai, other) / 40;
+    // Unrest at home presses a city to make peace.
+    need -= Math.max(0, RULES.peaceMoodLow - this.poleis[ai].satisfaction) * 0.25;
     // Nobody gives up a war in its first months.
     if (years < 0.5) need += 6;
     return need;
@@ -2981,6 +3008,7 @@ export class Simulation {
 
     if (this.time >= this.nextTidy) {
       this.tidyBorders();
+      this.fillHoles();
       this.updateFrontiers();
       this.nextTidy = this.time + RULES.borderTidyInterval;
     }
@@ -3242,7 +3270,8 @@ export class Simulation {
       p.prosperity = Math.min(RULES.maxProsperity, p.prosperity + RULES.prosperityPerCell);
       const x = cell % w.cols;
       for (const n of w.neighbours4(x, (cell - x) / w.cols)) {
-        if (this.owner[n] !== WILD || e.queued.has(n) || w.elevation[n] > RULES.maxElevation) continue;
+        if (this.owner[n] !== WILD || w.elevation[n] > RULES.maxElevation) continue;
+        // A cell already queued is queued again at its new (lower) cost: more of it is now ours.
         e.queued.add(n);
         e.frontier.push(n, this.settleCost(p, n));
       }
@@ -3260,7 +3289,61 @@ export class Simulation {
     const x = cell % w.cols;
     const y = (cell - x) / w.cols;
     const d = Math.hypot(x + 0.5 - p.cx, y + 0.5 - p.cy);
-    return w.elevation[cell] / 600 + (d / L) * 0.0035 - w.fertility[cell] * 0.4 + hash01(x, y, p.idx) * 0.25;
+    // Settlers fill in around what is already theirs before pushing on: no ragged, holed frontier.
+    let ours = 0;
+    for (let k = 0; k < 4; k++) if (this.owner[w.neighbour(cell, k)] === p.idx) ours++;
+    return w.elevation[cell] / 600 + (d / L) * 0.0035 - w.fertility[cell] * 0.4 + hash01(x, y, p.idx) * 0.05 - ours * RULES.settleCompact;
+  }
+
+  /**
+   * Small patches of wilderness enclosed by one city's land (and perhaps the sea) are taken in by it,
+   * a few at a time: a city's territory has no holes. Land above the mountain limit stays wild.
+   */
+  private fillHoles() {
+    const w = this.world;
+    const own = this.owner;
+    const seen = new Uint8Array(w.size);
+    const stack: number[] = [];
+    let filled = 0;
+    for (const start of w.greekCells) {
+      if (own[start] !== WILD || seen[start]) continue;
+      const pocket: number[] = [];
+      let owner = -1;
+      let enclosed = true;
+      seen[start] = 1;
+      stack.push(start);
+      while (stack.length) {
+        const c = stack.pop()!;
+        pocket.push(c);
+        for (let k = 0; k < 4; k++) {
+          const n = w.neighbour(c, k);
+          if (n < 0) {
+            enclosed = false;
+            continue;
+          }
+          const o = own[n];
+          if (o === WILD) {
+            if (!seen[n]) {
+              seen[n] = 1;
+              stack.push(n);
+            }
+          } else if (o >= 0) {
+            if (owner === -1) owner = o;
+            else if (owner !== o) enclosed = false;
+          } else if (o !== SEA) {
+            // Neutral islands or land beyond the frontier: not a hole.
+            enclosed = false;
+          }
+        }
+      }
+      if (!enclosed || owner < 0 || pocket.length > RULES.holeMax || !this.poleis[owner].alive) continue;
+      for (const c of pocket) {
+        if (w.elevation[c] > RULES.maxElevation) continue;
+        this.setOwner(c, owner, false);
+        filled++;
+      }
+      if (filled > RULES.holeMax * 4) return;
+    }
   }
 
   private think(p: PolisState) {

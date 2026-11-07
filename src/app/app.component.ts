@@ -25,6 +25,7 @@ import {
   DropdownComponent,
   DropdownOption,
   PopupComponent,
+  PopupConfig,
   PopupService,
   SplashComponent,
   SplashService,
@@ -257,6 +258,21 @@ export class AppComponent {
   readonly ended = computed(() => this.game.status() === 'won' || this.game.status() === 'lost');
 
   constructor() {
+    // A letter that demands a decision ignores Escape and clicks on the backdrop (caught before the popup sees them).
+    window.addEventListener(
+      'keydown',
+      e => {
+        if (this.forcedOpen && e.key === 'Escape') e.stopImmediatePropagation();
+      },
+      true
+    );
+    window.addEventListener(
+      'click',
+      e => {
+        if (this.forcedOpen && (e.target as HTMLElement | null)?.classList?.contains('popup-backdrop')) e.stopImmediatePropagation();
+      },
+      true
+    );
     effect(() => {
       const t = this.i18n.t();
       this.seo.update({
@@ -370,7 +386,7 @@ export class AppComponent {
     // Suing for peace at once costs a year's income, paid to the aggressor.
     const cost = this.game.buyPeaceCost();
     const affordable = this.game.sim.treasury(this.game.sim.poleis[this.game.player()]) >= cost;
-    this.popup.open({
+    this.openForced({
       id: 'war-letter',
       title: computed(() => interpolate(this.i18n.t().letterTitle, { name: name() })),
       subtitle: computed(() => interpolate(this.i18n.t().letterDeclares, { name: name() })),
@@ -396,15 +412,22 @@ export class AppComponent {
       return;
     }
     const name = () => this.game.name(enemy);
-    this.popup.open({
+    let chosen = false;
+    this.openForced({
       id: 'war-posture',
       title: computed(() => interpolate(this.i18n.t().postureTitle, { name: name() })),
       description: computed(() => this.i18n.t().postureIntro),
       component: WarPostureComponent,
-      componentInputs: { enemy, done: () => this.popup.close() },
+      componentInputs: {
+        enemy,
+        done: () => {
+          chosen = true;
+          this.popup.close();
+        }
+      },
       size: 'md',
       onClose: () => this.game.closeNotice()
-    });
+    }, () => chosen);
   }
 
   /** Envoys come with terms: accept them, refuse, or sit down at the table. */
@@ -416,7 +439,7 @@ export class AppComponent {
     const t = () => this.i18n.t();
     const name = () => this.game.name(from);
     let talk = false;
-    this.popup.open({
+    this.openForced({
       id: 'peace-offer',
       title: computed(() => interpolate(t().peaceOfferTitle, { name: name() })),
       description: computed(() => {
@@ -477,7 +500,7 @@ export class AppComponent {
 
   private openEmbassy(from: number) {
     const name = () => this.game.name(from);
-    this.popup.open({
+    this.openForced({
       id: 'embassy',
       title: computed(() => interpolate(this.i18n.t().embassyTitle, { name: name() })),
       subtitle: computed(() => this.i18n.t().embassySubtitle),
@@ -526,17 +549,13 @@ export class AppComponent {
       decided = true;
       this.game.resolveConquest(from, choice);
     };
-    this.popup.open({
+    this.openForced({
       id: 'conquest',
       title: computed(() => interpolate(this.i18n.t().conquestTitle, { name: name() })),
       subtitle: computed(() => this.i18n.t().conquestSubtitle),
       template: this.conquestTpl,
       size: 'md',
-      onClose: () => {
-        // Dismissing the dialog leaves the city subjugated.
-        if (!decided) this.game.resolveConquest(from, 'subjugate');
-        this.game.closeNotice();
-      },
+      onClose: () => this.game.closeNotice(),
       actions: [
         { label: computed(() => this.i18n.t().conquestRaze), variant: 'play', hot: true, onClick: decide('raze') },
         { label: computed(() => this.i18n.t().conquestSubjugate), variant: 'play', hot: true, onClick: decide('subjugate') },
@@ -587,24 +606,20 @@ export class AppComponent {
         label: label(key, share)
       }))
     );
-    this.popup.open({
+    this.openForced({
       id: 'olympics-invite',
       title: computed(() => interpolate(t().olyInviteTitle, { n: formatOrdinal(olympiad, lang()), year: formatYear(year, t()) })),
       description: computed(() => interpolate(t().olyInviteText, { name: this.game.name(this.game.player()) })),
       template: this.inviteTpl,
       size: 'sm',
-      onClose: () => {
-        // Closing without a word sends a modest team.
-        if (!this.inviteDecided) this.game.sendDelegation(0.1);
-        this.game.closeNotice();
-      },
+      onClose: () => this.game.closeNotice(),
       actions: []
-    });
+    }, () => this.inviteDecided);
   }
 
   /**
    * A warband has crossed into our land: pay it six months' income to plunder someone else, or
-   * fight it in the name of Hellas. Closing the letter means fighting.
+   * fight it in the name of Hellas. The letter cannot be put aside.
    */
   private openRaidChoice(band: number, tribe: number, men: number, cost: number, treasury: number) {
     const t = () => this.i18n.t();
@@ -615,7 +630,7 @@ export class AppComponent {
       answered = true;
       this.game.answerRaid(band, choice);
     };
-    this.popup.open({
+    this.openForced({
       id: 'raid-choice',
       title: computed(() => interpolate(t().raidTitle, { name: this.game.name(tribe) })),
       description: computed(() =>
@@ -626,10 +641,7 @@ export class AppComponent {
         })
       ),
       size: 'sm',
-      onClose: () => {
-        if (!answered) this.game.answerRaid(band, 'fight');
-        this.game.closeNotice();
-      },
+      onClose: () => this.game.closeNotice(),
       actions: [
         ...(affordable
           ? [{ label: computed(() => interpolate(t().raidBribe, { d: formatNumber(cost, lang()) })), variant: 'default' as const, onClick: answer('bribe') }]
@@ -671,9 +683,46 @@ export class AppComponent {
   }
 
   /** A twist of fortune, read from the alerts row. */
+  /** Whether the open letter demands a decision (no closing it without one). */
+  private forcedOpen = false;
+
+  /**
+   * Opens a letter that demands a decision: it has no close button, Escape and clicks beside it do
+   * nothing, and should it close without an answer it opens again. Any of its buttons counts as an
+   * answer; `answered` reports a choice made inside it (a list of options, a delegation).
+   */
+  private openForced(config: PopupConfig, answered: () => boolean = () => false) {
+    let picked = false;
+    const full: PopupConfig = {
+      ...config,
+      actions: config.actions?.map(a => ({
+        ...a,
+        onClick: () => {
+          picked = true;
+          a.onClick?.();
+        }
+      })),
+      onClose: () => {
+        if (!picked && !answered()) {
+          this.popup.open(full);
+          return;
+        }
+        this.setForced(false);
+        config.onClose?.();
+      }
+    };
+    this.setForced(true);
+    this.popup.open(full);
+  }
+
+  private setForced(on: boolean) {
+    this.forcedOpen = on;
+    document.body.classList.toggle('popup-forced', on);
+  }
+
   /**
    * A choice for the city, painted like a grand-strategy event: the scene, the story and one button per
-   * answer with its consequences. Putting the letter aside takes the last answer.
+   * answer with its consequences. The letter cannot be put aside: an answer must be given.
    */
   private openDilemma(id: DilemmaId, year: number, choices: DilemmaChoice[]) {
     let answered = false;
@@ -682,17 +731,14 @@ export class AppComponent {
       this.game.answerDilemma(option);
       this.popup.close();
     };
-    this.popup.open({
+    this.openForced({
       id: 'dilemma',
       title: computed(() => this.i18n.t().dilemmas[id].title),
       component: EventCardComponent,
       componentInputs: { id, year, choices, choose },
       size: 'md',
-      onClose: () => {
-        if (!answered) this.game.answerDilemma(choices[choices.length - 1]?.id ?? '');
-        this.game.closeNotice();
-      }
-    });
+      onClose: () => this.game.closeNotice()
+    }, () => answered);
   }
 
   private openFortune(f: Fortune) {

@@ -91,10 +91,24 @@ export class PeaceTableComponent implements OnInit {
     return { ...v, fill, text: v.accept ? t.peaceAccept : t.peaceRefuse };
   });
 
+  /** The balance at the table: the fighting, shifted by how content each side's citizens are. */
   readonly score = computed(() => {
     this.game.poleis();
-    const s = Math.round(this.game.warScore(this.enemy()));
-    return { value: (s > 0 ? '+' : '') + s, fill: (s + 100) / 2 };
+    const t = this.i18n.t();
+    const s = Math.round(this.game.peaceBalance(this.enemy()));
+    const war = Math.round(this.game.warScore(this.enemy()));
+    const sim = this.game.sim;
+    const mood = (idx: number) => Math.round(sim.poleis[idx]?.satisfaction ?? 0);
+    return {
+      value: (s > 0 ? '+' : '') + s,
+      fill: (s + 100) / 2,
+      note: interpolate(t.peaceMoodLine, {
+        w: (war > 0 ? '+' : '') + war,
+        a: mood(this.game.player()),
+        b: mood(this.enemy()),
+        name: this.game.name(this.enemy())
+      })
+    };
   });
 
   readonly years = computed(() => {

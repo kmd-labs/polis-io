@@ -3,10 +3,11 @@
 
 <div class="table">
   <div class="balance" [appTooltip]="t.warScoreHint">
-    <span class="balance__label">{{ t.warScoreLabel }}</span>
+    <span class="balance__label">{{ t.peaceBalanceLabel }}</span>
     <span class="balance__track"><span class="balance__fill" [style.width.%]="score().fill"></span></span>
     <span class="balance__value">{{ score().value }}</span>
   </div>
+  <p class="table__mood">{{ score().note }}</p>
   @if (years() >= 4) {
     <p class="table__weary">{{ t.peaceWeary }}</p>
   }
