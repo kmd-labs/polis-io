@@ -1,6 +1,7 @@
 @let t = i18n.t();
 
-<section class="budget glass-panel" [attr.aria-label]="t.budget">
+<section class="budget" [class.glass-panel]="!embedded()" [class.budget--embedded]="embedded()" [attr.aria-label]="t.budget">
+  @if (!embedded()) {
   <button type="button" class="budget__head" [attr.aria-expanded]="open()" [appTooltip]="t.budgetHint" (click)="toggle()">
     <lucide-icon class="budget__icon" [img]="icons.Coins" [size]="15"></lucide-icon>
     <span class="budget__title">{{ t.budget }}</span>
@@ -11,8 +12,16 @@
     }
     <lucide-icon class="budget__chevron" [class.budget__chevron--open]="open()" [img]="icons.ChevronDown" [size]="14"></lucide-icon>
   </button>
+  }
 
   @if (open()) {
+    @let ps = presets();
+    <div class="presets" role="group" [attr.aria-label]="t.presetsLabel">
+      @for (p of ps.items; track p.id) {
+        <button type="button" class="presets__btn" [class.presets__btn--on]="p.on" [attr.aria-pressed]="p.on" [appTooltip]="p.hint" (click)="applyPreset(p.id)">{{ p.label }}</button>
+      }
+      <span class="presets__btn presets__btn--custom" [class.presets__btn--on]="ps.active === 'custom'">{{ ps.custom }}</span>
+    </div>
     <div class="budget__rows">
       @for (row of rows(); track row.key) {
         <div class="row" [class]="'row row--' + row.key">
@@ -30,14 +39,38 @@
             [value]="row.share"
             [style.--fill]="((row.share - min) / (max - min)) * 100 + '%'"
             [attr.aria-label]="row.name"
+            (pointerdown)="hold()"
+            (pointerup)="release()"
+            (keyup)="release()"
             (input)="set(row.key, $event)" />
           <div class="row__meta">
             <span class="row__fund">{{ row.fund }} dr</span>
-            <span class="row__next">{{ row.next }}</span>
+            <span class="row__next" [attr.title]="row.next">
+              {{ row.forecast.pre }}@if (row.was) {<s class="row__was">{{ row.was }}</s> → }<b class="row__metric" [class.row__metric--changed]="row.was">{{ row.forecast.metric }}</b>{{ row.forecast.post }}
+            </span>
           </div>
           <span class="row__progress"><span [style.width.%]="row.progress * 100"></span></span>
+          @if (row.forecast.warn) {
+            <span class="row__warn" role="alert">{{ row.forecast.warn }}</span>
+          }
           @if (row.extra) {
             <span class="row__extra">{{ row.extra }}</span>
+          }
+          @if (row.key === 'military' && surplus(); as sp) {
+            <div class="surplus" role="radiogroup" [attr.aria-label]="sp.label">
+              <span class="surplus__label">{{ sp.label }}</span>
+              @for (o of sp.options; track o.use) {
+                <button
+                  type="button"
+                  role="radio"
+                  class="surplus__btn"
+                  [class.surplus__btn--on]="o.on"
+                  [attr.aria-checked]="o.on"
+                  [disabled]="o.disabled"
+                  [appTooltip]="o.hint"
+                  (click)="setSurplus(o.use)">{{ o.name }}</button>
+              }
+            </div>
           }
         </div>
       }

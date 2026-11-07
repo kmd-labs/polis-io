@@ -12,7 +12,7 @@ export interface Camera {
   oy: number;
 }
 
-export type MapView = 'political' | 'relief' | 'fertility';
+export type MapView = 'political' | 'relief' | 'fertility' | 'relations' | 'hegemony';
 
 /** Cartographic label (a mountain peak) placed by longitude / latitude. */
 export interface MapLabel {
@@ -24,6 +24,8 @@ export interface MapLabel {
 
 export interface RenderOptions {
   view: MapView;
+  /** Hegemony view: the top three poleis by hegemony points, best first. */
+  podium?: number[];
   hover: number;
   selected: number;
   /** Localized polis names, indexed like `sim.poleis`. */
@@ -145,7 +147,7 @@ export class MapRenderer {
       'neutral-600', 'success-100', 'success-200', 'success-600', 'warning-100', 'warning-200', 'warning-300',
       'info-50', 'info-100', 'info-200', 'info-300', 'info-400', 'info-700', 'primary-200', 'primary-300', 'primary-400',
       'primary-800', 'neutral-700', 'neutral-900', 'warning-50', 'warning-700', 'warning-800', 'success-500', 'accent', 'text-bright', 'text-main',
-      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong'
+      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong', 'danger-400', 'danger-700', 'success-400', 'success-700', 'warning-400', 'warning-500'
     ];
     for (const t of tokens) {
       this.css[t] = this.theme.getTokenColor(t, '#888888');
@@ -199,6 +201,8 @@ export class MapRenderer {
     this.drawClaims(ctx, cam);
     this.drawBuildings(ctx, cam, width, height);
     this.drawShips(ctx, cam, now, width, height);
+    this.drawBlockades(ctx, cam, now);
+    this.drawFleets(ctx, cam, now, width, height);
     this.drawClouds(ctx, cam, now / 1000);
     this.drawEdgeFade(ctx, cam);
     this.drawGrade(ctx, width, height);
@@ -292,7 +296,10 @@ export class MapRenderer {
     if (this.baseView !== opt.view) this.buildBase(opt.view);
     const me = sim.poleis[sim.player];
     const wars = me ? [...me.wars].join(',') : '';
-    const key = `${sim.resets}|${opt.view}|${opt.hover}|${opt.selected}|${sim.player}|${wars}`;
+    // In the relations view, a city repaints when its standing with the player moves a step.
+    const standing = opt.view === 'relations' && me ? sim.poleis.map(p => Math.round(sim.relation(p.idx, me.idx) / 10)).join(',') + [...me.allies].join(',') : '';
+    const podium = opt.view === 'hegemony' ? (opt.podium ?? []).join(',') : '';
+    const key = `${sim.resets}|${opt.view}|${opt.hover}|${opt.selected}|${sim.player}|${wars}|${standing}|${podium}`;
     const dirty = sim.takeDirty();
 
     if (key !== this.paintedKey) {
@@ -345,6 +352,18 @@ export class MapRenderer {
     if (border) {
       const k = Math.min(1, 0.8 + 0.2 * s);
       col = [tint[0] * k, tint[1] * k, tint[2] * k];
+    } else if (opt.view === 'hegemony') {
+      // Gold, silver and bronze for the three leading poleis; everyone else greyed out.
+      const place = opt.podium?.indexOf(o) ?? -1;
+      const c = this.rgb;
+      const medal = [mix(c['warning-400'], c['warning-500'], 0.4), c['neutral-400'], mix(c['warning-700'], c['danger-400'], 0.25)][place];
+      const m = medal ? mix(medal, c['neutral-0'], focus ? 0.1 : 0.22) : mix(c['neutral-200'], c['neutral-0'], 0.35);
+      const k = 0.7 + 0.3 * s;
+      col = [m[0] * k, m[1] * k, m[2] * k];
+    } else if (opt.view === 'relations') {
+      const k = 0.7 + 0.3 * s;
+      const m = mix(this.relationTint(o), this.rgb['neutral-0'], focus ? 0.2 : 0.38);
+      col = [m[0] * k, m[1] * k, m[2] * k];
     } else if (opt.view === 'political') {
       const me = sim.poleis[sim.player];
       const hostile = !!me && me.wars.has(o) && (x + y) % 6 === 0;
@@ -360,6 +379,18 @@ export class MapRenderer {
     data[p] = col[0];
     data[p + 1] = col[1];
     data[p + 2] = col[2];
+  }
+
+  /** Relations view: the player gold, enemies deep red, allies and vassals green, the rest by reputation. */
+  private relationTint(o: number): Rgb {
+    const sim = this.sim;
+    const c = this.rgb;
+    const me = sim.poleis[sim.player];
+    if (!me || o === me.idx) return c['accent'];
+    if (me.wars.has(o)) return c['danger-700'];
+    if (me.allies.has(o) || sim.poleis[o].overlord === me.idx) return c['success-700'];
+    const r = Math.max(-100, Math.min(100, sim.relation(o, me.idx)));
+    return r < 0 ? mix(c['neutral-300'], c['danger-400'], Math.min(1, -r / 60)) : mix(c['neutral-300'], c['success-400'], Math.min(1, r / 60));
   }
 
   // ─── Sea ──────────────────────────────────────────────────────────────────
@@ -520,6 +551,101 @@ export class MapRenderer {
       ctx.fill();
       ctx.stroke();
       ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  /** War galleys: a long dark hull with a ram, a bank of oars and the owner's sail, and the galley count above. */
+  private drawFleets(ctx: CanvasRenderingContext2D, cam: Camera, now: number, width: number, height: number) {
+    const sim = this.sim;
+    const l = Math.max(11, Math.min(22, cam.scale * 4.2));
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const f of sim.fleets) {
+      if (f.dead) continue;
+      const x = cam.ox + f.x * cam.scale;
+      const y = cam.oy + f.y * cam.scale + Math.sin(now / 350 + f.id) * 0.8;
+      if (x < -l * 3 || y < -l * 3 || x > width + l * 3 || y > height + l * 3) continue;
+      const isMe = f.owner === sim.player;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(f.angle);
+      // Oars, rowing
+      ctx.strokeStyle = this.css['neutral-700'];
+      ctx.lineWidth = Math.max(1, l * 0.06);
+      ctx.beginPath();
+      for (let k = -2; k <= 2; k++) {
+        const ox = k * l * 0.18;
+        const sweep = Math.sin(now / 160 + k) * l * 0.08;
+        ctx.moveTo(ox, -l * 0.18);
+        ctx.lineTo(ox - sweep, -l * 0.46);
+        ctx.moveTo(ox, l * 0.18);
+        ctx.lineTo(ox - sweep, l * 0.46);
+      }
+      ctx.stroke();
+      // Hull with a bronze ram
+      ctx.fillStyle = this.css['neutral-900'];
+      ctx.beginPath();
+      ctx.moveTo(l * 0.75, 0);
+      ctx.lineTo(l * 0.45, -l * 0.2);
+      ctx.lineTo(-l * 0.6, -l * 0.18);
+      ctx.quadraticCurveTo(-l * 0.78, 0, -l * 0.6, l * 0.18);
+      ctx.lineTo(l * 0.45, l * 0.2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = this.css['warning-700'];
+      ctx.beginPath();
+      ctx.moveTo(l * 0.9, 0);
+      ctx.lineTo(l * 0.7, -l * 0.07);
+      ctx.lineTo(l * 0.7, l * 0.07);
+      ctx.fill();
+      // Sail in the owner's colour
+      ctx.fillStyle = this.colorOf(f.owner);
+      ctx.strokeStyle = isMe ? this.css['accent'] : this.css['neutral-0'];
+      ctx.lineWidth = Math.max(1, l * 0.08);
+      ctx.beginPath();
+      ctx.roundRect(-l * 0.08, -l * 0.34, l * 0.2, l * 0.68, l * 0.06);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      // Galleys in the fleet
+      const text = String(f.strength);
+      ctx.font = `600 10px ${this.mono}`;
+      const w = ctx.measureText(text).width + 8;
+      ctx.fillStyle = this.css['panel-bg-heavy'];
+      ctx.strokeStyle = isMe ? this.css['accent'] : this.css['line'];
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, y - l * 0.7 - 15, w, 14, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = this.css['text-main'];
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y - l * 0.7 - 7.5);
+    }
+    ctx.restore();
+  }
+
+  /** A slowly turning ring of red dashes around every blockaded harbour. */
+  private drawBlockades(ctx: CanvasRenderingContext2D, cam: Camera, now: number) {
+    const sim = this.sim;
+    const w = sim.world;
+    const r = Math.max(10, cam.scale * 5);
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.lineDashOffset = -now / 60;
+    for (const p of sim.poleis) {
+      if (!p.alive || p.blockadedBy < 0) continue;
+      const h = sim.harbourOf(p);
+      if (h < 0) continue;
+      const x = cam.ox + ((h % w.cols) + 0.5) * cam.scale;
+      const y = cam.oy + (Math.floor(h / w.cols) + 0.5) * cam.scale;
+      ctx.strokeStyle = this.css['danger-700'];
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
     }
     ctx.restore();
   }
@@ -785,7 +911,7 @@ export class MapRenderer {
 
   private drawCapitals(ctx: CanvasRenderingContext2D, cam: Camera, opt: RenderOptions, width: number, height: number) {
     const sim = this.sim;
-    const placed: Rect[] = [];
+    const placed: Rect[] = (this.labelRects = []);
     const px = this.pixelSize(cam, 0.6);
     const size = 13 * px;
     const margin = 40;
@@ -873,13 +999,18 @@ export class MapRenderer {
 
   // ─── Armies & battles ─────────────────────────────────────────────────────
 
+  /** City labels placed this frame; army counters steer clear of them. */
+  private labelRects: Rect[] = [];
+
   private drawArmies(ctx: CanvasRenderingContext2D, cam: Camera, now: number) {
     const sim = this.sim;
     const me = sim.poleis[sim.player];
-    const r = Math.max(5, Math.min(16, cam.scale * 2.6));
+    const base = Math.max(5, Math.min(16, cam.scale * 2.6));
     ctx.save();
     for (const a of sim.armies) {
       if (a.battle || a.dead) continue;
+      // The main host carries a larger shield than the raiding parties.
+      const r = a.role === 'main' ? base * 1.2 : base * 0.85;
       let sx = cam.ox + a.x * cam.scale;
       let sy = cam.oy + a.y * cam.scale + Math.sin(now / 140 + a.id) * 0.8;
       if (a.siege >= 0) {
@@ -911,6 +1042,18 @@ export class MapRenderer {
         ctx.stroke();
       }
 
+      if (a.stance === 'hold') {
+        // Dug in: a ring of stakes that closes as the position is fortified.
+        const k = (a.fortify - 1) / (RULES.holdPowerMax - 1);
+        ctx.strokeStyle = this.css['text-bright'];
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(sx, sy, r + 5, -Math.PI / 2, -Math.PI / 2 + Math.max(0.15, k) * Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
       // Hoplite shield (aspis)
       ctx.fillStyle = this.colorOf(a.owner);
       ctx.strokeStyle = isMe ? this.css['accent'] : this.css['text-bright'];
@@ -938,8 +1081,16 @@ export class MapRenderer {
         const text = String(Math.round(a.strength));
         ctx.font = `600 10px ${this.mono}`;
         const w = ctx.measureText(text).width + 8;
-        const bx = sx + r + 2;
-        const by = sy - 7;
+        // Above the shield by default; elsewhere if that would cover a city's name.
+        const spots: Rect[] = [
+          { x: sx - w / 2, y: sy - r - 17, w, h: 14 },
+          { x: sx - w / 2, y: sy + r + 3, w, h: 14 },
+          { x: sx + r + 2, y: sy - 7, w, h: 14 },
+          { x: sx - r - 2 - w, y: sy - 7, w, h: 14 }
+        ];
+        const spot = spots.find(q => !this.labelRects.some(l => overlaps(q, l))) ?? spots[0];
+        const bx = spot.x;
+        const by = spot.y;
         ctx.fillStyle = this.css['panel-bg-heavy'];
         ctx.strokeStyle = this.css['line'];
         ctx.lineWidth = 1;
@@ -973,6 +1124,20 @@ export class MapRenderer {
       // The brawl swells as reinforcements pile in.
       const crowd = 1 + 0.15 * Math.max(0, b.attackers.length + b.defenders.length - 2);
       drawFightCloud(ctx, cam.ox + b.x * cam.scale, cam.oy + b.y * cam.scale, r * crowd * (0.6 + 0.4 * pop), this.sim.time, b.id, style);
+    }
+    // Clashes at sea get a brief cloud too.
+    for (const f of this.sim.seaFights) {
+      const style: FightCloudStyle = {
+        font: this.font,
+        ink: this.css['text-bright'],
+        paper: this.css['neutral-0'],
+        star: this.css['warning-300'],
+        shaft: this.css['neutral-600'],
+        sideA: this.colorOf(f.a),
+        sideB: this.colorOf(f.b)
+      };
+      const pop = Math.min(1, (this.sim.time - f.start) / 0.15);
+      drawFightCloud(ctx, cam.ox + f.x * cam.scale, cam.oy + f.y * cam.scale, r * (0.6 + 0.4 * pop), this.sim.time, f.id, style);
     }
   }
 }

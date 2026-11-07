@@ -25,6 +25,22 @@ export const EN: Dict = {
     'Greece, 600 BC. The Dark Ages are over and dozens of city-states compete for land. Every pixel of the map belongs to a polis or is still wild.',
   glossaryItems: [
     {
+      term: 'Keyboard',
+      desc: 'Space pauses, 1–5 set the speed, B opens the budget, H the hegemony rankings, Esc folds the side panel.'
+    },
+    {
+      term: 'The Olympic Games',
+      desc: 'Every fourth year (counted from the first Olympiad of 776 BC) the Games are held at Olympia, with the contests of their time: twelve in 600 BC, up to eighteen and more later (races, wrestling, boxing, pankration, pentathlon, chariots, the race in armour, heralds and trumpeters). The sacred truce runs from two months before to a month after: no war is waged, armies march home. You choose how much of a year’s income to spend on your delegation; big, wealthy, well-funded cities do best (warlike ones in combat sports, cultured ones in races and music, rich ones in chariots). Every city that competes gains power projection, and every wreath raises its renown and others’ regard; a triumph (two-fifths of all wreaths, at least five) adds +1 culture.'
+    },
+    {
+      term: 'Twists of fortune',
+      desc: 'Every two years fortune turns for every city: a windfall for one budget branch (one to three months of income straight into that fund) or a misfortune — fire, plague, drought, pirates, earthquake or embezzlement — costing up to three months of full income. They wait in the alerts row.'
+    },
+    {
+      term: 'Hegemony',
+      desc: 'Every year the three best cities in silver (average income over 10 years, tribute included), people (today’s population; vassals count for themselves) and arms (last 25 years: battle won 1, capital taken 5, war won 3) earn 3, 2 and 1 points. The most points (out of 9) makes the Hegemon of Hellas. Each point brings +0.1 power projection a year; the Hegemon earns 5% more from sea trade and draws more ships. A city holding 7 or more points for ten years running unites Hellas against it: everyone’s regard for it sinks by 2 a year, and its rivals ally and attack more readily, until its score falls below 6. See the Hegemony tab, the laurel in the top bar and the hegemony map mode.'
+    },
+    {
       term: 'Polis',
       desc: 'An independent city-state. Click a temple on the map to inspect it; click any of its land to choose it at the start of the game.'
     },
@@ -38,7 +54,7 @@ export const EN: Dict = {
     },
     {
       term: 'Settle the wilderness',
-      desc: 'Driven by the colonization share of your budget: each expedition costs drachmae from that fund and takes 10% of your workers away for good. The settlers slowly claim free land next to your borders — or found a colony across the sea once your coast is full. More land raises your carrying capacity, and every new pixel permanently speeds up population growth and income.'
+      desc: 'Driven by the colonization share of your budget: each small expedition costs drachmae from that fund and takes 5% of your workers away for good, and the settlers slowly claim free land next to your borders. Once a generation (every 40 years, down to 16 with a large colonization share) the city founds a colony: one new vassal city on a historical site. More land raises your carrying capacity, and every new pixel permanently speeds up population growth and income.'
     },
     {
       term: 'Militarism & culture',
@@ -62,7 +78,7 @@ export const EN: Dict = {
     },
     {
       term: 'Sea trade',
-      desc: 'A polis on the coast sends small merchant ships to the harbours of coastal poleis it is not at war with. Every completed voyage earns the owner 1 drachma, raised by culture (+8% per point), and the receiving city 30% of that. Each port lets one more ship sail at a time.'
+      desc: 'A polis on the coast sends small merchant ships to the harbours of coastal poleis it is not at war with. Every completed voyage earns the owner 1 drachma, raised by culture (+8% per point), and the receiving city 30% of that. Each port lets one more ship sail at a time, and brings in harbour dues of its own — unless an enemy fleet blockades the harbour.'
     },
     {
       term: 'Victories & power projection',
@@ -81,8 +97,16 @@ export const EN: Dict = {
       desc: 'Declare war on a polis and your armies roam on their own, seizing enemy pixels one by one. Hostile territory is striped. Storming an enemy capital means beating its garrison — and annexing the whole polis.'
     },
     {
+      term: 'Main army and raiders',
+      desc: 'At war a polis fields two to five armies. The main army (the larger shield) takes about half the spare hoplites and seeks out the enemy’s main army; the smaller raiding parties plunder the countryside and run from any force near their size. A main army weaker than the enemy’s halts and digs in (a ring of stakes): within a few months its fighting power grows to 150%, and it falls on any enemy army that comes within 30 cells. A few hoplites always stay behind the walls. An army gives up a chase after three seconds, and armies keep to the valleys, skirting hills and mountains.'
+    },
+    {
+      term: 'Mercenaries and the war fleet',
+      desc: 'Levies are small and frequent. Once the army reaches the size the Military slider aims for, choose what the military fund does with the rest: save it (it flows to the other funds), hire mercenaries in wartime (no citizens lost, but dear to hire, double pay, and they leave at peace), or build war galleys. At war the fleet rows to the nearest enemy harbour and blockades it — no trade, no port bonus, no harbour dues — sinking enemy merchantmen and fighting enemy fleets.'
+    },
+    {
       term: 'Sieges and the fall of a polis',
-      desc: 'An army reaching an enemy capital camps before its walls for about two and a half years before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
+      desc: 'An army reaching an enemy capital camps before its walls for over half a year before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
     },
     {
       term: 'Conquest',
@@ -94,7 +118,7 @@ export const EN: Dict = {
     },
     {
       term: 'Battle',
-      desc: 'When two hostile armies meet, they vanish into a brawl cloud, and armies passing nearby join their friends in it. Only one side walks out; the larger usually wins, but not always. An army facing an enemy two and a half times its size falls back instead, losing stragglers, and sometimes scatters into two smaller armies. Land an army overruns is not always kept — 20% of it, and up to half far from home, is simply left as wilderness.'
+      desc: 'When two hostile armies meet, they vanish into a brawl cloud, and armies passing nearby join their friends in it. Only one side walks out; the larger usually wins, but not always. An army facing an enemy two and a half times its size falls back instead, losing stragglers, and sometimes scatters into two smaller armies. Land an army overruns is not always kept — 20% of it, and up to half far from home, is simply left as wilderness. In wartime a patch of fewer than 20 pixels (not the capital) that touches the enemy and does not grow to 20 within two years passes to that enemy; other stray scraps of land (four pixels or fewer) cut off from their capital go back to the wild after about four years.'
     },
     {
       term: 'Victory',
@@ -133,7 +157,7 @@ export const EN: Dict = {
   statPopulationHint: 'Everyone living in your polis: civilians and warriors.',
   statWorkersHint: 'Civilians fit for physical work. They produce income and can be sent as settlers.',
   statWarriorsHint: 'Hoplites in the garrison and in the field.',
-  statDrachmaeHint: 'Treasury across all five budget funds, and net income per second (after hoplite upkeep).',
+  statDrachmaeHint: 'Treasury across all five budget funds, and net income per month (after hoplite upkeep).',
   statTerritoryHint: 'Share of all Greek land you hold.',
   statGrowthHint: 'Growth and income multiplier earned by settling the wilderness.',
   settle: 'Settle the wilderness',
@@ -164,7 +188,9 @@ export const EN: Dict = {
     colony: 'new colony',
     farm: 'new farm',
     port: 'new port',
-    festival: 'festival'
+    festival: 'festival',
+    mercenaries: 'mercenaries',
+    warship: 'war galley'
   },
   nextPurchase: 'next: {what} ({c})',
   savingOnly: 'saving',
@@ -292,6 +318,112 @@ export const EN: Dict = {
   evFestival: '{a} held a great festival',
   evFarmPlanned: 'Surveyors lay out new farms — ready in {m}',
   evPortPlanned: 'Work begins on a new port — ready in {m}',
+  evBuilt: '{a} completed: {w}',
+  evPodium: '{a} overtakes {b} — {w}',
+  evHegemon: '{a} is the new Hegemon of Hellas',
+  evCoalition: 'Hellas fears the power of {a}: the cities draw together against it',
+  evMercenaries: '{a} hires {n} mercenaries',
+  versionLabel: 'Version',
+  builtTitle: '{name} is finished',
+  builtNames: { farm: 'A new farm', port: 'A new port' },
+  builtTexts: {
+    farm: 'Fields, a threshing floor and a well: the land can feed 2,500 more people.',
+    port: 'Quays and a lighthouse: +12% income, harbour dues of its own, and one more merchant ship at sea.'
+  },
+  builtAction: 'Splendid',
+  fcColonyWait: 'next colony city possible in {t}',
+  fcColonyCity: 'one new city on a historical site',
+  boons: {
+    military: { title: 'Veterans come home', text: 'Seasoned hoplites back from service abroad offer to drill our young men.' },
+    colonization: { title: 'Delphi smiles on us', text: 'The Pythia blesses a new venture; families from all around ask to sail with our settlers.' },
+    agriculture: { title: 'A bumper harvest', text: 'Rain at the right time and sun at the right time: the granaries overflow.' },
+    trade: { title: 'Merchants from afar', text: 'A Phoenician trading house opens a warehouse by our harbour and pays well for the privilege.' },
+    culture: { title: 'A poet’s winter', text: 'A famous poet stays the winter; the citizens flock to hear him and a rich admirer endows the festival.' }
+  },
+  banes: {
+    fire: { title: 'Fire in the agora', text: 'A fire tears through the market quarter; stalls and storehouses must be rebuilt.' },
+    plague: { title: 'Sickness in the city', text: 'A fever spreads through the crowded houses; physicians and offerings to Asclepius cost dearly.' },
+    drought: { title: 'Drought', text: 'The springs run low and the barley withers; grain must be bought abroad.' },
+    pirates: { title: 'Pirates', text: 'Raiders seize cargoes off our coast; we pay ransoms and arm escorts.' },
+    earthquake: { title: 'Earthquake', text: 'Poseidon shakes the earth: walls crack and a temple roof falls in.' },
+    embezzlement: { title: 'Embezzlement', text: 'Treasurers are caught with their hands in the city chest; the money is gone.' }
+  },
+  fortuneGain: '+{d} drachmae for {fund}.',
+  fortuneLoss: 'It costs {d} drachmae (about {m} months of our income).',
+  fortuneAction: 'So it goes',
+  evTruce: 'The heralds of Elis proclaim the sacred truce of the {n} Olympiad: all wars stand still',
+  evTruceEnd: 'The Olympic truce is over: the wars resume',
+  evOlympics: '{a} wins {n} olive wreaths at Olympia',
+  truce: 'Sacred truce',
+  truceHint: 'The Olympic truce (ekecheiria): from two months before the Games to a month after, no war is waged. Armies march home, fleets return to harbour, and no city may declare war.',
+  olympicEvents: {
+    stadion: 'Stadion (one length)',
+    diaulos: 'Diaulos (two lengths)',
+    dolichos: 'Dolichos (long race)',
+    pentathlon: 'Pentathlon',
+    pale: 'Wrestling',
+    pygme: 'Boxing',
+    tethrippon: 'Four-horse chariot',
+    pankration: 'Pankration',
+    keles: 'Horse race',
+    paidesStadion: 'Boys’ stadion',
+    paidesPale: 'Boys’ wrestling',
+    paidesPygme: 'Boys’ boxing',
+    hoplitodromos: 'Race in armour',
+    apene: 'Mule-cart race',
+    kalpe: 'Mares’ race',
+    synoris: 'Two-horse chariot',
+    kerykes: 'Heralds',
+    salpinktai: 'Trumpeters',
+    tethripponPolon: 'Four-colt chariot',
+    synorisPolon: 'Two-colt chariot',
+    kelesPolon: 'Colt race',
+    paidesPankration: 'Boys’ pankration'
+  },
+  olyInviteTitle: 'The {n} Olympiad — {year}',
+  olyInviteText: 'The heralds of Elis proclaim the sacred truce: all wars stop until a month after the Games, and armies march home. How large a delegation will {name} send to Olympia (as a share of a year’s income)? The more silver, the better the athletes, trainers and chariot teams.',
+  olyStay: 'Stay home',
+  olyChoose: 'Purse for the delegation',
+  olyModest: 'Modest {p}% · {d} dr',
+  olyGenerous: 'Generous {p}% · {d} dr',
+  olyLavish: 'Lavish {p}% · {d} dr',
+  olyReportTitle: 'The {n} Olympiad — {year}',
+  olyReportSubtitle: 'Olive wreaths at Olympia',
+  olyYouWon: 'Our athletes won {n} olive wreaths — {place} of {of} cities.',
+  olyYouNone: 'Our athletes came home without a wreath — {place} of {of} cities.',
+  olyYouStayed: 'We sent no delegation this time.',
+  olyReward: 'Power projection +{p}; every city’s regard for us +{r}.',
+  olyTriumph: 'A triumph! All Hellas sings of our athletes: culture +1.',
+  olyTriumphOther: 'A triumph for {name}: its culture rises by one.',
+  olyTable: 'Wreaths by city',
+  olyEvents: 'The contests',
+  olyAction: 'Glory to the victors',
+  evWarship: '{a} launches a war galley (fleet of {n})',
+  evNavalBattle: 'The fleet of {a} sinks the fleet of {b}',
+  evBlockade: 'The fleet of {a} blockades the harbour of {b}',
+  surplusLabel: 'Once the army is full:',
+  surplusUses: {
+    none: { name: 'Save', hint: 'Nothing extra: what the military fund does not need flows to the other funds.' },
+    mercenaries: {
+      name: 'Mercenaries',
+      hint: 'In wartime, hire bands of mercenaries: they cost no citizens, but are dear to hire and draw double pay. They leave when peace is made.'
+    },
+    fleet: {
+      name: 'War fleet',
+      hint: 'Build war galleys. At war the fleet sails to the nearest enemy harbour and blockades it (no trade, no harbour dues), sinks enemy merchantmen and fights enemy fleets.'
+    }
+  },
+  surplusNoHarbour: 'A war fleet needs a harbour.',
+  fcMercenaries: '+{n} hired swords · double pay',
+  fcWarship: 'fleet {n} → {m} galleys',
+  fcMercenariesPeace: 'mercenaries are only hired in wartime',
+  incDues: 'Harbour dues',
+  incBlockaded: 'Blockaded: no port bonus, no dues, no trade.',
+  alertBlockaded: 'Our harbour is blockaded by the fleet of {name}: no trade, no harbour dues. Build galleys or make peace.',
+  alertBlockading: 'Our fleet blockades the harbour of {name}.',
+  warships: 'Galleys',
+  mercenariesLabel: 'Mercenaries',
+  evCoalitionEnd: 'The coalition against {a} falls apart',
 
   // Conquest decision
   conquestTitle: '{name} lies at your feet',
@@ -326,8 +458,145 @@ export const EN: Dict = {
   // Embassy (alliance offer)
   embassyTitle: 'An embassy from {name}',
   embassySubtitle: 'Envoys bearing olive branches wait at your gates.',
-  embassyText:
-    'All of Hellas speaks of your victories. {name} offers you an alliance: if anyone declares war on you, we will march at your side — and you at ours.',
+  embassyTexts: {
+    victories:
+      'All of Hellas speaks of your victories. {name} offers you an alliance: if anyone declares war on you, we will march at your side — and you at ours.',
+    trade:
+      'Our ships know your harbours well, and our merchants grow rich on your oil. {name} would bind our cities with more than trade: an alliance, each defending the other.',
+    commonEnemy:
+      'You and we both stand against {enemy}. {name} proposes we stand together: an alliance, each marching when the other is attacked.',
+    neighbour:
+      'Our fields touch yours, and good fences make good neighbours — better still, good allies. {name} offers an alliance of mutual defence.',
+    hegemon:
+      'Whoever stands with the Hegemon sleeps soundly. {name} asks for an alliance with the first city of Hellas: if anyone declares war on you, we will march at your side — and you at ours.',
+    goodwill: '{name} sends gifts and greetings, and offers an alliance: if anyone declares war on you, we will march at your side — and you at ours.'
+  },
+  embassyWars: 'At war with',
+  embassyWarning: 'Accepting the alliance means joining these wars at once.',
+  topBarLabel: 'Your polis at a glance',
+  perMonth: '{n}/mo',
+  topHoplitesHint: 'Hoplites under arms now / the army your military budget aims for. Raise the Military slider to grow it; lower it and men go back to the fields.',
+  topSatisfactionHint: 'How content the citizens are. Above 70% your reputation improves and work goes faster; low contentment slows growth and income.',
+  speedN: 'Speed {n}×',
+  drawerLabel: 'Polis panels',
+  drawerCollapse: 'Fold the panel',
+  drawerExpand: 'Open the panel',
+  tabs: { budget: 'Budget', polis: 'Polis', diplomacy: 'Diplomacy', hegemony: 'Hegemony', chronicle: 'Chronicle & charts' },
+  outlinerTitle: 'Situation',
+  outlinerToggle: 'Show or hide the situation panel',
+  outWars: 'Wars',
+  outAllies: 'Allies',
+  outSieges: 'Sieges',
+  outLatest: 'Latest news',
+  outNoAllies: 'No allies yet.',
+  outNoSieges: 'No city is under siege.',
+  outSiegeOurs: 'Our army besieges {b}',
+  outSiegeTheirs: '{a} besieges {b}',
+  outAdvantageHint: 'Hoplites — ours: {a}, theirs: {b}',
+  mapModes: 'Map mode',
+  viewRelations: 'Relations',
+  dipListHint: 'Every city of Hellas and how it stands with you. Click one to open its card.',
+  standings: { war: 'At war', ally: 'Ally', vassal: 'Vassal', client: 'Client', peace: 'At peace' },
+  chronicleEmpty: 'Nothing worth recording has happened yet.',
+  alertsLabel: 'Alerts',
+  etaNow: 'now',
+  viewHegemony: 'Hegemony',
+  hegemonyCats: {
+    finance: { name: 'First in Silver', desc: 'Average monthly income over the last 10 years, tribute included' },
+    population: { name: 'First in People', desc: 'People of the city and its incorporated towns (vassals count for themselves)' },
+    arms: { name: 'First in Arms', desc: 'Last 25 years: battle won 1, capital taken 5, war won 3' }
+  },
+  hegIntro: 'Each year the three best cities in every category earn 3, 2 and 1 hegemony points. The most points makes the Hegemon of Hellas.',
+  hegHegemon: 'Hegemon of Hellas',
+  hegNoHegemon: 'No city rules Hellas yet.',
+  hegYou: 'Your standing',
+  hegYourPlace: '{place} in {cat}',
+  hegScore: '{s}/9 points',
+  hegChart: 'Your hegemony points',
+  hegEmpty: 'The first rankings come at the end of the first year.',
+  hegemonyTab: 'Hegemony',
+  decTitle: '{from} – {to}',
+  decSubtitle: 'Ten years in review',
+  decBattles: 'Battles',
+  decBattlesValue: '{w} won · {l} lost',
+  decBudget: 'Average budget of the decade',
+  decVerdicts: {
+    silver: 'The treasury swells: trade and toil have filled the funds.',
+    people: 'The city teems with people: new hands for fields and phalanx.',
+    land: 'Our borders have grown: settlers and soldiers have pushed them outward.',
+    arms: 'A decade of victories: our hoplites are spoken of across Hellas.',
+    war: 'A hard decade of war: more battles lost than won.',
+    hard: 'Lean years: fewer people, less silver and less land than ten years ago.',
+    quiet: 'A quiet decade: little has changed, for better or worse.'
+  },
+  decOff: 'Stop these reports',
+  decAction: 'Onward',
+  decToggle: 'Show a report every ten years',
+  alertEmbassy: 'Envoys from {name} await your answer — they leave in {t}. Click to receive them.',
+  incTreasuryNote: 'The treasury is the five funds together; each fund spends itself on what it is saving for. In the hegemony rankings, First in Silver counts income, not savings.',
+  hegCoalition: 'Hellas fears {name}: the other cities are drawing together against it — their goodwill sinks every year, they ally and go to war more readily.',
+  hegCoalitionYou: 'Hellas fears your power: the other cities are drawing together against you. Their goodwill sinks every year until your score drops below 6.',
+  alertCoalition: 'All Hellas is uniting against us: expect enemies and fewer friends while we dominate.',
+  hegTrendUp: 'up on ten years ago',
+  hegTrendDown: 'down on ten years ago',
+  hegUnitFinance: '{n} dr/mo',
+  hegUnitArms: '{n} pts',
+  topLaurel: 'Hegemony points {s}/9 — {places}',
+  podUp: '{cat}: we are now {place}',
+  podDown: '{cat}: {name} pushed us to {place}',
+  podOff: '{cat}: we have dropped off the podium',
+  hegemonTitle: '{name} is the Hegemon of Hellas',
+  hegemonText: 'Silver, people and arms: {name} now leads Hellas. Expect the other cities to court it — and to fear it.',
+  hegemonYouTitle: 'You are the Hegemon of Hellas!',
+  hegemonYouText: 'No city stands higher in silver, people and arms. Hold the title — and beware the envy it breeds.',
+  hegemonOpen: 'See the rankings',
+  hegemonAction: 'Onward',
+  chartIncome: 'Income per month',
+  chartBuilt: 'Built: {w}',
+  chartWar: 'War with {name}',
+  chartPeace: 'Peace with {name}',
+  chartsLegend: 'Grey dashes mark budget changes, red wars, green peace, gold new buildings. Hover a chart for the figures.',
+  chartsEmpty: 'The charts fill in as the years go by.',
+  incWorkers: 'Workers’ yield ({n})',
+  incCulture: 'Culture',
+  incPorts: 'Ports',
+  incBuildings: 'Buildings',
+  incMood: 'Contentment',
+  incOther: 'Sea trade, tribute, spoils',
+  incUpkeep: 'Hoplite pay',
+  incTotal: 'Into the funds',
+  etaYears: '~{n} yr',
+  presetsLabel: 'Budget presets',
+  presets: { balanced: 'Balanced', war: 'War economy', expansion: 'Expansion', mercantile: 'Mercantile', golden: 'Golden age', custom: 'Custom' },
+  presetHints: {
+    balanced: 'An even fifth for every fund.',
+    war: 'Half of everything to the army: more hoplites, faster.',
+    expansion: 'Settlers and colonies first.',
+    mercantile: 'Harbours, ships and trade buildings.',
+    golden: 'Festivals and culture, with trade to pay for them.'
+  },
+  fcNext: '{what} in {t}',
+  fcStalled: 'not at this rate',
+  fcHoplites: '+{t} hoplites/yr',
+  fcPay: 'pay {u} dr/mo',
+  fcDesert: 'Desertion in {t}',
+  fcFarm: '+{n} land capacity',
+  fcPort: '+{n}% income',
+  fcFestival: '+{n}% satisfaction',
+  fcExpedition: '−{n} workers',
+  fcColonyOnly: 'No free land — overseas colonies only',
+  fcIdle: 'nothing to buy — its share goes to the other funds',
+  fcBlocked: 'no free land within reach — its share goes to the other funds',
+  alertOpen: 'click to read',
+  alertSiege: 'Our capital is under siege! Raise the Military slider, or seek peace.',
+  alertSiegeAlly: 'Our ally {name} is under siege.',
+  alertDeserting: 'Hoplites are deserting: their upkeep is more than the military fund brings in. Raise the Military slider or let the army shrink.',
+  alertAllyWar: 'Allies at war: {names}.',
+  alertColonyBlocked: 'Colonization is stuck: there is no free land within reach and no colony site left. Its share flows to the other funds.',
+  alertFundIdle: 'The {fund} fund has nothing to buy; its share flows to the other funds. Consider moving the slider.',
+  alertVictory: 'Victory near {place}',
+  alertWarEnd: 'The war with {name} is over',
+  alertDevelop: 'Surveyors’ report on new works',
   embassyAccept: 'Accept the alliance',
   embassyDecline: 'Send them away',
 

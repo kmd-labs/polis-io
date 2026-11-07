@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { PopupService } from '@kmd/design-system';
 import {
   LucideAngularModule,
@@ -19,7 +19,7 @@ import {
 } from 'lucide-angular';
 import { ButtonComponent, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
-import { formatNumber, formatRate, interpolate } from '../core/i18n/format';
+import { fmt1, formatNumber, formatRate, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { TraitPipsComponent } from './trait-pips.component';
 import { PolisScreenComponent } from './polis-screen.component';
@@ -40,6 +40,9 @@ export class PolisPanelComponent {
   readonly icons = { Anchor, Coins, Crown, Flag, Handshake, Landmark, Smile, MapIcon, Pickaxe, Sailboat, Swords, TrendingUp, Users, Wheat };
 
   private readonly popup = inject(PopupService);
+
+  /** Inside the HUD drawer: no frame of its own, and the building trees sit below it. */
+  readonly embedded = input(false);
 
   /** Buildings under construction, shown on the Buildings button (e.g. "1/3"). */
   readonly building = computed(() => {
@@ -73,6 +76,10 @@ export class PolisPanelComponent {
       onClose: () => this.game.paused.set(wasPaused),
       actions: [{ label: computed(() => this.i18n.t().close), variant: 'default' }]
     });
+  }
+
+  one(value: number): string {
+    return fmt1(value, this.i18n.lang());
   }
 
   round(value: number): number {

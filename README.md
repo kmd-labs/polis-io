@@ -34,8 +34,8 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   their fund commissions them — more often on low ground near the sea, rarely right under the walls.
 - **Armies in the field**: battles draw in nearby armies of both sides (up to four a side); an army facing an
   enemy 2.5× its size falls back, losing stragglers, and may scatter into two; 20% of overrun land — up to
-  half far from home — is simply left as wilderness. In wartime, cut-off pockets of up to 8 pixels pass to the
-  side whose capital is nearer. A polis at war keeps at least 100 hoplites at home; armies under 200 do not lay
+  half far from home — is simply left as wilderness. In wartime, a patch of fewer than 20 pixels (not the capital)
+  that touches the enemy and does not grow to 20 within two years passes to that enemy. A polis at war keeps at least 100 hoplites at home; armies under 200 do not lay
   siege; armies near a besieged friendly capital march to its relief, and an army with a 50% edge in power or
   numbers hunts down nearby enemy armies.
 - **Polis buildings**: the Buildings button shows three trees — agriculture, trade and military —
@@ -57,7 +57,7 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   shared borders and big armies sour it, culture, power projection and contented citizens slowly sweeten it.
   It shapes AI wars, peace terms, alliance offers and trade. Neighbours fight more often (except the islands
   Samos, Naxos, Corcyra and Chios).
-- **Victories**: every battle your army or garrison wins pauses the game with a report — a little gold
+- **Victories**: every battle your army or garrison wins files a report in the alerts row — a little gold
   (spoils), 15% of the beaten army taken captive as workers, and +1 power projection.
 - **Power projection**: makes your polis look stronger to would-be attackers, brings embassies offering a
   defensive alliance (allies join any war declared on you, and you on them), and draws merchant ships to your harbours.
@@ -69,12 +69,76 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Declare war**: click another polis, then *Declare war*. Small armies march out on their own and
   seize enemy pixels one by one. When two hostile armies meet they disappear into a cartoon brawl cloud
   and only one walks out. Beating a capital's garrison annexes the whole polis.
+- **Main army and raiders**: at war a polis fields two to five armies. The main army (about half the spare hoplites,
+  drawn with a larger shield) seeks out the enemy's main army; smaller raiding parties of varied size plunder the
+  countryside and run from any force near their size. A main army weaker than its rival halts and digs in — its
+  power climbs to 150% over a few years and it engages any enemy army within 30 cells.
+- **Time**: a year of the calendar lasts 16 game seconds; population grows at half the earlier rate.
+- **Olympic Games** every fourth year (counted from 776 BC) with the historical programme of the time — twelve contests
+  in 600 BC, more later (races, wrestling, boxing, pankration, pentathlon, chariots, race in armour, heralds…). The
+  sacred truce runs from two months before to a month after: no war is waged, armies march home and fleets to harbour.
+  You choose how much of a year's income to spend on the delegation (none, 10%, 25%, 50%); a report shows the wreaths
+  by city and every contest's winner. Every city competing gains power projection, each wreath renown and others'
+  regard; a triumph (two-fifths of the wreaths, at least five) adds +1 culture.
+- **Twists of fortune** every two years: a windfall for one budget branch (one to three months of income) or a
+  misfortune (fire, plague, drought, pirates, earthquake, embezzlement) costing up to three months of full income.
+  They wait in the alerts row.
+- **Colonies**: settlers' expeditions only claim wilderness along the city's own borders; a colony is always one new
+  city on a historical site, founded at most once in 40 years (down to 16 with a large colonization share).
+- **Levies and settlers** go out in small, frequent portions. Armies give up any chase after three seconds (and leave
+  that foe alone for a while; marching to lift a siege is not a chase) and keep to the valleys.
+- **Surplus of the military fund** (once the army is full): save it, hire **mercenaries** in wartime (no citizens,
+  dear, double pay, gone at peace) or build **war galleys**. A fleet at war rows to the nearest enemy harbour and
+  **blockades** it — no trade, no port bonus, no harbour dues — sinks enemy merchantmen and fights enemy fleets.
+- **Ports** bring in harbour dues of their own, on top of the income bonus and the ships they launch.
+- **Stray land**: scraps of four pixels or fewer cut off from their capital revert to wilderness after about four years
+  (a fresh colony seed in open wilderness is spared).
 - **Win** by holding half of the Greek land or by being the last polis standing. You lose if your capital falls.
 
 The HUD is styled after classical Greece — parchment and marble panels, terracotta rules, meander friezes and
 Cinzel capitals for titles, and pixel-art temples, towns, farms, ports and siege camps on the map. It shows total population, workers (able-bodied civilians) and warriors, plus treasury,
 territory share and prosperity. Population follows Archaic densities: a few thousand to ten thousand people
-per city at the start, 25–35 people/km² on settled lowland, and roughly 2–3 million across a fully settled Hellas. <kbd>Space</kbd> pauses; the wheel or a pinch zooms; dragging pans.
+per city at the start, 25–35 people/km² on settled lowland, and roughly 2–3 million across a fully settled Hellas.
+
+The in-game HUD sits on the edges of the map, grand-strategy style:
+
+- **Top bar**: your banner, drachmae (+ per month), population, workers, hoplites (now / target), satisfaction,
+  power projection and territory; on the right the date, pause, five speeds and the rules.
+- **Budget forecasts**: under every slider, what the fund will buy next and when ("New farm in ~2.1 yr · +2,500
+  land capacity", "+120 hoplites/yr · pay 4 dr/mo", a red "Desertion in ~8 months" when pay outruns the military
+  share). While a slider moves, the old figure is struck through next to the new one. Presets (Balanced, War economy,
+  Expansion, Mercantile, Golden age) set all five shares at once; any manual move switches to *Custom*.
+- **Left drawer** (collapsible to an icon rail): *Budget*, *Polis* (figures and building trees), *Diplomacy*
+  (every city and its standing with you), *Hegemony* and *Chronicle & charts*.
+- **Hegemony**: every year the three best cities in *First in Silver* (average monthly income over 10 years, tribute
+  included), *First in People* (population; vassals count for themselves) and *First in Arms* (last 25 years: battle
+  won 1, capital taken 5, war won 3) earn 3/2/1 points. The most points (of 9) makes the **Hegemon of Hellas**
+  (a reigning Hegemon keeps the title on a tie). The laurel in the top bar shows your points; the hegemony map mode
+  paints the leading three gold, silver and bronze. Podium changes go to the chronicle and the alerts row; a new
+  Hegemon who has held the title for three years is announced with a popup. Each point brings +0.1 power projection a
+  year; the Hegemon earns 5% more from sea trade and draws more ships. A city holding 7+ points for ten years unites
+  Hellas against it — everyone's regard for it sinks 2 a year, rivals pair up and attack more readily — until its
+  score drops below 6 (the coalition's pacts then lapse).
+- **History**: every year the game records a snapshot of every polis. The *Chronicle & charts* tab plots your
+  population, income per month, territory and hoplites on one time axis, with markers where you changed the budget
+  (by 5 points or more), went to war or made peace, and completed a building. Hover the drachmae in the top bar for
+  an income breakdown (workers, culture, ports, buildings, contentment, trade/tribute/spoils, hoplite pay).
+- **Decade report**: every ten years the game pauses for a review drawn from the history — change in population,
+  income and territory, battles won and lost, your hegemony places then and now, the average budget of the decade,
+  and one line from the chroniclers. It can be switched off in the report or in the *Chronicle & charts* tab.
+- **Embassies** wait in the alerts row instead of stopping the game; their envoys leave (the offer lapses) after two
+  years. Cities court the Hegemon too ("Whoever stands with the Hegemon sleeps soundly").
+- **Right outliner** (collapsible): wars with a strength bar, allies, sieges and the latest news.
+- **Map modes** bottom-right: political, terrain relief, soil fertility and relations; the card of a selected
+  foreign city appears bottom-left.
+- **Alerts** under the top bar (round icons): a siege, deserting hoplites, allies at war, an idle fund, blocked
+  colonization, and battle / war / survey reports waiting to be read. They never stop the game — only decisions do
+  (a declaration of war, an embassy you open, the fate of a conquered city, a new Hegemon, the decade report, the end
+  of the game).
+- On phones the drawer and the outliner become a bottom sheet behind a tab bar.
+
+Panel layout is remembered per browser. Keys: <kbd>Space</kbd> pauses, <kbd>1</kbd>–<kbd>5</kbd> set the speed,
+<kbd>B</kbd> opens the budget, <kbd>H</kbd> the hegemony, <kbd>Esc</kbd> folds the drawer; the wheel or a pinch zooms; dragging pans.
 
 ## Development
 
@@ -82,6 +146,7 @@ per city at the start, 25–35 people/km² on settled lowland, and roughly 2–3
 npm install
 npm start            # http://localhost:4200
 npm run build
+npm test             # unit tests (Vitest) for the pure functions
 npm run build:map    # rebuild src/assets/map/hellas.png (+ metadata) from Natural Earth and Terrain Tiles
 ```
 
@@ -93,7 +158,7 @@ npm run build:map    # rebuild src/assets/map/hellas.png (+ metadata) from Natur
 | `src/app/game/map-renderer.ts` | Canvas renderer (shaded relief, animated sea, outlines, temples, armies) |
 | `src/app/game/fight-cloud.ts` | Cartoon brawl animation |
 | `src/app/game/game.service.ts` | Game clock outside the Angular zone and signal snapshots for the HUD |
-| `src/app/hud/` | Start screen, dock panels (your polis, diplomacy) and the chronicle feed |
+| `src/app/hud/` | Start screen and the in-game HUD (`app-hud`: top bar, drawer tabs, outliner, map modes) |
 | `src/app/core/i18n/` | English and Polish dictionaries |
 
 See [AGENTS.md](AGENTS.md) for the KMD design-system conventions this app follows.

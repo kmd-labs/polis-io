@@ -42,3 +42,32 @@ export function formatPlural(n: number, one: string, few: string, many: string):
 export function formatYears(n: number, t: Dict): string {
   return formatPlural(n, t.yearsOne, t.yearsFew, t.yearsMany);
 }
+
+/** A number with at most one decimal place (power projection, culture…), never float noise. */
+export function fmt1(value: number, lang: Lang): string {
+  return value.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 1 });
+}
+
+/** Short form for tight spaces: 18,146 → "18.1K" / "18,1 tys.". */
+export function formatCompact(value: number, lang: Lang): string {
+  return Math.round(value).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { notation: 'compact', maximumFractionDigits: 1 });
+}
+
+/** Time until something happens: "now", "~5 months" under a year, else "~3.2 yr" (one decimal). */
+export function formatEta(seconds: number, secondsPerYear: number, t: Dict, lang: Lang): string {
+  if (seconds <= 0) return t.etaNow;
+  const years = seconds / secondsPerYear;
+  if (years < 1) {
+    const months = Math.max(1, Math.round(years * 12));
+    return `~${formatPlural(months, t.monthsOne, t.monthsFew, t.monthsMany)}`;
+  }
+  return interpolate(t.etaYears, { n: years.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) });
+}
+
+/** Place in a ranking: 1st, 2nd, 3rd, 11th, 22nd… / 1., 2., 3. */
+export function formatOrdinal(n: number, lang: Lang): string {
+  if (lang === 'pl') return `${n}.`;
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  return `${n}${suffix}`;
+}

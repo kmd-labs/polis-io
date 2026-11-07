@@ -1,0 +1,71 @@
+@let t = i18n.t();
+
+@if (view(); as v) {
+  <p class="intro">{{ t.hegIntro }}</p>
+
+  <div class="hegemon" [class.hegemon--mine]="v.hegemon?.mine">
+    <lucide-icon class="hegemon__crown" [img]="icons.Crown" [size]="18"></lucide-icon>
+    @if (v.hegemon; as hg) {
+      <app-polis-flag [def]="hg.def" [size]="18"></app-polis-flag>
+      <span class="hegemon__text">
+        <span class="hegemon__label">{{ t.hegHegemon }}</span>
+        <b>{{ hg.name }}</b>
+      </span>
+    } @else {
+      <span class="hegemon__label">{{ t.hegNoHegemon }}</span>
+    }
+  </div>
+
+  @if (v.coalition) {
+    <p class="coalition" role="status">{{ v.coalition }}</p>
+  }
+
+  @for (c of v.categories; track c.cat) {
+    <section class="cat" [attr.aria-label]="c.name">
+      <h3 class="cat__name" [appTooltip]="c.desc">{{ c.name }}</h3>
+      <ol class="podium">
+        @for (r of c.podium; track r.idx) {
+          <li class="podium__row" [class]="'podium__row podium__row--' + r.place" [class.podium__row--mine]="r.mine">
+            <button type="button" class="podium__btn" (click)="game.focus(r.idx)">
+              <span class="podium__medal" aria-hidden="true">{{ r.place }}</span>
+              <app-polis-flag [def]="r.def" [size]="14"></app-polis-flag>
+              <span class="podium__name">{{ r.name }}</span>
+              <span class="podium__value">{{ r.value }}</span>
+              @if (r.trend) {
+                <lucide-icon
+                  class="podium__trend"
+                  [class.podium__trend--down]="r.trend < 0"
+                  [img]="r.trend > 0 ? icons.ArrowUp : icons.ArrowDown"
+                  [size]="12"
+                  [attr.aria-label]="r.trendLabel"></lucide-icon>
+              }
+            </button>
+          </li>
+        }
+      </ol>
+    </section>
+  }
+
+  <section class="you">
+    <h3 class="cat__name">{{ t.hegYou }} — {{ v.myName }} · {{ v.score }}</h3>
+    <ul class="you__list">
+      @for (line of v.mine; track $index) {
+        <li>{{ line }}</li>
+      }
+    </ul>
+  </section>
+
+  @if (v.chart; as ch) {
+    <app-line-chart
+      class="chart"
+      [title]="t.hegChart"
+      [points]="ch.points"
+      [from]="ch.from"
+      [to]="ch.to"
+      [format]="ch.format"
+      [formatYear]="ch.formatYear"
+      color="warning-600"></app-line-chart>
+  }
+} @else {
+  <p class="intro">{{ t.hegEmpty }}</p>
+}

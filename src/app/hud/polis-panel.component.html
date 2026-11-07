@@ -1,7 +1,7 @@
 @let t = i18n.t();
 @let me = game.me();
 
-<section class="panel glass-panel" [attr.aria-label]="t.yourPolis">
+<section class="panel" [class.glass-panel]="!embedded()" [class.panel--embedded]="embedded()" [attr.aria-label]="t.yourPolis">
   @if (me) {
     <header class="panel__head">
       <app-polis-flag class="panel__flag" [def]="game.sim.poleis[me.idx].def" [size]="26" [label]="name()"></app-polis-flag>
@@ -13,7 +13,7 @@
         <app-trait-pips kind="militarism" [label]="t.statMilitarism" [value]="me.militarism" [hint]="t.statMilitarismHint"></app-trait-pips>
         <app-trait-pips kind="culture" [label]="t.statCulture" [value]="me.culture" [hint]="t.statCultureHint"></app-trait-pips>
         <span class="prestige" [appTooltip]="t.statPrestigeHint">
-          <lucide-icon [img]="icons.Flag" [size]="11"></lucide-icon>{{ t.statPrestige }} <b>{{ me.prestige }}</b>
+          <lucide-icon [img]="icons.Flag" [size]="11"></lucide-icon>{{ t.statPrestige }} <b>{{ one(me.prestige) }}</b>
         </span>
       </div>
     </header>
@@ -49,7 +49,7 @@
         <dt><lucide-icon [img]="icons.Coins" [size]="12"></lucide-icon>{{ t.statDrachmae }}</dt>
         <dd>
           {{ num(me.drachmae) }}
-          <span class="stat__rate" [class.stat__rate--neg]="me.income < 0">{{ rate(me.income) }}</span>
+          <span class="stat__rate" [class.stat__rate--neg]="me.income < 0">{{ rate(game.perMonth(me.income)) }}</span>
         </dd>
       </div>
       <div class="stat" [appTooltip]="t.statTerritoryHint">
@@ -62,6 +62,7 @@
       </div>
     </dl>
 
+    @if (!embedded()) {
     <div class="actions">
       <div class="action action--wide">
         <app-button
@@ -79,13 +80,20 @@
         </app-button>
       </div>
     </div>
+    }
 
-    @if (me.farms || me.ports || me.vassals.length || me.ships || me.allies.length) {
+    @if (me.farms || me.ports || me.vassals.length || me.ships || me.allies.length || me.warships || me.mercenaries) {
       <div class="holdings" [appTooltip]="holdingsHint()">
         <span><lucide-icon [img]="icons.Wheat" [size]="12"></lucide-icon>{{ t.farms }} <b>{{ me.farms }}</b></span>
         <span><lucide-icon [img]="icons.Anchor" [size]="12"></lucide-icon>{{ t.ports }} <b>{{ me.ports }}</b></span>
         <span><lucide-icon [img]="icons.Crown" [size]="12"></lucide-icon>{{ t.vassals }} <b>{{ me.vassals.length }}</b></span>
         <span><lucide-icon [img]="icons.Sailboat" [size]="12"></lucide-icon>{{ t.ships }} <b>{{ me.ships }}</b></span>
+        @if (me.warships) {
+          <span><lucide-icon [img]="icons.Anchor" [size]="12"></lucide-icon>{{ t.warships }} <b>{{ me.warships }}</b></span>
+        }
+        @if (me.mercenaries) {
+          <span><lucide-icon [img]="icons.Swords" [size]="12"></lucide-icon>{{ t.mercenariesLabel }} <b>{{ num(me.mercenaries) }}</b></span>
+        }
         @if (me.allies.length) {
           <span><lucide-icon [img]="icons.Handshake" [size]="12"></lucide-icon>{{ t.allies }} <b>{{ me.allies.length }}</b></span>
         }

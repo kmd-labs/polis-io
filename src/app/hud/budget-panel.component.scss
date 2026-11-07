@@ -1,6 +1,14 @@
 @use "variables" as *;
 @use "app/theme/greek" as greek;
 
+:host(.embedded) {
+  position: static;
+  width: auto;
+  max-height: none;
+  display: block;
+  pointer-events: auto;
+}
+
 :host {
   position: fixed;
   top: calc(2 * var(--header-offset-top) + var(--kmd-brand-h));
@@ -29,6 +37,16 @@
 
   &::before {
     @include greek.frieze(top, 5px, 18px, 6px, 0.4);
+  }
+
+  &--embedded {
+    padding: 0;
+    overflow: visible;
+    animation: none;
+
+    &::before {
+      content: none;
+    }
   }
 
   &__head {
@@ -98,6 +116,95 @@
     font-size: font-size("xxs");
     line-height: 1.4;
     color: color("text-dim");
+  }
+}
+
+.surplus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+
+  &__label {
+    font-size: font-size("xxs");
+    color: color("text-dim");
+  }
+
+  &__btn {
+    padding: 2px 8px;
+    border: 1px solid color("line");
+    border-radius: radius("pill");
+    background: color("panel-bg-solid");
+    font: inherit;
+    font-size: font-size("xxs");
+    font-weight: font-weight("semibold");
+    color: color("text-main");
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: color("btn-hover");
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    &:focus-visible {
+      outline: 2px solid color("accent");
+      outline-offset: 1px;
+    }
+
+    &--on {
+      border-color: var(--row-color);
+      color: var(--row-color);
+      background: color("panel-bg-heavy");
+    }
+  }
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: spacing("sm");
+
+  &__btn {
+    padding: 3px 9px;
+    border: 1px solid color("line");
+    border-radius: radius("pill");
+    background: color("panel-bg-solid");
+    font: inherit;
+    font-size: font-size("xxs");
+    font-weight: font-weight("semibold");
+    color: color("text-main");
+    cursor: pointer;
+
+    &:hover {
+      background: color("btn-hover");
+    }
+
+    &:focus-visible {
+      outline: 2px solid color("accent");
+      outline-offset: 1px;
+    }
+
+    &--on {
+      border-color: color("accent");
+      background: color("accent-glow-soft");
+      color: color("warning-800");
+    }
+
+    &--custom {
+      cursor: default;
+      border-style: dashed;
+      opacity: 0.6;
+
+      &.presets__btn--on {
+        opacity: 1;
+      }
+    }
   }
 }
 
@@ -202,9 +309,30 @@
 
   &__next {
     text-align: right;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.35;
+  }
+
+  &__metric {
+    font-family: var(--font-family-mono);
+    font-weight: font-weight("semibold");
+    color: color("text-bright");
+
+    &--changed {
+      color: var(--row-color);
+    }
+  }
+
+  &__was {
+    font-family: var(--font-family-mono);
+    color: color("text-dim");
+  }
+
+  &__warn {
+    display: block;
+    margin-top: 2px;
+    font-size: font-size("xxs");
+    font-weight: font-weight("semibold");
+    color: color("danger");
   }
 
   &__extra {

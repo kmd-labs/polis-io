@@ -1,0 +1,163 @@
+@let t = i18n.t();
+@let mobile = bp.mobile();
+
+<ng-template #tabBody let-tab>
+  @switch (tab) {
+    @case ('budget') {
+      <app-budget-panel [embedded]="true"></app-budget-panel>
+    }
+    @case ('polis') {
+      <app-polis-panel [embedded]="true"></app-polis-panel>
+      <app-polis-screen class="drawer__trees"></app-polis-screen>
+    }
+    @case ('diplomacy') {
+      <app-diplomacy-list></app-diplomacy-list>
+    }
+    @case ('hegemony') {
+      <app-hegemony-panel></app-hegemony-panel>
+    }
+    @case ('chronicle') {
+      <app-history-charts></app-history-charts>
+      <h3 class="drawer__subtitle">{{ t.chronicle }}</h3>
+      <app-chronicle [limit]="60" [framed]="false"></app-chronicle>
+    }
+  }
+</ng-template>
+
+<div class="hud" [class.hud--mobile]="mobile">
+  <div class="hud__top" data-occlude="top">
+    <ng-content select="[hudBrand]"></ng-content>
+    <app-top-bar class="hud__bar" (help)="help.emit()" (restart)="restart.emit()"></app-top-bar>
+  </div>
+
+  <app-alerts class="hud__alerts"></app-alerts>
+
+  @if (!mobile) {
+    <aside class="drawer" [class.drawer--closed]="!hud.drawerOpen()" data-occlude="left" [attr.aria-label]="t.drawerLabel">
+      <nav class="drawer__rail glass-panel" role="tablist" aria-orientation="vertical" [attr.aria-label]="t.drawerLabel">
+        @for (tab of tabs(); track tab.id) {
+          @let active = hud.drawerOpen() && hud.tab() === tab.id;
+          <button
+            type="button"
+            role="tab"
+            class="rail-btn"
+            [class.rail-btn--active]="active"
+            [attr.aria-selected]="active"
+            [attr.aria-controls]="'drawer-' + tab.id"
+            [attr.aria-label]="tab.label"
+            [appTooltip]="tab.key ? tab.label + ' · ' + tab.key : tab.label"
+            (click)="hud.toggleTab(tab.id)">
+            <lucide-icon [img]="tab.icon" [size]="17"></lucide-icon>
+          </button>
+        }
+        <span class="drawer__spacer"></span>
+        <button
+          type="button"
+          class="rail-btn rail-btn--quiet"
+          [attr.aria-expanded]="hud.drawerOpen()"
+          [attr.aria-label]="hud.drawerOpen() ? t.drawerCollapse : t.drawerExpand"
+          [appTooltip]="(hud.drawerOpen() ? t.drawerCollapse : t.drawerExpand) + (hud.drawerOpen() ? ' · Esc' : '')"
+          (click)="hud.drawerOpen.set(!hud.drawerOpen())">
+          <lucide-icon [img]="hud.drawerOpen() ? icons.ChevronsLeft : icons.ChevronsRight" [size]="16"></lucide-icon>
+        </button>
+      </nav>
+
+      @if (hud.drawerOpen()) {
+        <section class="drawer__panel glass-panel" role="tabpanel" [id]="'drawer-' + hud.tab()" [attr.aria-label]="tabTitle()">
+          <h2 class="drawer__title">{{ tabTitle() }}</h2>
+          <div class="drawer__body">
+            <ng-container [ngTemplateOutlet]="tabBody" [ngTemplateOutletContext]="{ $implicit: hud.tab() }"></ng-container>
+          </div>
+        </section>
+      }
+    </aside>
+
+    <aside class="side" [class.side--closed]="!outlinerOpen()" [attr.data-occlude]="outlinerOpen() ? 'right' : null">
+      <button
+        type="button"
+        class="side__toggle glass-panel"
+        [attr.aria-expanded]="outlinerOpen()"
+        [attr.aria-label]="t.outlinerToggle"
+        [appTooltip]="t.outlinerToggle"
+        (click)="toggleOutliner()">
+        <lucide-icon [img]="outlinerOpen() ? icons.PanelRightClose : icons.PanelRightOpen" [size]="15"></lucide-icon>
+        @if (!outlinerOpen()) {
+          <span>{{ t.outlinerTitle }}</span>
+        }
+      </button>
+      @if (outlinerOpen()) {
+        <app-outliner class="side__outliner"></app-outliner>
+      }
+    </aside>
+  }
+
+  <div class="hud__bottom">
+    <div class="hud__card">
+      @if (game.target()) {
+        <app-diplomacy-panel></app-diplomacy-panel>
+      } @else if (mobile && hud.sheet(); as sheet) {
+        <section class="sheet glass-panel--heavy" data-occlude="bottom" [attr.aria-label]="sheetTitle()">
+          <header class="sheet__head">
+            <h2 class="drawer__title">{{ sheetTitle() }}</h2>
+            <button type="button" class="sheet__close" [attr.aria-label]="t.close" (click)="hud.sheet.set(null)">
+              <lucide-icon [img]="icons.X" [size]="16"></lucide-icon>
+            </button>
+          </header>
+          <div class="sheet__body">
+            @if (sheet === 'outliner') {
+              <app-outliner></app-outliner>
+            } @else {
+              <ng-container [ngTemplateOutlet]="tabBody" [ngTemplateOutletContext]="{ $implicit: sheet }"></ng-container>
+            }
+          </div>
+        </section>
+      }
+    </div>
+
+    <div class="modes glass-panel" role="radiogroup" [attr.aria-label]="t.mapModes">
+      @for (m of modes(); track m.id) {
+        <button
+          type="button"
+          role="radio"
+          class="modes__btn"
+          [class.modes__btn--on]="hud.mapMode() === m.id"
+          [attr.aria-checked]="hud.mapMode() === m.id"
+          [attr.aria-label]="m.label"
+          [appTooltip]="m.label"
+          tooltipPlacement="top"
+          (click)="setMode(m.id)">
+          <lucide-icon [img]="m.icon" [size]="16"></lucide-icon>
+        </button>
+      }
+      <span class="modes__divider"></span>
+      <button type="button" class="modes__btn" [attr.aria-label]="t.fitMap" [appTooltip]="t.fitMap" tooltipPlacement="top" (click)="fit.emit()">
+        <lucide-icon [img]="icons.Maximize" [size]="15"></lucide-icon>
+      </button>
+    </div>
+
+    @if (mobile) {
+      <nav class="tabbar glass-panel" data-occlude="bottom" [attr.aria-label]="t.drawerLabel">
+        @for (tab of tabs(); track tab.id) {
+          <button
+            type="button"
+            class="tabbar__btn"
+            [class.tabbar__btn--active]="hud.sheet() === tab.id"
+            [attr.aria-pressed]="hud.sheet() === tab.id"
+            (click)="openSheet(tab.id)">
+            <lucide-icon [img]="tab.icon" [size]="18"></lucide-icon>
+            <span>{{ tab.label }}</span>
+          </button>
+        }
+        <button
+          type="button"
+          class="tabbar__btn"
+          [class.tabbar__btn--active]="hud.sheet() === 'outliner'"
+          [attr.aria-pressed]="hud.sheet() === 'outliner'"
+          (click)="openSheet('outliner')">
+          <lucide-icon [img]="icons.Compass" [size]="18"></lucide-icon>
+          <span>{{ t.outlinerTitle }}</span>
+        </button>
+      </nav>
+    }
+  </div>
+</div>

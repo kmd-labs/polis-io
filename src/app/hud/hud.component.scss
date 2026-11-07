@@ -1,0 +1,403 @@
+@use "variables" as *;
+@use "app/theme/greek" as greek;
+
+$drawer-w: 360px;
+$rail-w: 48px;
+$outliner-w: 260px;
+
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+// The middle of the grid is the map: only the panels on the edges take clicks.
+.hud {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top top top"
+    "left center right"
+    "left bottom right";
+  gap: spacing("xs");
+  height: 100%;
+  padding: var(--header-offset-top) var(--header-offset-x) var(--dock-offset-bottom);
+  pointer-events: none;
+
+  &__top {
+    grid-area: top;
+    display: flex;
+    align-items: center;
+    gap: spacing("xs");
+    min-width: 0;
+    pointer-events: none;
+
+    > * {
+      pointer-events: auto;
+    }
+  }
+
+  &__bar {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__alerts {
+    grid-area: center;
+    align-self: start;
+    justify-self: start;
+    min-width: 0;
+  }
+
+  &__bottom {
+    grid-area: bottom;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: spacing("sm");
+    min-width: 0;
+  }
+
+  &__card {
+    min-width: 0;
+    max-width: 340px;
+    pointer-events: auto;
+
+    &:empty {
+      pointer-events: none;
+    }
+  }
+}
+
+// ─── Left drawer ─────────────────────────────────────────────────────────────
+
+.drawer {
+  grid-area: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: $drawer-w;
+  min-height: 0;
+  max-height: 100%;
+  pointer-events: none;
+
+  &--closed {
+    width: $rail-w;
+  }
+
+  &__rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+    width: $rail-w;
+    padding: 6px 0;
+    border-radius: radius("card");
+    pointer-events: auto;
+  }
+
+  &__spacer {
+    width: 24px;
+    height: 1px;
+    margin: 2px 0;
+    background: color("line");
+  }
+
+  &__panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    max-height: 100%;
+    padding: spacing("md") spacing("md") spacing("sm");
+    border-radius: radius("card");
+    pointer-events: auto;
+    animation: panelSlideIn transition("base");
+
+    &::before {
+      @include greek.frieze(top, 5px, 18px, 6px, 0.4);
+    }
+  }
+
+  &__title {
+    @include greek.display-type(0.06em);
+    margin: 4px 0 spacing("sm");
+    font-size: font-size("md");
+    font-weight: font-weight("bold");
+    color: color("text-bright");
+  }
+
+  &__body {
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0 -#{spacing("md")};
+    padding: 0 spacing("md") spacing("xs");
+  }
+
+  &__subtitle {
+    @include greek.display-type(0.06em);
+    margin: spacing("lg") 0 spacing("xs");
+    font-size: font-size("sm");
+    font-weight: font-weight("bold");
+    color: color("text-bright");
+  }
+
+  &__trees {
+    display: block;
+    margin-top: spacing("md");
+  }
+}
+
+.rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: radius("sm");
+  background: transparent;
+  color: color("text-main");
+  cursor: pointer;
+  transition: background transition("fast"), color transition("fast");
+
+  &:hover {
+    background: color("btn-hover");
+  }
+
+  &:focus-visible {
+    outline: 2px solid color("accent");
+    outline-offset: 1px;
+  }
+
+  &--active {
+    background: color("accent-glow-soft");
+    border-color: color("accent");
+    color: color("warning-800");
+  }
+
+  &--quiet {
+    color: color("text-dim");
+  }
+}
+
+// ─── Right outliner ──────────────────────────────────────────────────────────
+
+.side {
+  grid-area: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  width: $outliner-w;
+  min-height: 0;
+  max-height: 100%;
+  pointer-events: none;
+
+  &--closed {
+    width: auto;
+  }
+
+  &__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: radius("pill");
+    font: inherit;
+    font-size: font-size("xs");
+    font-weight: font-weight("semibold");
+    color: color("text-main");
+    cursor: pointer;
+    pointer-events: auto;
+
+    &:focus-visible {
+      outline: 2px solid color("accent");
+      outline-offset: 1px;
+    }
+  }
+
+  &__outliner {
+    width: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+// ─── Map modes ───────────────────────────────────────────────────────────────
+
+.modes {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  padding: 4px;
+  border-radius: radius("pill");
+  pointer-events: auto;
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid transparent;
+    border-radius: radius("pill");
+    background: transparent;
+    color: color("text-main");
+    cursor: pointer;
+
+    &:hover {
+      background: color("btn-hover");
+    }
+
+    &:focus-visible {
+      outline: 2px solid color("accent");
+      outline-offset: 1px;
+    }
+
+    &--on {
+      background: color("accent-glow-soft");
+      border-color: color("accent");
+      color: color("warning-800");
+    }
+  }
+
+  &__divider {
+    width: 1px;
+    height: 18px;
+    margin: 0 3px;
+    background: color("line-strong");
+  }
+}
+
+// ─── Phones: bottom sheet and tab bar ────────────────────────────────────────
+
+.hud--mobile {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "top"
+    "center"
+    "bottom";
+
+  .hud__top {
+    flex-wrap: wrap;
+  }
+
+  .hud__bar {
+    flex-basis: 100%;
+  }
+
+  .hud__bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .hud__card {
+    max-width: none;
+    order: 1;
+  }
+
+  .modes {
+    order: 0;
+    align-self: flex-end;
+    padding: 3px;
+
+    &__btn {
+      width: 30px;
+      height: 30px;
+    }
+  }
+
+  .tabbar {
+    order: 2;
+  }
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  max-height: 60vh;
+  padding: spacing("sm") spacing("md");
+  border-radius: radius("card");
+  animation: sheetUp transition("base");
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .drawer__title {
+      margin: 0;
+    }
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: radius("pill");
+    background: transparent;
+    color: color("text-main");
+  }
+
+  &__body {
+    min-height: 0;
+    overflow-y: auto;
+    padding-top: spacing("xs");
+  }
+}
+
+.tabbar {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  padding: 4px;
+  border-radius: radius("card");
+  pointer-events: auto;
+
+  &__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    padding: 6px 2px 4px;
+    border: 0;
+    border-radius: radius("sm");
+    background: transparent;
+    font: inherit;
+    font-size: 10px;
+    color: color("text-main");
+
+    span {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &--active {
+      background: color("accent-glow-soft");
+      color: color("warning-800");
+    }
+  }
+}
+
+@keyframes sheetUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}

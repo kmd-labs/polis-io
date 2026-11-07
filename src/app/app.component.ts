@@ -22,7 +22,6 @@ import {
 } from 'lucide-angular';
 import {
   BrandComponent,
-  ButtonComponent,
   DropdownComponent,
   DropdownOption,
   PopupComponent,
@@ -36,17 +35,21 @@ import {
 } from '@kmd/design-system';
 import { I18nService } from './core/i18n/i18n.service';
 import { Lang } from './core/i18n/i18n.types';
-import { formatNumber, formatPlural, formatYear, formatYears, interpolate } from './core/i18n/format';
+import { fmt1, formatNumber, formatOrdinal, formatPlural, formatYear, formatYears, interpolate } from './core/i18n/format';
+import { DecadeReport } from './game/decade';
+import { HEGEMONY_CATEGORIES } from './game/hegemony';
 import { GameService } from './game/game.service';
 import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
-import { ConquestChoice, FallOutcome } from './game/simulation';
+import { BUDGET_KEYS, ConquestChoice, FallOutcome, OlympicReport } from './game/simulation';
+import { PolisFlagComponent } from './hud/polis-flag.component';
+import { Fortune } from './game/fortune';
+import { ImprovementId } from './game/data/improvements';
+import { APP_VERSION } from './version';
 import { SiteId } from './game/data/poleis';
-import { PolisPanelComponent } from './hud/polis-panel.component';
-import { DiplomacyPanelComponent } from './hud/diplomacy-panel.component';
-import { ChronicleComponent } from './hud/chronicle.component';
 import { StartScreenComponent } from './hud/start-screen.component';
-import { BudgetPanelComponent } from './hud/budget-panel.component';
+import { HudComponent } from './hud/hud.component';
+import { HudStateService } from './hud/hud-state.service';
 
 @Component({
   selector: 'app-root',
@@ -55,17 +58,14 @@ import { BudgetPanelComponent } from './hud/budget-panel.component';
     CommonModule,
     LucideAngularModule,
     BrandComponent,
-    ButtonComponent,
     DropdownComponent,
     PopupComponent,
     SplashComponent,
     TooltipComponent,
     MapCanvasComponent,
-    PolisPanelComponent,
-    DiplomacyPanelComponent,
-    ChronicleComponent,
+    PolisFlagComponent,
     StartScreenComponent,
-    BudgetPanelComponent
+    HudComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -78,12 +78,76 @@ export class AppComponent {
   readonly splash = inject(SplashService);
   readonly seo = inject(SeoService);
   readonly game = inject(GameService);
+  readonly version = APP_VERSION;
+  readonly hud = inject(HudStateService);
 
   @ViewChild(MapCanvasComponent) private map?: MapCanvasComponent;
   @ViewChild('rulesTpl', { static: true }) private rulesTpl!: TemplateRef<unknown>;
   @ViewChild('letterTpl', { static: true }) private letterTpl!: TemplateRef<unknown>;
   @ViewChild('reportTpl', { static: true }) private reportTpl!: TemplateRef<unknown>;
   @ViewChild('conquestTpl', { static: true }) private conquestTpl!: TemplateRef<unknown>;
+  @ViewChild('decadeTpl', { static: true }) private decadeTpl!: TemplateRef<unknown>;
+  @ViewChild('olympicsTpl', { static: true }) private olympicsTpl!: TemplateRef<unknown>;
+  @ViewChild('inviteTpl', { static: true }) private inviteTpl!: TemplateRef<unknown>;
+
+  /** The open Olympic report, localized. */
+  readonly olympicsView = computed(() => {
+    const n = this.game.notice();
+    if (n?.kind !== 'olympics') return null;
+    const r = n.report;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const me = this.game.player();
+    const def = (idx: number) => this.game.sim.poleis[idx].def;
+    const mine = r.table.findIndex(row => row.idx === me);
+    const myRow = mine >= 0 ? r.table[mine] : null;
+    const reward = r.rewards.find(x => x.idx === me);
+    const top = r.table.slice(0, 6).map((row, i) => ({ ...row, place: i + 1, def: def(row.idx), name: this.game.name(row.idx), mine: row.idx === me }));
+    if (myRow && mine >= 6) top.push({ ...myRow, place: mine + 1, def: def(me), name: this.game.name(me), mine: true });
+    return {
+      verdict: myRow
+        ? interpolate(myRow.wreaths ? t.olyYouWon : t.olyYouNone, {
+            n: myRow.wreaths,
+            place: formatOrdinal(mine + 1, lang),
+            of: r.table.length
+          })
+        : t.olyYouStayed,
+      reward: reward
+        ? interpolate(t.olyReward, { p: fmt1(reward.prestige, lang), r: reward.relation })
+        : '',
+      triumph: r.triumphs.includes(me) ? t.olyTriumph : '',
+      others: r.triumphs.filter(i => i !== me).map(i => interpolate(t.olyTriumphOther, { name: this.game.name(i) })),
+      top,
+      events: r.winners.map(w => ({ event: t.olympicEvents[w.event] ?? w.event, winner: this.game.name(w.idx), mine: w.idx === me }))
+    };
+  });
+
+  /** The open decade report, localized. */
+  readonly decadeView = computed(() => {
+    const n = this.game.notice();
+    if (n?.kind !== 'decade') return null;
+    const r = n.report;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const pct = (v: number | null) => (v === null ? '—' : `${v < 0 ? '−' : '+'}${fmt1(Math.abs(v * 100), lang)}%`);
+    const tone = (v: number | null) => (v === null || Math.abs(v) < 0.005 ? '' : v > 0 ? 'up' : 'down');
+    const place = (p: number) => (p ? formatOrdinal(p, lang) : '—');
+    return {
+      rows: [
+        { label: t.statPopulation, value: pct(r.population), tone: tone(r.population) },
+        { label: t.chartIncome, value: pct(r.income), tone: tone(r.income) },
+        { label: t.statTerritory, value: pct(r.territory), tone: tone(r.territory) },
+        { label: t.decBattles, value: interpolate(t.decBattlesValue, { w: r.battlesWon, l: r.battlesLost }), tone: '' }
+      ],
+      places: HEGEMONY_CATEGORIES.map(c => ({
+        label: t.hegemonyCats[c].name,
+        value: `${place(r.places[c].then)} → ${place(r.places[c].now)}`,
+        tone: r.places[c].now && (!r.places[c].then || r.places[c].now < r.places[c].then) ? 'up' : r.places[c].now > r.places[c].then ? 'down' : ''
+      })),
+      budget: BUDGET_KEYS.map(k => ({ key: k, label: t.budgetKeys[k].name, share: r.budget[k] })),
+      verdict: t.decVerdicts[r.verdict]
+    };
+  });
 
   /** The open end-of-war report, localized (rendered with the battle report template). */
   readonly warView = computed(() => {
@@ -128,7 +192,7 @@ export class AppComponent {
         {
           icon: this.icons.Flag,
           label: t.statPrestige,
-          value: interpolate(t.reportPrestigeValue, { n: num(n.prestige), t: num(n.totalPrestige) })
+          value: interpolate(t.reportPrestigeValue, { n: fmt1(n.prestige, lang), t: fmt1(n.totalPrestige, lang) })
         },
         {
           icon: this.icons.Swords,
@@ -147,8 +211,10 @@ export class AppComponent {
       const t = this.i18n.t();
       return {
         sender: interpolate(t.letterGeneric.sender, { name }),
-        text: interpolate(t.embassyText, { name }),
-        color: this.game.sim.poleis[n.from].def.color
+        text: interpolate(t.embassyTexts[n.reason], { name, enemy: this.game.name(n.enemy) }),
+        color: this.game.sim.poleis[n.from].def.color,
+        // Accepting means joining every war the city is fighting.
+        wars: [...this.game.sim.poleis[n.from].wars].map(i => ({ name: this.game.name(i), color: this.game.sim.poleis[i].def.color }))
       };
     }
     if (n?.kind !== 'war') return null;
@@ -160,13 +226,12 @@ export class AppComponent {
     return {
       sender: interpolate(voice.sender, { name }),
       text: letter.tone === 'taunt' ? voice.taunt : voice.challenge,
-      color: def.color
+      color: def.color,
+      wars: [] as { name: string; color: string }[]
     };
   });
 
   readonly icons = { Globe, BookOpen, Play, Pause, FastForward, Maximize, RotateCcw, Coins, Pickaxe, Flag, Swords, Hourglass, MapIcon, Smile };
-
-  readonly currentView = signal<MapView>('political');
 
   readonly langOptions = computed<DropdownOption<Lang>[]>(() =>
     this.i18n.langs.map(l => ({
@@ -177,20 +242,9 @@ export class AppComponent {
     }))
   );
 
-  readonly viewOptions = computed<DropdownOption<MapView>[]>(() => {
-    const t = this.i18n.t();
-    return [
-      { value: 'political', label: t.viewPolitical, icon: Landmark },
-      { value: 'relief', label: t.viewRelief, icon: Mountain },
-      { value: 'fertility', label: t.viewFertility, icon: Wheat }
-    ];
-  });
-
-  readonly currentViewIcon = computed(
-    () => this.viewOptions().find(o => o.value === this.currentView())?.icon ?? Landmark
-  );
-
   readonly isPopupOpen = computed(() => this.popup.config() !== null);
+  /** In game, on tablets the logotype folds to make room for the resource bar. */
+  readonly compactBrand = computed(() => this.game.status() !== 'choosing' && this.bp.tablet() && !this.bp.mobile());
   readonly year = computed(() => formatYear(this.game.year(), this.i18n.t()));
   readonly ended = computed(() => this.game.status() === 'won' || this.game.status() === 'lost');
 
@@ -219,6 +273,12 @@ export class AppComponent {
         else if (n.kind === 'warEnd') this.openWarEnd(n.enemy, n.outcome, n.fate);
         else if (n.kind === 'conquest') this.openConquest(n.from);
         else if (n.kind === 'develop') this.openDevelopment(n.work, n.months, n.site);
+        else if (n.kind === 'hegemon') this.openHegemon(n.hegemon);
+        else if (n.kind === 'decade') this.openDecade(n.report);
+        else if (n.kind === 'olympicsInvite') this.openOlympicsInvite(n.olympiad, n.year, n.annualIncome, n.treasury);
+        else if (n.kind === 'olympics') this.openOlympicsReport(n.report);
+        else if (n.kind === 'fortune') this.openFortune(n.fortune);
+        else if (n.kind === 'built') this.openBuilt(n.what, n.id);
         else this.openReport(n.near);
       });
     });
@@ -230,16 +290,43 @@ export class AppComponent {
     });
   }
 
-  @HostListener('document:keydown.space', ['$event'])
-  onSpace(event: Event) {
+  /** Space pauses, 1–5 set the speed, B opens the budget, H the hegemony, Esc folds the drawer. */
+  @HostListener('document:keydown', ['$event'])
+  onKey(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null;
-    if (target?.closest('button, input, textarea, [role="listbox"]') || this.game.status() !== 'playing') return;
-    event.preventDefault();
-    this.game.togglePause();
+    if (event.ctrlKey || event.metaKey || event.altKey || target?.closest('input, textarea, select, [contenteditable]')) return;
+    if (this.game.status() === 'choosing' || !this.game.ready()) return;
+    const playing = this.game.status() === 'playing';
+    const mobile = this.bp.mobile();
+    if (event.key === ' ') {
+      if (target?.closest('button, [role="listbox"]') || !playing || this.isPopupOpen()) return;
+      event.preventDefault();
+      this.game.togglePause();
+    } else if (/^[1-5]$/.test(event.key)) {
+      if (!playing || this.isPopupOpen()) return;
+      this.game.setSpeed(Number(event.key));
+    } else if (event.key === 'b' || event.key === 'B') {
+      if (this.isPopupOpen()) return;
+      if (mobile) this.hud.toggleSheet('budget');
+      else this.hud.toggleTab('budget');
+    } else if (event.key === 'h' || event.key === 'H') {
+      if (this.isPopupOpen()) return;
+      if (mobile) this.hud.toggleSheet('hegemony');
+      else this.hud.toggleTab('hegemony');
+    } else if (event.key === 'Escape') {
+      if (this.isPopupOpen()) return;
+      if (mobile) this.hud.sheet.set(null);
+      else this.hud.drawerOpen.set(false);
+    }
   }
 
   fitMap() {
     this.map?.fit(true);
+  }
+
+  /** HUD panels opened or folded: keep the untouched map framed in what is left. */
+  reframe() {
+    this.map?.reframe();
   }
 
   restart() {
@@ -342,6 +429,134 @@ export class AppComponent {
         { label: computed(() => this.i18n.t().conquestRaze), variant: 'play', hot: true, onClick: decide('raze') },
         { label: computed(() => this.i18n.t().conquestSubjugate), variant: 'play', hot: true, onClick: decide('subjugate') },
         { label: computed(() => this.i18n.t().conquestAlliance), variant: 'play', hot: true, onClick: decide('alliance') }
+      ]
+    });
+  }
+
+  /** Ten years in review: the clock stops while the player reads it (it can be switched off here). */
+  private openDecade(report: DecadeReport) {
+    const t = () => this.i18n.t();
+    this.popup.open({
+      id: 'decade',
+      title: computed(() => interpolate(t().decTitle, { from: formatYear(report.fromYear, t()), to: formatYear(report.toYear, t()) })),
+      subtitle: computed(() => t().decSubtitle),
+      template: this.decadeTpl,
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [
+        { label: computed(() => t().decOff), variant: 'default', onClick: () => this.game.setDecadeReports(false) },
+        { label: computed(() => t().decAction), variant: 'play', hot: true }
+      ]
+    });
+  }
+
+  /** The heralds of Elis proclaim the truce: the player decides how much to spend on the delegation. */
+  /** The four purses on offer in the Olympic invitation (rendered in the popup body). */
+  readonly inviteOptions = signal<{ key: 'olyStay' | 'olyModest' | 'olyGenerous' | 'olyLavish'; share: number; label: string }[]>([]);
+  private inviteDecided = false;
+
+  /** The player picks a purse for the delegation; the invitation closes. */
+  chooseDelegation(share: number) {
+    this.inviteDecided = true;
+    this.game.sendDelegation(share);
+    this.popup.close();
+  }
+
+  private openOlympicsInvite(olympiad: number, year: number, annualIncome: number, treasury: number) {
+    const t = () => this.i18n.t();
+    const lang = () => this.i18n.lang();
+    this.inviteDecided = false;
+    const label = (key: 'olyStay' | 'olyModest' | 'olyGenerous' | 'olyLavish', share: number) =>
+      interpolate(t()[key], { p: Math.round(share * 100), d: formatNumber(Math.min(treasury, share * annualIncome), lang()) });
+    this.inviteOptions.set(
+      ([['olyStay', 0], ['olyModest', 0.1], ['olyGenerous', 0.25], ['olyLavish', 0.5]] as const).map(([key, share]) => ({
+        key,
+        share,
+        label: label(key, share)
+      }))
+    );
+    this.popup.open({
+      id: 'olympics-invite',
+      title: computed(() => interpolate(t().olyInviteTitle, { n: formatOrdinal(olympiad, lang()), year: formatYear(year, t()) })),
+      description: computed(() => interpolate(t().olyInviteText, { name: this.game.name(this.game.player()) })),
+      template: this.inviteTpl,
+      size: 'sm',
+      onClose: () => {
+        // Closing without a word sends a modest team.
+        if (!this.inviteDecided) this.game.sendDelegation(0.1);
+        this.game.closeNotice();
+      },
+      actions: []
+    });
+  }
+
+  /** A building of the player's is finished. */
+  private openBuilt(what: 'improvement' | 'farm' | 'port', id: ImprovementId | null) {
+    const t = () => this.i18n.t();
+    const name = () => (what === 'improvement' && id ? t().improvements[id].name : t().builtNames[what === 'farm' ? 'farm' : 'port']);
+    this.popup.open({
+      id: 'built',
+      title: computed(() => interpolate(t().builtTitle, { name: name() })),
+      subtitle: computed(() => this.game.name(this.game.player())),
+      description: computed(() =>
+        what === 'improvement' && id ? t().improvements[id].desc : t().builtTexts[what === 'farm' ? 'farm' : 'port']
+      ),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => t().builtAction), variant: 'play', hot: true }]
+    });
+  }
+
+  /** A twist of fortune, read from the alerts row. */
+  private openFortune(f: Fortune) {
+    const t = () => this.i18n.t();
+    const story = () => (f.boon ? t().boons[f.branch] : t().banes[f.bane]);
+    this.popup.open({
+      id: 'fortune',
+      title: computed(() => story().title),
+      subtitle: computed(() => formatYear(f.year, t())),
+      description: computed(() => {
+        const amount = formatNumber(f.amount, this.i18n.lang());
+        const effect = f.boon
+          ? interpolate(t().fortuneGain, { d: amount, fund: t().budgetKeys[f.branch].name })
+          : interpolate(t().fortuneLoss, { d: amount, m: fmt1(f.months, this.i18n.lang()) });
+        return `${story().text} ${effect}`;
+      }),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => t().fortuneAction), variant: 'play', hot: true }]
+    });
+  }
+
+  private openOlympicsReport(report: OlympicReport) {
+    const t = () => this.i18n.t();
+    this.popup.open({
+      id: 'olympics',
+      title: computed(() => interpolate(t().olyReportTitle, { n: formatOrdinal(report.olympiad, this.i18n.lang()), year: formatYear(report.year, t()) })),
+      subtitle: computed(() => t().olyReportSubtitle),
+      template: this.olympicsTpl,
+      size: 'md',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => t().olyAction), variant: 'play', hot: true }]
+    });
+  }
+
+  /** A new Hegemon of Hellas: the clock stops for the news. */
+  private openHegemon(hegemon: number) {
+    const mine = hegemon === this.game.sim.player;
+    this.popup.open({
+      id: 'hegemon',
+      title: computed(() => (mine ? this.i18n.t().hegemonYouTitle : interpolate(this.i18n.t().hegemonTitle, { name: this.game.name(hegemon) }))),
+      description: computed(() => (mine ? this.i18n.t().hegemonYouText : interpolate(this.i18n.t().hegemonText, { name: this.game.name(hegemon) }))),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [
+        {
+          label: computed(() => this.i18n.t().hegemonOpen),
+          variant: 'default',
+          onClick: () => (this.bp.mobile() ? this.hud.sheet.set('hegemony') : (this.hud.tab.set('hegemony'), this.hud.drawerOpen.set(true)))
+        },
+        { label: computed(() => this.i18n.t().hegemonAction), variant: 'play', hot: true }
       ]
     });
   }

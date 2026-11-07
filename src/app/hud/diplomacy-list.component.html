@@ -1,0 +1,22 @@
+@let t = i18n.t();
+
+<p class="hint">{{ t.dipListHint }}</p>
+<ul class="list">
+  @for (r of rows(); track r.idx) {
+    <li>
+      <button
+        type="button"
+        class="row"
+        [class.row--selected]="game.selected() === r.idx"
+        [attr.aria-label]="r.name + ', ' + r.label + ', ' + t.relation + ' ' + r.relation"
+        (click)="game.focus(r.idx)">
+        <app-polis-flag [def]="r.def" [size]="16"></app-polis-flag>
+        <span class="row__name">{{ r.name }}</span>
+        @if (r.standing !== 'peace') {
+          <span class="row__standing" [class]="'row__standing row__standing--' + r.standing">{{ r.label }}</span>
+        }
+        <span class="row__relation" [class]="'row__relation row__relation--' + r.tone">{{ r.relation }}</span>
+      </button>
+    </li>
+  }
+</ul>

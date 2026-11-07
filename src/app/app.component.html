@@ -2,118 +2,53 @@
 
 <main class="viewport">
   <app-splash></app-splash>
+  <span class="app-version" [attr.aria-label]="t.versionLabel + ' ' + version">v{{ version }}</span>
 
   <!-- Fullscreen Visualization Stage -->
   <section class="stage" [attr.aria-label]="t.stageAriaLabel">
-    <app-map-canvas [view]="currentView()"></app-map-canvas>
+    <app-map-canvas [view]="hud.mapMode()"></app-map-canvas>
   </section>
 
-  <!-- Top HUD: Left Logotype + Language, Right View Switcher -->
-  <header class="header" [class.header--popup-open]="isPopupOpen()">
-    <div class="header__left">
-      <app-brand
-        [appName]="t.appName"
-        [lang]="i18n.lang()"
-        (btnClick)="about.open({ lang: i18n.lang() })">
-      </app-brand>
+  <!-- Top-left: logotype and language (inside the HUD's top row once the game is on) -->
+  <ng-template #brandTpl>
+    <app-brand
+      [appName]="t.appName"
+      [lang]="i18n.lang()"
+      (btnClick)="about.open({ lang: i18n.lang() })">
+    </app-brand>
 
-      <div class="header__settings glass-panel" role="group" [attr.aria-label]="t.changeLanguage">
-        <app-dropdown
-          variant="ghost"
-          [icon]="bp.mobile() ? null : icons.Globe"
-          [options]="langOptions()"
-          [value]="i18n.lang()"
-          [ariaLabel]="t.changeLanguage"
-          (valueChange)="i18n.setLang($event)">
-        </app-dropdown>
-      </div>
+    <div class="header__settings glass-panel" role="group" [attr.aria-label]="t.changeLanguage">
+      <app-dropdown
+        variant="ghost"
+        [icon]="bp.mobile() ? null : icons.Globe"
+        [options]="langOptions()"
+        [value]="i18n.lang()"
+        [ariaLabel]="t.changeLanguage"
+        (valueChange)="i18n.setLang($event)">
+      </app-dropdown>
     </div>
+  </ng-template>
 
-    <div class="header__right">
-      <div class="header__view glass-panel">
-        <app-dropdown
-          variant="ghost"
-          align="right"
-          [fullWidth]="true"
-          [options]="viewOptions()"
-          [value]="currentView()"
-          [icon]="currentViewIcon()"
-          [ariaLabel]="t.chooseView"
-          (valueChange)="currentView.set($event)">
-        </app-dropdown>
+  @if (game.ready() && game.status() !== 'choosing') {
+    <app-hud
+      (help)="openGlossary()"
+      (restart)="restart()"
+      (fit)="fitMap()"
+      (layoutChange)="reframe()">
+      <div hudBrand class="header__left" [class.header__left--compact]="compactBrand()">
+        <ng-container [ngTemplateOutlet]="brandTpl"></ng-container>
       </div>
-      <app-chronicle class="header__chronicle"></app-chronicle>
-    </div>
-  </header>
+    </app-hud>
+  } @else {
+    <header class="header" [class.header--popup-open]="isPopupOpen()">
+      <div class="header__left">
+        <ng-container [ngTemplateOutlet]="brandTpl"></ng-container>
+      </div>
+    </header>
+  }
 
   @if (game.ready() && game.status() === 'choosing') {
     <app-start-screen></app-start-screen>
-  }
-
-  @if (game.ready() && game.status() !== 'choosing') {
-    <app-budget-panel></app-budget-panel>
-  }
-
-  <!-- Bottom Dock: polis economy, diplomacy, time controls & rules -->
-  @if (game.ready() && game.status() !== 'choosing') {
-  <footer class="dock-wrap">
-    <div class="dock">
-      <app-polis-panel class="dock__polis"></app-polis-panel>
-      <app-diplomacy-panel class="dock__diplomacy"></app-diplomacy-panel>
-
-      <section class="dock__time glass-panel">
-        <span class="dock__year" [attr.aria-live]="'off'">{{ year() }}</span>
-        <div class="dock__controls">
-          @if (ended()) {
-            <app-button variant="play" [hot]="true" [active]="true" (btnClick)="restart()">
-              <lucide-icon [img]="icons.RotateCcw" [size]="14"></lucide-icon>
-              <span>{{ t.playAgain }}</span>
-            </app-button>
-          } @else {
-            <app-button
-              variant="play"
-              [iconOnly]="true"
-              [active]="!game.paused()"
-              [disabled]="game.status() !== 'playing'"
-              [ariaLabel]="game.paused() ? t.play : t.pause"
-              [titleText]="game.paused() ? t.play : t.pause"
-              (btnClick)="game.togglePause()">
-              <lucide-icon [img]="game.paused() ? icons.Play : icons.Pause" [size]="15"></lucide-icon>
-            </app-button>
-            <app-button
-              variant="toggle"
-              extraClass="dock__speed"
-              [active]="game.speed() > 1"
-              [disabled]="game.status() !== 'playing'"
-              [ariaLabel]="t.speed"
-              [titleText]="t.speed"
-              (btnClick)="game.cycleSpeed()">
-              <lucide-icon [img]="icons.FastForward" [size]="14"></lucide-icon>
-              <span>{{ game.speed() }}×</span>
-            </app-button>
-          }
-          <app-button
-            variant="ghost"
-            [iconOnly]="true"
-            [ariaLabel]="t.fitMap"
-            [titleText]="t.fitMap"
-            (btnClick)="fitMap()">
-            <lucide-icon [img]="icons.Maximize" [size]="15"></lucide-icon>
-          </app-button>
-          <app-button
-            variant="ghost"
-            [iconOnly]="bp.mobile()"
-            [ariaLabel]="t.glossary"
-            (btnClick)="openGlossary()">
-            <lucide-icon [img]="icons.BookOpen" [size]="15"></lucide-icon>
-            @if (!bp.mobile()) {
-              <span>{{ t.glossary }}</span>
-            }
-          </app-button>
-        </div>
-      </section>
-    </div>
-  </footer>
   }
 
   <ng-template #rulesTpl>
@@ -127,12 +62,99 @@
     </dl>
   </ng-template>
 
+  <ng-template #inviteTpl>
+    <div class="invite" role="group" [attr.aria-label]="t.olyChoose">
+      @for (o of inviteOptions(); track o.key) {
+        <button type="button" class="invite__btn" [class.invite__btn--stay]="!o.share" (click)="chooseDelegation(o.share)">{{ o.label }}</button>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template #olympicsTpl>
+    @if (olympicsView(); as o) {
+      <p class="decade__verdict">{{ o.verdict }}</p>
+      @if (o.reward) {
+        <p class="olympics__reward">{{ o.reward }}</p>
+      }
+      @if (o.triumph) {
+        <p class="olympics__triumph">{{ o.triumph }}</p>
+      }
+      @for (line of o.others; track $index) {
+        <p class="olympics__other">{{ line }}</p>
+      }
+      <h3 class="decade__heading">{{ t.olyTable }}</h3>
+      <ol class="olympics__table">
+        @for (row of o.top; track row.idx) {
+          <li class="olympics__row" [class.olympics__row--mine]="row.mine">
+            <span class="olympics__place">{{ row.place }}</span>
+            <app-polis-flag [def]="row.def" [size]="14"></app-polis-flag>
+            <span class="olympics__name">{{ row.name }}</span>
+            <span class="olympics__wreaths">{{ row.wreaths }} 🌿</span>
+          </li>
+        }
+      </ol>
+      <h3 class="decade__heading">{{ t.olyEvents }}</h3>
+      <dl class="olympics__events">
+        @for (e of o.events; track $index) {
+          <div class="olympics__event" [class.olympics__event--mine]="e.mine">
+            <dt>{{ e.event }}</dt>
+            <dd>{{ e.winner }}</dd>
+          </div>
+        }
+      </dl>
+    }
+  </ng-template>
+
+  <ng-template #decadeTpl>
+    @if (decadeView(); as d) {
+      <p class="decade__verdict">{{ d.verdict }}</p>
+      <dl class="report decade__rows">
+        @for (row of d.rows; track row.label) {
+          <div class="report__row">
+            <dt>{{ row.label }}</dt>
+            <dd [class]="'decade__value decade__value--' + row.tone">{{ row.value }}</dd>
+          </div>
+        }
+      </dl>
+      <h3 class="decade__heading">{{ t.hegemonyTab }}</h3>
+      <dl class="report decade__rows">
+        @for (row of d.places; track row.label) {
+          <div class="report__row">
+            <dt>{{ row.label }}</dt>
+            <dd [class]="'decade__value decade__value--' + row.tone">{{ row.value }}</dd>
+          </div>
+        }
+      </dl>
+      <h3 class="decade__heading">{{ t.decBudget }}</h3>
+      <div class="decade__budget" role="img" [attr.aria-label]="t.decBudget">
+        @for (b of d.budget; track b.key) {
+          <div class="decade__bar" [class]="'decade__bar decade__bar--' + b.key">
+            <span class="decade__bar-label">{{ b.label }}</span>
+            <span class="decade__bar-track"><span [style.width.%]="b.share"></span></span>
+            <span class="decade__bar-value">{{ b.share }}%</span>
+          </div>
+        }
+      </div>
+    }
+  </ng-template>
+
   <ng-template #letterTpl>
     @if (letterView(); as letter) {
       <figure class="letter" [style.--letter-color]="'var(--color-' + letter.color + ')'">
         <blockquote class="letter__text">{{ letter.text }}</blockquote>
         <figcaption class="letter__sender">— {{ letter.sender }}</figcaption>
       </figure>
+      @if (letter.wars.length) {
+        <div class="ally-wars" role="note">
+          <span class="ally-wars__label">{{ t.embassyWars }}</span>
+          <span class="ally-wars__chips">
+            @for (w of letter.wars; track w.name) {
+              <span class="ally-wars__chip"><span class="ally-wars__dot" [style.background]="'var(--color-' + w.color + ')'"></span>{{ w.name }}</span>
+            }
+          </span>
+          <span class="ally-wars__warning">{{ t.embassyWarning }}</span>
+        </div>
+      }
     }
   </ng-template>
 

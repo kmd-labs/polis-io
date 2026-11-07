@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest';
+import { fmt1, formatCompact, formatEta, formatNumber, formatOrdinal, formatRate } from './format';
+import { EN } from './en';
+import { PL } from './pl';
+
+describe('fmt1', () => {
+  it('hides float noise', () => {
+    expect(fmt1(0.6000000000000001, 'en')).toBe('0.6');
+    expect(fmt1(0.1 + 0.2, 'en')).toBe('0.3');
+  });
+
+  it('keeps at most one decimal and drops a trailing zero', () => {
+    expect(fmt1(2.46, 'en')).toBe('2.5');
+    expect(fmt1(3, 'en')).toBe('3');
+  });
+
+  it('uses the Polish decimal comma', () => {
+    expect(fmt1(0.6000000000000001, 'pl')).toBe('0,6');
+  });
+});
+
+describe('formatNumber / formatRate', () => {
+  it('rounds to whole numbers', () => {
+    expect(formatNumber(1234.6, 'en')).toBe('1,235');
+  });
+
+  it('signs rates with one decimal', () => {
+    expect(formatRate(4.25, 'en')).toBe('+4.3');
+    expect(formatRate(-0.8, 'en')).toBe('−0.8');
+  });
+});
+
+describe('formatCompact', () => {
+  it('shortens large numbers for narrow bars', () => {
+    expect(formatCompact(18146, 'en')).toBe('18.1K');
+    expect(formatCompact(950, 'en')).toBe('950');
+  });
+});
+
+describe('formatEta', () => {
+  it('reads "now" once affordable', () => {
+    expect(formatEta(0, 4, EN, 'en')).toBe(EN.etaNow);
+  });
+
+  it('counts months under a year', () => {
+    expect(formatEta(1, 4, EN, 'en')).toBe('~3 months');
+    expect(formatEta(0.1, 4, PL, 'pl')).toBe('~1 miesiąc');
+  });
+
+  it('gives years with one decimal', () => {
+    expect(formatEta(12.8, 4, EN, 'en')).toBe('~3.2 yr');
+    expect(formatEta(12.8, 4, PL, 'pl')).toBe('~3,2 roku');
+  });
+});
+
+describe('formatOrdinal', () => {
+  it('uses English suffixes and Polish dots', () => {
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 103].map(n => formatOrdinal(n, 'en'))).toEqual([
+      '1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '103rd'
+    ]);
+    expect(formatOrdinal(7, 'pl')).toBe('7.');
+  });
+});
