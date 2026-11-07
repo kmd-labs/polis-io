@@ -16,6 +16,7 @@ import { formatNumber, interpolate, polisName } from '../core/i18n/format';
 import { GameService } from './game.service';
 import { Camera, MapLabel, MapRenderer, MapView } from './map-renderer';
 import { FOREIGN, NEUTRAL, WILD } from './simulation';
+import { GRID_SCALE } from './world';
 
 const MAX_SCALE = 48;
 const CLICK_SLOP = 5;
@@ -442,7 +443,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
     const px = clientX - rect.left;
     const py = clientY - rect.top;
-    const r = Math.max(5, Math.min(16, this.cam.scale * 2.6)) + 5;
+    const r = Math.max(5, Math.min(16, this.cam.scale * GRID_SCALE * 2.6)) + 5;
     let best: (typeof this.game.sim.armies)[number] | null = null;
     let bestD = r;
     for (const a of this.game.sim.armies) {
@@ -511,7 +512,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         const d = Math.hypot(p.cx - x, p.cy - y);
         if (!best || d < best.d) best = { name: polisName(t, p.def), d };
       }
-      text = best && best.d < 120 ? interpolate(t.hoverTribe, { name: best.name }) : t.hoverForeign;
+      text = best && best.d < 120 * GRID_SCALE ? interpolate(t.hoverTribe, { name: best.name }) : t.hoverForeign;
     }
     this.zone.run(() => {
       if (text) this.tooltip.show(text, clientX, clientY - 14, 'top', autoHideMs, { noWrap: true });
@@ -522,7 +523,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   /** Whether two land cells lie within a few cells of each other (the same small island). */
   private sameIsland(a: number, b: number): boolean {
     const w = this.game.world;
-    return Math.hypot((a % w.cols) - (b % w.cols), Math.floor(a / w.cols) - Math.floor(b / w.cols)) < 10;
+    return Math.hypot((a % w.cols) - (b % w.cols), Math.floor(a / w.cols) - Math.floor(b / w.cols)) < 10 * GRID_SCALE;
   }
 
   private hideTooltip() {

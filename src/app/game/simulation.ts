@@ -12,7 +12,7 @@ import {
 } from './data/improvements';
 import { MinHeap } from './heap';
 import { hash01 } from './rng';
-import { Terrain, World } from './world';
+import { GRID_SCALE, Terrain, World } from './world';
 
 /** The five funds every drachma of income is split into. */
 export type BudgetKey = 'military' | 'colonization' | 'agriculture' | 'trade' | 'culture';
@@ -91,16 +91,22 @@ export const WILD = -1;
 const YEAR = 64;
 
 /** Tunable game balance. Times are in game seconds (1 game second = 1 real second at 1× speed). */
+/** Lengths in cells scale with the grid (L), areas and cell counts with its square (A). */
+const L = GRID_SCALE;
+const A = L * L;
+/** How far (cells) to look for land around a point given in degrees. */
+const NEAR = Math.ceil(4 * L);
+
 export const RULES = {
   startYear: 600,
   secondsPerYear: YEAR,
   /** Travel budget (cells) of the founding territory; climbing 1000 m doubles the cost of a step. */
-  startReach: 15,
+  startReach: 15 * L,
   /**
    * Carrying capacity per unit of owned fertility. ~60 gives 25–35 people/km² on good lowland,
    * close to estimates for Archaic and Classical Greece (≈3 million if all of Hellas were settled).
    */
-  peoplePerFertility: 60,
+  peoplePerFertility: 60 / A,
   /** Share of the founding capacity already populated in 600 BC. */
   startPopulation: 0.6,
   /** Hoplites per civilian at the start: base + per point of militarism. */
@@ -115,10 +121,10 @@ export const RULES = {
   settleShare: 0.05,
   /** …and only once the city has filled this share of its land's capacity. */
   settleCrowding: 0.7,
-  settlersPerCell: 12,
+  settlersPerCell: 12 / A,
   /** Cells claimed per second by an expedition. */
-  settleRate: 11,
-  prosperityPerCell: 0.00055,
+  settleRate: 11 * A,
+  prosperityPerCell: 0.00055 / A,
   maxProsperity: 2,
   /** A levy takes this share of workers, plus the military share times trainPerShare (small levies, often)… */
   trainShare: 0.01,
@@ -154,31 +160,31 @@ export const RULES = {
   /** Galleys in one polis's fleet at most. */
   maxWarships: 12,
   /** Cells per second: war galleys row far faster than merchantmen sail (a few years around the Peloponnese). */
-  fleetSpeed: 16,
+  fleetSpeed: 16 * L,
   /** Hostile fleets this close fight; a fleet sinks hostile merchantmen this close; it blockades a harbour this close. */
-  navalRange: 4,
-  raidRange: 4,
-  blockadeRange: 5,
+  navalRange: 4 * L,
+  raidRange: 4 * L,
+  blockadeRange: 5 * L,
   /** A sunk merchantman yields this many voyages' worth of plunder. */
   raidPlunder: 2,
   /** Seconds an army keeps chasing one enemy army before giving up on it for chaseCooldown seconds. */
   chaseTime: 3,
   chaseCooldown: 20,
   /** Armies look this many cells ahead to keep to the valleys; every this many metres of height weighs like a full detour. */
-  valleyLook: 3,
+  valleyLook: 3 * L,
   valleyElevation: 400,
   /** Travel budget (cells) of a vassal's founding land. */
-  vassalReach: 7,
+  vassalReach: 7 * L,
   /** Drachmae earned by the owner for every completed trade voyage, before the culture bonus. */
   tradeIncome: 1,
   /** Cells per second. */
-  shipSpeed: 6,
+  shipSpeed: 6 * L,
   /** Mean seconds between departures from a coastal polis. */
   shipInterval: 8,
   /** Trade ships at sea per polis: one, plus one per port, up to this many. */
   maxShips: 4,
   /** Sea routes are planned on a grid this many times coarser than the map. */
-  routeCoarse: 3,
+  routeCoarse: 3 * L,
   /** Share of a voyage's value also earned by the receiving harbour. */
   tradeReceiverShare: 0.3,
   /** Spoils of a won battle: drachmae per fallen enemy, plus a flat purse. */
@@ -214,7 +220,7 @@ export const RULES = {
   satisfactionBattleLost: -4,
   satisfactionWarWon: 8,
   satisfactionWarLost: -6,
-  satisfactionPerCellLost: -0.02,
+  satisfactionPerCellLost: -0.02 / A,
   satisfactionSettle: -1,
   satisfactionTrain: -1,
   /** Income and growth run at this multiplier at 0% satisfaction, and its mirror at 100%. */
@@ -244,7 +250,7 @@ export const RULES = {
   tributeShare: 0.3,
   tributeWorkers: 0.003,
   /** Travel budget (cells) of the land a client state keeps around its capital. */
-  clientReach: 12,
+  clientReach: 12 * L,
   /** Fate chosen by the player for a conquered city: odds of the intended outcome. */
   razeSuccess: 0.8,
   subjugateSuccess: 0.6,
@@ -258,8 +264,8 @@ export const RULES = {
   generalPower: 0.05,
   /** An army with a lesser general within generalJoinRadius cells of a better one of the same city marches to it,
    * and merges once within generalMergeRadius. */
-  generalJoinRadius: 20,
-  generalMergeRadius: 3,
+  generalJoinRadius: 20 * L,
+  generalMergeRadius: 3 * L,
   /** A city only picks a war with one of its nearest neighbours: this many nearest by border and by capital. */
   warNeighbours: 3,
   /** Seconds over which a city's cash inflow is smoothed (spoils and trade arrive in lumps). */
@@ -277,7 +283,7 @@ export const RULES = {
   raidMax: 2000,
   raidEveryMin: 3,
   raidEveryMax: 7,
-  raidReach: 200,
+  raidReach: 200 * L,
   /** A raid ends after this many cells plundered or this many years, whichever comes first. */
   raidLoot: 8,
   raidYears: 1.5,
@@ -301,7 +307,7 @@ export const RULES = {
   neutralPortPull: 1,
   /** Neutral merchant cities: the largest island one may hold (cells), their extra merchantmen, how much more
    * often they sail, how strongly they draw other cities' ships, and the share a city receiving their ship keeps. */
-  traderIsland: 200,
+  traderIsland: 200 * A,
   traderShips: 3,
   traderSailing: 0.5,
   traderPull: 2,
@@ -328,16 +334,16 @@ export const RULES = {
   wildernessNear: 0.2,
   wildernessFar: 0.5,
   /** Distance (cells) from the victor's capital at which the far chance applies. */
-  wildernessRange: 150,
+  wildernessRange: 150 * L,
   /** An army flees a hostile force this many times stronger within this radius (cells)… */
   retreatRatio: 2.5,
-  retreatRadius: 9,
+  retreatRadius: 9 * L,
   /** …losing this share of its men per second while it runs… */
   retreatAttrition: 0.012,
   /** …and sometimes scatters into two smaller armies. */
   splitChance: 0.3,
   /** Armies this close (cells) to a raging battle join their side, up to this many per side. */
-  joinRange: 6,
+  joinRange: 6 * L,
   maxArmiesPerSide: 4,
   /** Budget costs: a settlers' expedition, a colony, a farm, a port and a festival. */
   expeditionBase: 20,
@@ -368,7 +374,7 @@ export const RULES = {
   developMonthsMin: 1,
   developMonthsMax: 12,
   /** A stray pocket of land this small, cut off from its capital, goes back to the wild after this many seconds (4 years). */
-  strayPocket: 4,
+  strayPocket: 4 * A,
   strayDecay: 4 * YEAR,
   /** The Games are held in this month (0 = the first) of every Olympic year; the sacred truce runs from
    * truceBefore months earlier to truceAfter months later. */
@@ -399,7 +405,7 @@ export const RULES = {
   /** …and seek one ally against it (chance per AI decision); these pacts lapse when the coalition ends. */
   coalitionAllyChance: 0.05,
   /** Cells more than the enemy a side must have taken for a war ending in peace to count as won. */
-  warWonMargin: 5,
+  warWonMargin: 5 * A,
   /** At war a polis fields between this many armies… */
   armiesMin: 2,
   armiesMax: 5,
@@ -414,10 +420,10 @@ export const RULES = {
   /** …gaining this much per second… */
   holdPowerRate: 0.05,
   /** …and it engages any enemy army that comes within this many cells. */
-  holdRadius: 30,
+  holdRadius: 30 * L,
   /** In wartime, a patch of land smaller than this (not the capital) that touches an enemy and has not
    * grown to this size for enclaveYears passes to that enemy (the one along most of its edge). */
-  enclaveSize: 20,
+  enclaveSize: 20 * A,
   enclaveYears: 2,
   /** …checked this often (seconds). */
   borderTidyInterval: 2,
@@ -427,27 +433,27 @@ export const RULES = {
   siegeMinimum: 200,
   /** An army this much stronger (in power or numbers) hunts enemy armies within chaseRadius cells. */
   chaseRatio: 1.5,
-  chaseRadius: 14,
+  chaseRadius: 14 * L,
   /** Armies within this many cells of a besieged friendly capital march to lift the siege. */
-  reliefRadius: 70,
+  reliefRadius: 70 * L,
   /** Island poleis that do not feel the pull of border wars. */
   islandPoleis: ['samos', 'naxos', 'korkyra', 'chios'] as readonly string[],
   /** A bordering rival looks this much weaker to an ambitious neighbour. */
   neighbourAggression: 1.35,
   /** Cells per second. */
-  armySpeedLand: 6.5,
-  armySpeedSea: 4.2,
+  armySpeedLand: 6.5 * L,
+  armySpeedSea: 4.2 * L,
   /** Speed lost per 1000 m of altitude. */
   mountainSlowdown: 0.35,
   captureDwell: 1.4,
   /** Radius (cells) of ground seized each time an army settles in. */
-  captureRadius: 1.6,
+  captureRadius: 1.6 * L,
   battleDuration: 1.8,
-  battleRange: 3.6,
+  battleRange: 3.6 * L,
   wallsBonus: 1.25,
   aiWarGrace: 45,
   aiPlayerGrace: 90,
-  aiWarRange: 165,
+  aiWarRange: 165 * L,
   maxWorldWars: 4,
   victoryShare: 0.5
 } as const;
@@ -1215,7 +1221,7 @@ export class Simulation {
     this.neutralPorts = [];
     for (const spec of NEUTRAL_PORTS) {
       const p = w.project(spec.lon, spec.lat);
-      const found = this.smallIsland(spec.lon, spec.lat, 70);
+      const found = this.smallIsland(spec.lon, spec.lat, 70 * A);
       if (!found) continue;
       const { land, island } = found;
       let best = Infinity;
@@ -1248,8 +1254,8 @@ export class Simulation {
     const p = w.project(lon, lat);
     let land = -1;
     let best = Infinity;
-    for (let dy = -4; dy <= 4; dy++) {
-      for (let dx = -4; dx <= 4; dx++) {
+    for (let dy = -NEAR; dy <= NEAR; dy++) {
+      for (let dx = -NEAR; dx <= NEAR; dx++) {
         const c = w.cellAt(p.x + dx, p.y + dy);
         if (c < 0 || w.terrain[c] !== Terrain.Greek || Math.hypot(dx, dy) >= best) continue;
         best = Math.hypot(dx, dy);
@@ -1551,10 +1557,14 @@ export class Simulation {
     const frontier = new MinHeap();
     const queued = new Set<number>();
     const w = this.world;
+    const own = this.owner;
+    const touches = (c: number) => {
+      for (let k = 0; k < 4; k++) if (own[w.neighbour(c, k)] === idx) return true;
+      return false;
+    };
     for (const c of w.greekCells) {
-      if (this.owner[c] !== WILD) continue;
-      const x = c % w.cols;
-      if (w.neighbours4(x, (c - x) / w.cols).some(n => this.owner[n] === idx)) {
+      if (own[c] !== WILD) continue;
+      if (touches(c)) {
         queued.add(c);
         if (w.elevation[c] <= RULES.maxElevation) frontier.push(c, this.settleCost(p, c));
       }
@@ -1756,8 +1766,8 @@ export class Simulation {
     for (const c of w.greekCells) {
       const o = own[c];
       if (o < 0) continue;
-      const x = c % w.cols;
-      for (const n of [x < w.cols - 1 ? c + 1 : -1, c + w.cols < w.size ? c + w.cols : -1]) {
+      for (let k = 1; k < 4; k += 2) {
+        const n = w.neighbour(c, k);
         const q = n >= 0 ? own[n] : -1;
         if (q >= 0 && q !== o) set.add(Math.min(o, q) * 4096 + Math.max(o, q));
       }
@@ -1844,7 +1854,7 @@ export class Simulation {
     if (!stats || this.status !== 'playing') return;
     this.playerWars.delete(enemy);
     const me = this.poleis[this.player];
-    const balance = stats.cellsGained - stats.cellsLost + (stats.battlesWon - stats.battlesLost) * 20;
+    const balance = (stats.cellsGained - stats.cellsLost) / A + (stats.battlesWon - stats.battlesLost) * 20;
     const satisfaction =
       outcome === 'conquest' || balance > 0
         ? RULES.satisfactionWarWon
@@ -2036,12 +2046,12 @@ export class Simulation {
   private farmSite(p: PolisState): number {
     const w = this.world;
     const candidates = w.greekCells.filter(
-      c => this.owner[c] === p.idx && c !== p.capital && !this.nearBuilding(c, 4) && !this.nearPending(c, 4)
+      c => this.owner[c] === p.idx && c !== p.capital && !this.nearBuilding(c, 4 * L) && !this.nearPending(c, 4 * L)
     );
     return this.weightedPick([...candidates], c => {
       const lowland = Math.exp(-Math.max(0, w.elevation[c]) / 600);
-      const coast = this.nearSea(c, 2) ? 2.5 : 1;
-      const walls = this.distanceFrom(p, c) < 10 ? 0.05 : 1;
+      const coast = this.nearSea(c, Math.round(2 * L)) ? 2.5 : 1;
+      const walls = this.distanceFrom(p, c) < 10 * L ? 0.05 : 1;
       return w.fertility[c] * lowland * coast * walls;
     });
   }
@@ -2053,12 +2063,12 @@ export class Simulation {
       if (this.owner[c] !== p.idx || c === p.capital) return false;
       const x = c % w.cols;
       if (!w.neighbours4(x, (c - x) / w.cols).some(n => w.terrain[n] === Terrain.Sea)) return false;
-      return !this.nearBuilding(c, 6, 'port') && !this.nearBuilding(c, 2) && !this.nearPending(c, 4);
+      return !this.nearBuilding(c, 6 * L, 'port') && !this.nearBuilding(c, 2 * L) && !this.nearPending(c, 4 * L);
     });
     return this.weightedPick([...candidates], c => {
       const d = this.distanceFrom(p, c);
       const lowland = Math.exp(-Math.max(0, w.elevation[c]) / 400);
-      return lowland * (d < 10 ? 0.05 : 1) * Math.exp(-Math.abs(d - 25) / 60);
+      return lowland * (d < 10 * L ? 0.05 : 1) * Math.exp(-Math.abs(d - 25 * L) / (60 * L));
     });
   }
 
@@ -2071,10 +2081,10 @@ export class Simulation {
       .map(s => {
         const d = this.distanceFrom(p, s.cell);
         const score =
-          d * 0.02 + Math.max(0, this.world.elevation[s.cell]) / 400 - (this.nearSea(s.cell, 3) ? 0.6 : 0) + this.rand() * 0.3;
+          (d / L) * 0.02 + Math.max(0, this.world.elevation[s.cell]) / 400 - (this.nearSea(s.cell, Math.round(3 * L)) ? 0.6 : 0) + this.rand() * 0.3;
         return { ...s, d, score };
       })
-      .filter(s => s.d >= 12 && s.d < 220)
+      .filter(s => s.d >= 12 * L && s.d < 220 * L)
       .sort((a, b) => a.score - b.score)[0];
   }
 
@@ -2448,7 +2458,7 @@ export class Simulation {
     const x = cell % w.cols;
     const y = (cell - x) / w.cols;
     const d = Math.hypot(x + 0.5 - p.cx, y + 0.5 - p.cy);
-    return w.elevation[cell] / 600 + d * 0.0035 - w.fertility[cell] * 0.4 + hash01(x, y, p.idx) * 0.25;
+    return w.elevation[cell] / 600 + (d / L) * 0.0035 - w.fertility[cell] * 0.4 + hash01(x, y, p.idx) * 0.25;
   }
 
   private think(p: PolisState) {
@@ -2572,7 +2582,7 @@ export class Simulation {
     const oy = port ? Math.floor(port.cell / w.cols) + 0.5 : p.cy;
     let best = -1;
     let bestD = Infinity;
-    for (const c of w.greekCells) {
+    for (const c of w.coastalGreek) {
       if (this.owner[c] !== p.idx) continue;
       const x = c % w.cols;
       const y = (c - x) / w.cols;
@@ -2613,13 +2623,13 @@ export class Simulation {
         (1 + this.relation(p.idx, q.idx) / 200) *
         (q.idx === this.hegemon ? 1 + RULES.hegemonTradeBonus : 1) *
         (q.trader ? RULES.traderPull : 1);
-      options.push({ q, harbour, weight: pull / (d + 60) });
+      options.push({ q, harbour, weight: pull / (d + 60 * L) });
     }
     // Neutral island harbours trade with anyone.
     for (let i = 0; i < this.neutralPorts.length; i++) {
       const port = this.neutralPorts[i];
       const d = Math.hypot((port.harbour % w.cols) - (from % w.cols), Math.floor(port.harbour / w.cols) - Math.floor(from / w.cols));
-      options.push({ q: null, port: i, harbour: port.harbour, weight: RULES.neutralPortPull / (d + 60) });
+      options.push({ q: null, port: i, harbour: port.harbour, weight: RULES.neutralPortPull / (d + 60 * L) });
     }
     if (!options.length) return;
     let pick = this.rand() * options.reduce((sum, o) => sum + o.weight, 0);
@@ -2852,7 +2862,7 @@ export class Simulation {
       .filter(q => q.alive && !q.tribe && !q.trader && !q.captured && q.cells > 0)
       .map(q => ({ q, d: Math.hypot(q.cx - t.cx, q.cy - t.cy) }))
       .filter(x => x.d <= RULES.raidReach)
-      .map(x => ({ ...x, weight: (1 + this.treasury(x.q) / 500) / ((1 + x.q.garrison / 800) * (1 + x.d / 60)) }));
+      .map(x => ({ ...x, weight: (1 + this.treasury(x.q) / 500) / ((1 + x.q.garrison / 800) * (1 + x.d / (60 * L))) }));
     if (!targets.length) return;
     let pick = this.rand() * targets.reduce((s, x) => s + x.weight, 0);
     const victim = (targets.find(x => (pick -= x.weight) <= 0) ?? targets[targets.length - 1]).q;
@@ -2962,7 +2972,7 @@ export class Simulation {
     for (const c of w.greekCells) {
       if (this.owner[c] !== victim.idx || c === victim.capital || w.elevation[c] > RULES.maxElevation) continue;
       const x = c % w.cols;
-      const d = Math.hypot(x + 0.5 - a.x, (c - x) / w.cols + 0.5 - a.y) + w.elevation[c] / 200 + this.rand() * 3;
+      const d = Math.hypot(x + 0.5 - a.x, (c - x) / w.cols + 0.5 - a.y) + (w.elevation[c] / 200 + this.rand() * 3) * L;
       if (d < bestD) {
         bestD = d;
         best = c;
@@ -3044,7 +3054,7 @@ export class Simulation {
       const v = this.poleis[band.raid];
       // Only a city that chose to fight sends out defenders.
       if (!v?.alive || !band.fought || band.asked !== v.idx || this.armies.some(a => !a.dead && a.defend === band.id)) continue;
-      const near = Math.hypot(band.x - v.cx, band.y - v.cy) < 40 || this.owner[this.world.cellAt(band.x, band.y)] === v.idx;
+      const near = Math.hypot(band.x - v.cx, band.y - v.cy) < 40 * L || this.owner[this.world.cellAt(band.x, band.y)] === v.idx;
       if (!near) continue;
       const floor = v.wars.size ? RULES.garrisonFloor : 30;
       const spare = v.garrison - floor;
@@ -3084,7 +3094,7 @@ export class Simulation {
 
   private defendMove(a: Army, p: PolisState, dt: number) {
     const band = this.armies.find(o => o.id === a.defend && !o.dead);
-    if (band && !band.homeward && Math.hypot(band.x - p.cx, band.y - p.cy) < 70) {
+    if (band && !band.homeward && Math.hypot(band.x - p.cx, band.y - p.cy) < 70 * L) {
       this.walk(a, band.x, band.y, dt);
       return;
     }
@@ -3310,7 +3320,7 @@ export class Simulation {
     dest.drachmae += share;
     dest.tradeEarned += share;
     this.mood(dest, share * RULES.satisfactionPerTrade);
-    this.tradeFx.push({ x: s.x, y: s.y - 1.5, t: this.time, amount: share, owner: dest.idx });
+    this.tradeFx.push({ x: s.x, y: s.y - 1.5 * L, t: this.time, amount: share, owner: dest.idx });
   }
 
   /** A* over the coarse sea grid, smoothed into a gentle polyline; cached per harbour pair. */
@@ -3816,11 +3826,11 @@ export class Simulation {
         a.strength /= 2;
         a.fleeAngle = -0.7;
         a.split = true;
-        this.armies.push({ ...a, id: this.nextId++, fleeAngle: 0.7, x: a.x + 0.4, y: a.y + 0.4 });
+        this.armies.push({ ...a, id: this.nextId++, fleeAngle: 0.7, x: a.x + 0.4 * L, y: a.y + 0.4 * L });
       }
     }
     const away = Math.atan2(a.y - threat.y, a.x - threat.x) + a.fleeAngle;
-    this.walk(a, a.x + Math.cos(away) * 4, a.y + Math.sin(away) * 4, dt);
+    this.walk(a, a.x + Math.cos(away) * 4 * L, a.y + Math.sin(away) * 4 * L, dt);
     a.strength *= 1 - RULES.retreatAttrition * dt;
   }
 
@@ -3863,7 +3873,7 @@ export class Simulation {
     const dx = tx - a.x;
     const dy = ty - a.y;
     const d = Math.hypot(dx, dy);
-    if (d < 0.35) return true;
+    if (d < 0.35 * L) return true;
     const cell = this.world.cellAt(a.x, a.y);
     const atSea = cell < 0 || this.world.terrain[cell] === Terrain.Sea;
     const speed = atSea
@@ -3873,7 +3883,7 @@ export class Simulation {
         (1 - Math.min(0.6, (this.world.elevation[cell] / 1000) * RULES.mountainSlowdown));
     const step = Math.min(d, speed * dt);
     // On land, keep to the valleys: bend the line of march away from heights (and water).
-    const [ux, uy] = atSea || d < 2 ? [dx / d, dy / d] : this.valleyHeading(a.x, a.y, dx / d, dy / d);
+    const [ux, uy] = atSea || d < 2 * L ? [dx / d, dy / d] : this.valleyHeading(a.x, a.y, dx / d, dy / d);
     a.x += ux * step;
     a.y += uy * step;
     return false;
@@ -3927,7 +3937,7 @@ export class Simulation {
       const x = c % w.cols;
       const y = (c - x) / w.cols;
       // Lowland first: a thousand metres of height weighs like 25 cells of distance.
-      const d = Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) + this.rand() * 18 + Math.max(0, w.elevation[c]) / 40;
+      const d = Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) + (this.rand() * 18 + Math.max(0, w.elevation[c]) / 40) * L;
       if (d < bestD) {
         bestD = d;
         best = c;
@@ -3942,8 +3952,8 @@ export class Simulation {
     const x0 = a.target % w.cols;
     const y0 = Math.floor(a.target / w.cols);
     const options: number[] = [];
-    for (let dy = -4; dy <= 4; dy++) {
-      for (let dx = -4; dx <= 4; dx++) {
+    for (let dy = -NEAR; dy <= NEAR; dy++) {
+      for (let dx = -NEAR; dx <= NEAR; dx++) {
         if (!w.inBounds(x0 + dx, y0 + dy)) continue;
         const c = w.index(x0 + dx, y0 + dy);
         if (this.isEnemyCell(a, c)) options.push(c);
@@ -4192,8 +4202,9 @@ export class Simulation {
       while (stack.length) {
         const c = stack.pop()!;
         pocket.push(c);
-        const x = c % w.cols;
-        for (const n of w.neighbours4(x, (c - x) / w.cols)) {
+        for (let k = 0; k < 4; k++) {
+          const n = w.neighbour(c, k);
+          if (n < 0) continue;
           const q = own[n];
           if (q === o) {
             if (!seen[n]) {
@@ -4267,10 +4278,13 @@ export class Simulation {
   private updateFrontiers() {
     const w = this.world;
     const out = new Set<number>();
+    const own = this.owner;
     for (const c of w.greekCells) {
-      if (this.owner[c] !== WILD) continue;
-      const x = c % w.cols;
-      for (const n of w.neighbours4(x, (c - x) / w.cols)) if (this.owner[n] >= 0) out.add(this.owner[n]);
+      if (own[c] !== WILD) continue;
+      for (let k = 0; k < 4; k++) {
+        const n = w.neighbour(c, k);
+        if (n >= 0 && own[n] >= 0) out.add(own[n]);
+      }
     }
     this.frontierOwners = out;
   }
@@ -4521,7 +4535,7 @@ export class Simulation {
 
   /** In the chaos of a fall, an outlying town declares itself an independent polis. */
   private secede(l: PolisState) {
-    if (l.cells < 60) return;
+    if (l.cells < 60 * A) return;
     const capitals = new Set(this.poleis.map(q => q.capital));
     const site = this.siteCells.find(
       s => !this.usedSites.has(s.id) && !capitals.has(s.cell) && this.owner[s.cell] === l.idx
@@ -4546,7 +4560,7 @@ export class Simulation {
     );
     this.poleis.push(nova);
     const before = l.cells;
-    this.floodClaim([{ cell: site.cell, idx }], RULES.vassalReach + 2, c => this.owner[c] === l.idx && c !== l.capital);
+    this.floodClaim([{ cell: site.cell, idx }], RULES.vassalReach + 2 * L, c => this.owner[c] === l.idx && c !== l.capital);
     const share = (before - l.cells) / Math.max(1, before);
     nova.civilians = l.civilians * share;
     l.civilians -= nova.civilians;

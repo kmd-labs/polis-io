@@ -3,9 +3,11 @@
 A pixel real-time strategy game set in Archaic Greece, 600 BC, built on the
 [KMD design system](https://github.com/kmd-labs/design-system) (Angular 21, standalone components, signals).
 
-The map is a 639×628 raster of ~1.25 km pixels: coastlines and borders from Natural Earth, elevation and
-sea depth from AWS Terrain Tiles. Every one of the 84,000 Greek land pixels belongs to one of 18 poleis or is
-still wild; land outside modern Greece is shown but never playable. The map is drawn as a stylised relief —
+The map is a 1278×1257 raster of ~0.63 km pixels: coastlines and borders from Natural Earth, elevation and
+sea depth from AWS Terrain Tiles. Every one of the 336,000 Greek land pixels belongs to one of 18 poleis (or a
+neutral merchant city) or is still wild; land outside modern Greece is shown but never playable. Rules that measure land in pixels (reaches, speeds,
+ranges, enclave sizes, settlers per pixel) are scaled by `GRID_SCALE` in `world.ts`, so the game plays the same at any
+map resolution. The map is drawn as a stylised relief —
 terraced contour tints with warm light and cool shade, an inked coastline, stepped sea depths with isobaths,
 twinkling waves and drifting cloud shadows — and has three views: political, terrain relief and soil fertility.
 

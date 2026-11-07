@@ -34,6 +34,12 @@ export function decodeMapPixels(pixels: ArrayLike<number>, channels: number, col
 }
 
 /** Vertical exaggeration of the hillshade on land and on the sea floor. */
+/**
+ * Cells per edge of the original 1.26 km cell the game was tuned on: lengths measured in cells scale
+ * by this, areas (cell counts) by its square.
+ */
+export const GRID_SCALE = Math.round((0.0113 / GREECE_MAP.cellLat) * 1000) / 1000;
+
 const RELIEF_LAND = 1.6;
 const RELIEF_SEA = 0.5;
 
@@ -54,6 +60,8 @@ export class World {
   readonly fertility: Float32Array;
   /** Sea cell touching land — rendered as surf. */
   readonly shallow: Uint8Array;
+  /** Flat indices of every Greek land cell that touches the sea (where a harbour can be). */
+  coastalGreek: Int32Array = new Int32Array(0);
   /** Flat indices of every Greek land cell. */
   readonly greekCells: Int32Array;
 
@@ -113,20 +121,25 @@ export class World {
         // Plains and gentle valleys feed people; mountains and steep slopes do not.
         const altitude = 1 - Math.min(1, elevation[i] / 1500) * 0.8;
         const slope = 1 - Math.min(0.45, (Math.hypot(dx, dy) / RELIEF_LAND) * 15);
-        const noise = 0.85 + 0.3 * valueNoise(x / 14, y / 14, 7) + 0.05 * (hash01(x, y, 2) - 0.5);
+        const noise = 0.85 + 0.3 * valueNoise(x / (14 * GRID_SCALE), y / (14 * GRID_SCALE), 7) + 0.05 * (hash01(x, y, 2) - 0.5);
         this.fertility[i] = Math.min(1, Math.max(0.12, altitude * slope * noise + (coastal ? 0.06 : 0)));
       }
     }
     this.greekCells = Int32Array.from(greek);
+    this.coastalGreek = Int32Array.from(greek.filter(i => [0, 1, 2, 3].some(k => {
+      const n = this.neighbour(i, k);
+      return n >= 0 && terrain[n] === Terrain.Sea;
+    })));
   }
 
   /** Small islands the coastline data misses become low Greek land (only where the raster is sea). */
   private addIslets() {
     for (const islet of ISLETS) {
       const p = this.project(islet.lon, islet.lat);
-      for (let dy = -islet.r; dy <= islet.r; dy++) {
-        for (let dx = -islet.r; dx <= islet.r; dx++) {
-          if (Math.hypot(dx, dy) > islet.r + 0.25) continue;
+      const r = Math.round(islet.r * GRID_SCALE);
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.hypot(dx, dy) > r + 0.25) continue;
           const c = this.cellAt(p.x + dx, p.y + dy);
           if (c < 0 || this.terrain[c] !== Terrain.Sea) continue;
           this.terrain[c] = Terrain.Greek;
@@ -157,6 +170,15 @@ export class World {
       x: (lon - GREECE_MAP.lon0) / GREECE_MAP.cellLon,
       y: (GREECE_MAP.lat1 - lat) / GREECE_MAP.cellLat
     };
+  }
+
+  /** The k-th (0–3: west, east, north, south) neighbour of a cell, or -1 off the map. Allocation-free for hot loops. */
+  neighbour(c: number, k: number): number {
+    const cols = this.cols;
+    if (k === 0) return c % cols > 0 ? c - 1 : -1;
+    if (k === 1) return c % cols < cols - 1 ? c + 1 : -1;
+    if (k === 2) return c >= cols ? c - cols : -1;
+    return c + cols < this.size ? c + cols : -1;
   }
 
   neighbours4(x: number, y: number): number[] {
