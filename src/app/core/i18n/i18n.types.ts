@@ -5,6 +5,8 @@ import { PresetId } from '../../game/economy';
 import { HegemonyCategory } from '../../game/hegemony';
 import { DecadeVerdict } from '../../game/decade';
 import { Bane } from '../../game/fortune';
+import { DilemmaId, WorldNoteId } from '../../game/data/dilemmas';
+import { DilemmaText } from './dilemmas.en';
 import { GreatWorkId, NeutralPortId, TraderId, TribeId } from '../../game/data/frontier';
 
 export type Lang = 'en' | 'pl';
@@ -222,6 +224,26 @@ export interface Dict {
   raidTextPoor: string;
   raidBribe: string;
   raidFight: string;
+  dilemmas: Record<DilemmaId, DilemmaText>;
+  dilemmaPutAside: string;
+  worldNotes: Record<WorldNoteId, string>;
+  evDilemma: string;
+  evWorld: string;
+  fx: {
+    silver: string;
+    colonize: string;
+    prestige: string;
+    mood: string;
+    culture: string;
+    militarism: string;
+    regard: string;
+    hoplitesUp: string;
+    hoplitesDown: string;
+    people: string;
+    prosperity: string;
+    none: string;
+    cantAfford: string;
+  };
   traderNames: Record<TraderId, string>;
   traderNeutral: string;
   hoverTrader: string;

@@ -1,3 +1,4 @@
+import { DILEMMAS_EN, WORLD_NOTES_EN } from './dilemmas.en';
 import { Dict } from './i18n.types';
 
 export const EN: Dict = {
@@ -358,6 +359,26 @@ export const EN: Dict = {
   raidTextPoor: 'A warband of {n} {name} has crossed into our fields to carry off our people and our silver. Their chief asks {d} drachmae — more than we have. We must fight them in the name of Hellas: all Greeks will honour us for it.',
   raidBribe: 'Pay {d} dr',
   raidFight: 'Fight for Hellas',
+  dilemmas: DILEMMAS_EN,
+  dilemmaPutAside: 'Putting the letter aside takes the last answer.',
+  worldNotes: WORLD_NOTES_EN,
+  evDilemma: '{a}: {w}',
+  evWorld: '{w}',
+  fx: {
+    silver: '{v} dr',
+    colonize: '{v} dr for colonization',
+    prestige: '{v} prestige',
+    mood: '{v} contentment',
+    culture: '{v} culture',
+    militarism: '{v} militarism',
+    regard: '{v} regard of every Greek city',
+    hoplitesUp: '{v}% of the people take up arms',
+    hoplitesDown: '{v}% of the garrison sent away',
+    people: '{v}% population',
+    prosperity: '{v}% prosperity',
+    none: 'Nothing changes',
+    cantAfford: 'We cannot afford it'
+  },
   traderNames: { aegina: 'Aegina', siphnos: 'Siphnos', thera: 'Thera', keos: 'Keos' },
   traderNeutral: 'A neutral merchant city: it holds its island, goes to war with no one and lives by the sea trade. Its ships call at every harbour — the city receiving one keeps half of what it brings.',
   hoverTrader: 'neutral merchant city',

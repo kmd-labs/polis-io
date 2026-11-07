@@ -10,7 +10,7 @@
     }
     <ol class="chronicle__list">
       @for (e of entries(); track e.id) {
-        <li class="entry" [class.entry--mine]="e.mine" [class.entry--hostile]="e.hostile">
+        <li class="entry" [class.entry--mine]="e.mine" [class.entry--hostile]="e.hostile" [class.entry--world]="e.world">
           <span class="entry__year">{{ e.year }}</span>
           <span class="entry__text">{{ e.text }}</span>
         </li>

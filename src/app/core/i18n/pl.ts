@@ -1,3 +1,4 @@
+import { DILEMMAS_PL, WORLD_NOTES_PL } from './dilemmas.pl';
 import { Dict } from './i18n.types';
 
 export const PL: Dict = {
@@ -358,6 +359,26 @@ export const PL: Dict = {
   raidTextPoor: 'Banda {n} wojowników — {name} — wkroczyła na nasze pola, by porywać ludzi i rabować srebro. Ich wódz żąda {d} drachm — więcej, niż mamy. Musimy walczyć w imię Hellady: wszyscy Grecy nas za to uczczą.',
   raidBribe: 'Zapłać {d} dr',
   raidFight: 'Walcz za Helladę',
+  dilemmas: DILEMMAS_PL,
+  dilemmaPutAside: 'Odłożenie listu oznacza ostatnią odpowiedź.',
+  worldNotes: WORLD_NOTES_PL,
+  evDilemma: '{a}: {w}',
+  evWorld: '{w}',
+  fx: {
+    silver: '{v} dr',
+    colonize: '{v} dr na kolonizację',
+    prestige: '{v} prestiżu',
+    mood: '{v} zadowolenia',
+    culture: '{v} kultury',
+    militarism: '{v} militaryzmu',
+    regard: '{v} życzliwości każdego greckiego miasta',
+    hoplitesUp: '{v}% ludności chwyta za broń',
+    hoplitesDown: '{v}% garnizonu odchodzi',
+    people: '{v}% ludności',
+    prosperity: '{v}% dobrobytu',
+    none: 'Nic się nie zmienia',
+    cantAfford: 'Nie stać nas na to'
+  },
   traderNames: { aegina: 'Egina', siphnos: 'Sifnos', thera: 'Thera', keos: 'Keos' },
   traderNeutral: 'Neutralne miasto kupieckie: trzyma swoją wyspę, z nikim nie wojuje i żyje z handlu morskiego. Jego statki zawijają do każdego portu — miasto, które przyjmie taki statek, zatrzymuje połowę tego, co przywiózł.',
   hoverTrader: 'neutralne miasto kupieckie',

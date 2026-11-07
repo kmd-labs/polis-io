@@ -1,5 +1,6 @@
 import { Delegation, OlympicResults, holdGames, isOlympicYear, isTriumph, olympiadOf } from './olympics';
 import { Fortune, rollFortune } from './fortune';
+import { DILEMMAS, DILEMMA_BY_ID, DilemmaDef, DilemmaEffects, DilemmaId, WORLD_NOTES } from './data/dilemmas';
 import { GREAT_WORKS, GreatWorkId, NEUTRAL_PORTS, TRADERS, NeutralPortId, TRIBES } from './data/frontier';
 import { POLEIS, PolisDef, SITES, SiteId } from './data/poleis';
 import {
@@ -91,6 +92,9 @@ export const WILD = -1;
 const YEAR = 64;
 
 /** Tunable game balance. Times are in game seconds (1 game second = 1 real second at 1× speed). */
+/** The wider world's news in the order it happens. */
+const WORLD_NOTES_BY_YEAR = [...WORLD_NOTES].sort((a, b) => b.year - a.year);
+
 /** Lengths in cells scale with the grid (L), areas and cell counts with its square (A). */
 const L = GRID_SCALE;
 const A = L * L;
@@ -303,6 +307,17 @@ export const RULES = {
   defenceRatio: 1.3,
   /** Merchantmen value a neutral harbour this much more than a city's (exotic goods, no tolls)… */
   neutralPortBonus: 1.3,
+  /** Choices put before the player: years between them while the game is young, then ever fewer
+   * (until `years` years have passed, a gap of min–max years); one comes up at most this often again. */
+  dilemmaGaps: [
+    { years: 10, min: 0.8, max: 1.4 },
+    { years: 30, min: 1.5, max: 2.5 },
+    { years: 100, min: 2.5, max: 4 },
+    { years: Infinity, min: 4, max: 6 }
+  ] as readonly { years: number; min: number; max: number }[],
+  dilemmaRepeatYears: 30,
+  /** After this many years the player meets at most one chance event (a choice or a twist of fortune) a year. */
+  randomCapYears: 100,
   /** …and are drawn to one as much as to a city with no renown. */
   neutralPortPull: 1,
   /** Neutral merchant cities: the largest island one may hold (cells), their extra merchantmen, how much more
@@ -863,7 +878,9 @@ export type GameEventKind =
   | 'raidRepelled'
   | 'raidBribed'
   | 'raidStand'
-  | 'greatWork';
+  | 'greatWork'
+  | 'dilemma'
+  | 'world';
 
 export interface GameEvent {
   id: number;
@@ -891,6 +908,14 @@ export class Simulation {
   neutralPorts: NeutralPort[] = [];
   /** Warbands awaiting the player's answer (pay or fight). */
   private raidChoices: { band: number; tribe: number; cost: number }[] = [];
+  /** The player's choices: when the next comes, which came when (year BC), the one awaiting an answer. */
+  private nextDilemma = 0;
+  private dilemmaSeen = new Map<DilemmaId, number>();
+  private dilemmaQueue: { id: DilemmaId; year: number }[] = [];
+  pendingDilemma: DilemmaId | null = null;
+  /** Game year (counted from the start) of the player's last chance event, and the next world note due. */
+  private randomYear = -1;
+  private worldNote = 0;
   /** Per people beyond the frontier: its non-Greek cells touching Greek land (where warbands cross). */
   private tribeBorders = new Map<number, number[]>();
   seaFights: SeaFight[] = [];
@@ -1166,6 +1191,12 @@ export class Simulation {
     this.olympicInvites = [];
     this.olympicResults = [];
     this.raidChoices = [];
+    this.nextDilemma = 0.5 * RULES.secondsPerYear;
+    this.dilemmaSeen = new Map();
+    this.dilemmaQueue = [];
+    this.pendingDilemma = null;
+    this.randomYear = -1;
+    this.worldNote = 0;
     this.nextFortune = RULES.fortuneYears * RULES.secondsPerYear;
     this.fortunes = [];
     this.frontierOwners = new Set();
@@ -2142,8 +2173,18 @@ export class Simulation {
     this.olympicCalendar();
     if (this.time >= this.nextFortune) {
       this.nextFortune += RULES.fortuneYears * RULES.secondsPerYear;
-      for (const p of this.poleis) if (p.alive && !p.captured && !p.tribe) this.befall(p);
+      for (const p of this.poleis) {
+        if (!p.alive || p.captured || p.tribe) continue;
+        if (p.idx === this.player && !this.autoplay) {
+          // Late in the game the player meets at most one chance event a year.
+          if (!this.randomAllowed()) continue;
+          this.randomYear = this.gameYear;
+        }
+        this.befall(p);
+      }
     }
+    this.dilemmaTurn();
+    this.worldNotes();
 
     this.finishDevelopments();
     for (const p of this.poleis) p.farms = p.ports = p.besieged = 0;
@@ -3273,6 +3314,135 @@ export class Simulation {
       amount = Math.round(total > 0 ? this.plunder(p, Math.min(1, due / total)) : 0);
     }
     if (p.idx === this.player && !this.autoplay) this.fortunes.push({ ...roll, amount, year: this.year });
+  }
+
+  /** Whole years since the game began. */
+  get gameYear(): number {
+    return Math.floor(this.time / RULES.secondsPerYear);
+  }
+
+  /** Whether the player may meet another chance event this year (always, until late in the game). */
+  private randomAllowed(): boolean {
+    return this.gameYear < RULES.randomCapYears || this.randomYear !== this.gameYear;
+  }
+
+  /** The wider world's news, as its year comes. */
+  private worldNotes() {
+    if (this.status !== 'playing') return;
+    while (this.worldNote < WORLD_NOTES_BY_YEAR.length && this.year <= WORLD_NOTES_BY_YEAR[this.worldNote].year) {
+      this.emit('world', -1, -1, undefined, WORLD_NOTES_BY_YEAR[this.worldNote].id);
+      this.worldNote++;
+    }
+  }
+
+  /** Puts a choice before the player: a historical one in its year, otherwise now and then (often at first). */
+  private dilemmaTurn() {
+    if (this.player < 0 || this.autoplay || this.status !== 'playing' || this.pendingDilemma) return;
+    const p = this.poleis[this.player];
+    if (!p?.alive || !this.randomAllowed()) return;
+    const due = DILEMMAS.find(
+      d => d.year !== undefined && !this.dilemmaSeen.has(d.id) && this.year <= d.year && this.year >= d.year - 3 && this.dilemmaFits(p, d)
+    );
+    if (due) {
+      this.offerDilemma(due);
+      return;
+    }
+    if (this.time < this.nextDilemma) return;
+    const gap = RULES.dilemmaGaps.find(g => this.gameYear < g.years)!;
+    this.nextDilemma = this.time + (gap.min + this.rand() * (gap.max - gap.min)) * RULES.secondsPerYear;
+    const pool = DILEMMAS.filter(
+      d => d.year === undefined && this.dilemmaFits(p, d) && (this.dilemmaSeen.get(d.id) ?? Infinity) - this.year >= RULES.dilemmaRepeatYears
+    );
+    if (pool.length) this.offerDilemma(pool[Math.floor(this.rand() * pool.length)]);
+  }
+
+  private dilemmaFits(p: PolisState, d: DilemmaDef): boolean {
+    switch (d.need) {
+      case 'coastal':
+        return this.harbourOf(p) >= 0;
+      case 'war':
+        return p.wars.size > 0;
+      case 'peace':
+        return p.wars.size === 0;
+      case 'militant':
+        return p.militarism >= 2;
+      case 'warlike':
+        return p.militarism >= 4;
+      default:
+        return true;
+    }
+  }
+
+  private offerDilemma(d: DilemmaDef) {
+    this.pendingDilemma = d.id;
+    this.dilemmaSeen.set(d.id, this.year);
+    this.randomYear = this.gameYear;
+    this.dilemmaQueue.push({ id: d.id, year: this.year });
+  }
+
+  /** Choices that have just come up for the player. */
+  takeDilemmas(): { id: DilemmaId; year: number }[] {
+    const out = this.dilemmaQueue;
+    this.dilemmaQueue = [];
+    return out;
+  }
+
+  /** A month of the city's income (what silver in a choice is counted in). */
+  private monthIncome(p: PolisState): number {
+    return (Math.max(0, p.gross, p.inflow) * RULES.secondsPerYear) / 12;
+  }
+
+  /** The answers to a choice as the city stands now: drachmae gained (+) or paid (−), and whether it can pay. */
+  dilemmaChoices(
+    p: PolisState,
+    id: DilemmaId
+  ): { id: string; effects: DilemmaEffects; silver: number; colonize: number; affordable: boolean }[] {
+    const def = DILEMMA_BY_ID.get(id);
+    if (!def) return [];
+    const month = this.monthIncome(p);
+    const treasury = this.treasury(p);
+    return def.options.map(o => {
+      const silver = Math.round((o.effects.silver ?? 0) * month);
+      const colonize = Math.round((o.effects.colonize ?? 0) * month);
+      return { id: o.id, effects: o.effects, silver, colonize, affordable: silver >= 0 || treasury >= -silver };
+    });
+  }
+
+  /** The player answers the open choice (an answer the city cannot pay for falls back to the last one). */
+  answerDilemma(optionId: string) {
+    const id = this.pendingDilemma;
+    if (!id || this.player < 0) return;
+    this.pendingDilemma = null;
+    const p = this.poleis[this.player];
+    const choices = this.dilemmaChoices(p, id);
+    const choice = choices.find(c => c.id === optionId && c.affordable) ?? choices[choices.length - 1];
+    if (!choice) return;
+    this.applyDilemma(p, choice.effects);
+    this.emit('dilemma', p.idx, -1, undefined, `${id}.${choice.id}`);
+  }
+
+  private applyDilemma(p: PolisState, e: DilemmaEffects) {
+    const month = this.monthIncome(p);
+    if (e.silver) {
+      const amount = Math.round(Math.abs(e.silver) * month);
+      if (e.silver > 0) p.drachmae += amount;
+      else if (!this.spend(p, amount)) this.plunder(p, 1);
+    }
+    if (e.colonize) p.funds.colonization += Math.round(e.colonize * month);
+    if (e.prestige) p.prestige = Math.max(0, p.prestige + e.prestige);
+    if (e.mood) this.mood(p, e.mood);
+    if (e.culture) p.culture = Math.max(0, Math.min(5, p.culture + e.culture));
+    if (e.militarism) p.militarism = Math.max(0, Math.min(5, p.militarism + e.militarism));
+    if (e.regard) for (const q of this.poleis) if (q.alive && !q.tribe && q.idx !== p.idx) this.shiftRelation(p.idx, q.idx, e.regard);
+    if (e.hoplites && e.hoplites > 0) {
+      const men = Math.round(p.civilians * e.hoplites);
+      p.civilians -= men;
+      p.garrison += men;
+    } else if (e.hoplites) {
+      p.garrison = Math.round(p.garrison * (1 + e.hoplites));
+    }
+    if (e.people) p.civilians = Math.max(0, p.civilians * (1 + e.people));
+    if (e.prosperity) p.prosperity = Math.max(0.2, Math.min(RULES.maxProsperity, p.prosperity + e.prosperity));
   }
 
   takeFortunes(): Fortune[] {

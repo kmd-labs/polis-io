@@ -82,3 +82,9 @@
     width: min(240px, calc(100vw - 16px));
   }
 }
+
+// The wider world's news: in italics, like a marginal note.
+.entry--world .entry__text {
+  font-style: italic;
+  color: color("text-dim");
+}
