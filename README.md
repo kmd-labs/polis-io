@@ -3,9 +3,11 @@
 A pixel real-time strategy game set in Archaic Greece, 600 BC, built on the
 [KMD design system](https://github.com/kmd-labs/design-system) (Angular 21, standalone components, signals).
 
-The map is a 639×628 raster of ~1.25 km pixels: coastlines and borders from Natural Earth, elevation and
-sea depth from AWS Terrain Tiles. Every one of the 84,000 Greek land pixels belongs to one of 18 poleis or is
-still wild; land outside modern Greece is shown but never playable. The map is drawn as a stylised relief —
+The map is a 1278×1257 raster of ~0.63 km pixels: coastlines and borders from Natural Earth, elevation and
+sea depth from AWS Terrain Tiles. Every one of the 336,000 Greek land pixels belongs to one of 18 poleis (or a
+neutral merchant city) or is still wild; land outside modern Greece is shown but never playable. Rules that measure land in pixels (reaches, speeds,
+ranges, enclave sizes, settlers per pixel) are scaled by `GRID_SCALE` in `world.ts`, so the game plays the same at any
+map resolution. The map is drawn as a stylised relief —
 terraced contour tints with warm light and cool shade, an inked coastline, stepped sea depths with isobaths,
 twinkling waves and drifting cloud shadows — and has three views: political, terrain relief and soil fertility.
 
@@ -82,6 +84,23 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   regard; a triumph (two-fifths of the wreaths, at least five) adds +1 culture.
 - **Twists of fortune** every two years: a windfall for one budget branch (one to three months of income) or a
   misfortune (fire, plague, drought, pirates, earthquake, embezzlement) costing up to three months of full income.
+- **Choices** in the manner of a grand-strategy event: a scene painted like a black-figure vase, the story and two or
+  three answers listing their consequences (silver in months of income, prestige, contentment, culture, militarism,
+  every city's regard, people, hoplites, prosperity). Fourteen come in their historical year — Solon's cancelling of
+  debts (594 BC), the Sacred War on Kirrha, Thales' eclipse (585), the Pythian Games, Peisistratos' bodyguard, the gold
+  of Croesus, the fall of Sardis (546), Pythagoras, Polycrates, Cleisthenes, the Ionian revolt, Darius' heralds and
+  Xerxes (481) — and fifteen others at any time (the Pythia's riddles, drought, fever, blood feuds, poets, silver veins,
+  coinage, suppliants, omens, ransom, Olympic victors, stone temples, pirates, the phalanx, restless serfs). They come
+  about once a year at first and ever more rarely later.
+- **Letters that stop the game** are kept to at most ten a year (threats and choices always come through). After a
+  century the player meets at most one chance event a year (a choice or a twist of fortune), and finished buildings no
+  longer stop the game.
+- **The wider world** reaches the chronicle in its year: Massalia, Solon, the Pythian, Isthmian and Nemean Games,
+  Naucratis, Peisistratos, Croesus and Cyrus, Alalia, Polycrates, Pythagoras at Croton, Cleisthenes, the Ionian revolt,
+  Marathon, Thermopylae and Salamis, Plataea.
+- **Grand-strategy HUD**: vellum panels in carved bronze frames with gilt rules and corners, the city's arms in a gilt
+  medallion, the treasury and figures in a ledger of bronze roundels, the date in a bronze cartouche, carved tiles for
+  the tabs and map modes, and events on bronze banners.
   They wait in the alerts row.
 - **Peoples beyond the frontier**: Illyrians (north-west, beyond Epirus), Paeonians (Axios valley) and Thracians
   (Edoni and Bisaltae, between the Axios and the Strymon) sit on the non-Greek land around Hellas and cannot be
@@ -93,8 +112,12 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Great works** for spare silver (Polis tab): money no fund can spend goes to the chosen work instead of the other
   funds — a treasury at Delphi (repeatable), a great temple, city walls or a water tunnel.
 - **Small islands and neutral harbours**: islets missing from the coastline data are added (Delos, Rheneia, Donousa…);
-  fifteen small unclaimed islands carry neutral harbours (Delos, Syros, Thera, Aegina, Ithaca…) that belong to no one,
+  twelve small unclaimed islands carry neutral harbours (Delos, Syros, Ios, Ithaca…) that belong to no one,
   cannot be settled or taken, and pay merchantmen 30% more.
+- **Neutral merchant cities**: Aegina, Siphnos, Thera and Keos each hold their whole small island, go to war with no
+  one (nor do barbarians raid them), found no colonies and stand outside the hegemony and victory reckoning. They spend
+  mostly on their harbours, keep three extra merchantmen at sea, sail twice as often and draw other cities' ships twice
+  as strongly; a city their ship calls at keeps half of what it brings (30% for an ordinary city's ship).
 - **Mountains**: no land above 1500 m can be taken, settled, laid waste or handed over.
 - **Colonies**: settlers' expeditions only claim wilderness along the city's own borders; a colony is always one new
   city on a historical site, founded at most once in 40 years (down to 16 with a large colonization share).

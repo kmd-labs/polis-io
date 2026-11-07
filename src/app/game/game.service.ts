@@ -29,6 +29,7 @@ import { Annals, AnnalsYear } from './annals';
 import { DecadeReport, decadeReport } from './decade';
 import { olympiadOf } from './olympics';
 import { Fortune } from './fortune';
+import { DilemmaChoice, DilemmaId } from './data/dilemmas';
 import { GREAT_WORKS, GreatWorkId } from './data/frontier';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
@@ -89,6 +90,8 @@ export interface PolisView {
   expeditionOffer: { settlers: number; cost: number } | null;
   /** A people beyond the frontier rather than a city. */
   tribe: boolean;
+  /** A neutral merchant city on its island (never at war). */
+  trader: boolean;
   /** Player only: the great work receiving spare silver, saved so far, and cost / completions / availability of each. */
   greatWork: GreatWorkId | null;
   greatFund: number;
@@ -151,6 +154,7 @@ export type Notice =
   | { kind: 'built'; what: 'improvement' | 'farm' | 'port'; id: ImprovementId | null }
   | { kind: 'greatWork'; id: GreatWorkId }
   | { kind: 'raidChoice'; band: number; tribe: number; men: number; cost: number; treasury: number }
+  | { kind: 'dilemma'; id: DilemmaId; year: number; choices: DilemmaChoice[] }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
 /** Clock multipliers behind the five speed keys (1–5). */
@@ -202,6 +206,11 @@ const UI_REFRESH_MS = 200;
  * Loads the map, drives the simulation clock outside Angular's zone and publishes signal snapshots
  * for the HUD. The canvas renderer reads `sim` directly every animation frame.
  */
+/** At most this many letters a year stop the game. */
+const NOTICES_PER_YEAR = 10;
+/** Threats and choices that always come through (they still count towards the year's letters). */
+const ESSENTIAL_NOTICES = new Set<Notice['kind']>(['war', 'conquest', 'raidChoice', 'dilemma', 'olympicsInvite', 'alliance']);
+
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly zone = inject(NgZone);
@@ -264,6 +273,9 @@ export class GameService {
   private reportId = 0;
   private pausedBeforeNotice = false;
   private readonly queue: Notice[] = [];
+  /** Year of the letters counted so far, and how many have stopped the game in it. */
+  private noticeYear = 0;
+  private noticesThisYear = 0;
 
   constructor() {
     void this.load();
@@ -349,13 +361,13 @@ export class GameService {
       const rows = this.history.recent(11).map(r => r[me]).filter(s => s?.alive);
       if (rows.length === 11) {
         const report = decadeReport(rows, this.annals.tenYearsAgo?.places[me] ?? null, now.places[me] ?? null);
-        this.enqueue([{ kind: 'decade', report }]);
+        this.enqueue(this.admit([{ kind: 'decade', report }]));
       }
     }
     // A new Hegemon of Hellas stops the game — but not in the first decade, while the rankings settle.
     if (year.announce) {
       sim.note('hegemon', year.announce.hegemon, year.announce.previous);
-      if (this.history.length > HEGEMONY_RULES.financeYears) this.enqueue([{ kind: 'hegemon', ...year.announce }]);
+      if (this.history.length > HEGEMONY_RULES.financeYears) this.enqueue(this.admit([{ kind: 'hegemon', ...year.announce }]));
     }
   }
 
@@ -662,6 +674,7 @@ export class GameService {
         colonyBlocked: p.idx === sim.player && this.colonyBlocked(p),
         colonyIn: Math.max(0, p.nextColonyAt - sim.time),
         tribe: p.tribe,
+        trader: p.trader,
         greatWork: p.greatWork,
         greatFund: p.greatFund,
         greatWorks:
@@ -773,6 +786,8 @@ export class GameService {
       incoming.push({ kind: 'olympicsInvite', year, olympiad: olympiadOf(year), annualIncome: sim.annualIncome(me), treasury: sim.treasury(me) });
     }
     for (const report of games) incoming.push({ kind: 'olympics', report });
+    // A choice put before the city.
+    for (const d of sim.takeDilemmas()) incoming.push({ kind: 'dilemma', id: d.id, year: d.year, choices: sim.dilemmaChoices(me, d.id) });
     // A warband on our land: pay it off or fight it.
     for (const c of sim.takeRaidChoices()) {
       const band = sim.armies.find(a => a.id === c.band);
@@ -783,7 +798,7 @@ export class GameService {
     for (const { owner, plan } of sim.takePlans()) {
       if (owner === sim.player) filed.push({ kind: 'develop', work: plan.kind, months: plan.months, site: plan.site });
     }
-    this.enqueue(incoming);
+    this.enqueue(this.admit(incoming));
     // Unanswered envoys go home after two years: the offer is taken as declined.
     const waiting = this.embassies();
     const gone = waiting.filter(x => sim.time - x.time >= EMBASSY_TTL);
@@ -794,6 +809,34 @@ export class GameService {
     const live = this.reports().filter(r => sim.time - r.time < REPORT_TTL);
     const added = filed.map(notice => ({ id: ++this.reportId, notice, year: sim.year, time: sim.time }));
     if (added.length || live.length !== this.reports().length) this.reports.set([...live, ...added].slice(-REPORTS_MAX));
+  }
+
+  /**
+   * Keeps the letters that stop the game to a bearable number: at most NOTICES_PER_YEAR a year, threats and
+   * choices first (they always come through); news beyond that waits in the chronicle. Late in the game
+   * (after RULES.randomCapYears) finished buildings no longer stop the game at all.
+   */
+  private admit(incoming: Notice[]): Notice[] {
+    const year = this.sim.year;
+    if (this.noticeYear !== year) {
+      this.noticeYear = year;
+      this.noticesThisYear = 0;
+    }
+    const late = this.sim.gameYear >= RULES.randomCapYears;
+    const out: Notice[] = [];
+    for (const n of incoming) {
+      const essential = ESSENTIAL_NOTICES.has(n.kind);
+      if (!essential && (this.noticesThisYear >= NOTICES_PER_YEAR || (late && n.kind === 'built'))) continue;
+      this.noticesThisYear++;
+      out.push(n);
+    }
+    return out;
+  }
+
+  /** The player's answer to the open choice. */
+  answerDilemma(option: string) {
+    this.sim.answerDilemma(option);
+    this.publish();
   }
 
   /** Shows the first notice (pausing the game) and queues the rest. */

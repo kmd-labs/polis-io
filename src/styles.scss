@@ -2,6 +2,7 @@
 @use "variables" as *;
 @use "base";
 @use "app/theme/greek" as greek;
+@use "app/theme/strategy" as strategy;
 
 // ─── Classical theme: warm parchment and marble surfaces, terracotta rules ──────
 // Overrides the design-system surface tokens so every KMD component follows suit.
@@ -18,13 +19,10 @@
   --color-btn-hover: #{rgba(palette("warning-900"), 0.1)};
 }
 
-// Double rule inside every frosted panel, like the border of a painted vase.
+// Every panel is vellum in a carved bronze frame with a gilt rule and gilt corners.
 .glass-panel,
 .glass-panel--heavy {
-  box-shadow:
-    inset 0 0 0 3px var(--color-panel-bg-solid),
-    inset 0 0 0 4px #{rgba(palette("warning-700"), 0.2)},
-    0 10px 32px var(--color-shadow-panel);
+  @include strategy.frame();
 }
 
 // Meander frieze along the top of the city card and the framed chronicle.
@@ -56,29 +54,47 @@ app-diplomacy-panel .glass-panel,
 
 // ─── Message boxes (design-system popup) ───────────────────────────────────
 body .popup-dialog {
-  border: 1px solid #{rgba(palette("warning-800"), 0.35)};
-  box-shadow:
-    inset 0 0 0 4px var(--color-panel-bg-solid),
-    inset 0 0 0 5px #{rgba(palette("warning-700"), 0.35)},
-    0 24px 64px #{rgba(palette("neutral-900"), 0.28)};
+  border: 2px solid #{palette("warning-900")};
+  border-radius: 3px;
 
+  // The title on a bronze banner with gilt lettering, as on a grand-strategy event.
   .popup-dialog__header {
     position: relative;
+    align-items: center;
+    margin: 5px 5px 0;
+    padding: 10px 14px 10px 18px;
     border-bottom: none;
-    padding-bottom: 22px;
+    @include strategy.cartouche;
 
     &::after {
-      @include greek.frieze(bottom, 6px, 20px, 9px, 0.6);
+      @include greek.frieze(bottom, -14px, 20px, 9px, 0.6);
     }
   }
 
   .popup-dialog__title {
-    @include greek.display-type(0.06em);
-    color: #{palette("warning-900")};
+    @include greek.display-type(0.08em);
+    font-size: font-size("md");
+    color: #{palette("warning-100")};
+    text-shadow: 0 1px 0 #{rgba(palette("neutral-900"), 0.6)};
   }
 
   .popup-dialog__subtitle {
     font-style: italic;
+    color: #{palette("warning-200")};
+  }
+
+  .popup-dialog__header .btn {
+    color: #{palette("warning-100")};
+    background: transparent;
+    border-color: transparent;
+
+    &:hover {
+      background: #{rgba(palette("warning-100"), 0.15)};
+    }
+  }
+
+  .popup-dialog__body {
+    padding-top: 22px;
   }
 
   .popup-dialog__footer {
@@ -108,4 +124,27 @@ body .popup-dialog {
 
 body .popup-backdrop {
   background: #{rgba(color.mix(palette("warning-900"), palette("neutral-900"), 40%), 0.4)};
+}
+
+// ─── Grand-strategy controls ───────────────────────────────────────────────
+// Buttons are carved tiles rather than pills.
+app-button .btn.btn {
+  border-radius: 2px;
+  border-color: #{rgba(palette("warning-900"), 0.4)};
+  background: linear-gradient(180deg, #{strategy.$vellum} 0%, #{strategy.$vellum-deep} 100%);
+  box-shadow: inset 0 1px 0 #{rgba(palette("neutral-0"), 0.8)};
+
+  &:hover:not(:disabled) {
+    border-color: #{palette("warning-900")};
+  }
+}
+
+// Tooltips are slips of vellum with a bronze edge.
+body .ui-tooltip.ui-tooltip,
+app-tooltip .ui-tooltip.ui-tooltip {
+  border: 1px solid #{palette("warning-900")};
+  border-radius: 2px;
+  box-shadow:
+    inset 0 0 0 1px #{rgba(palette("warning-500"), 0.6)},
+    0 4px 14px #{rgba(palette("neutral-900"), 0.25)};
 }

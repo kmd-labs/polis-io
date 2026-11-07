@@ -22,9 +22,11 @@ describe('GameHistory', () => {
     const sim = new Simulation(world, { seed: 3, autoplay: true });
     sim.choose(0);
     const history = new GameHistory();
+    let recorded = 0;
     for (let year = 0; year < 300; year++) {
       history.record(sim);
       history.record(sim); // twice in the same year is ignored
+      recorded = sim.poleis.length;
       // Play a little of every year and skip the rest: the test is about what the history keeps.
       sim.step(1);
       sim.time += RULES.secondsPerYear - 1;
@@ -38,7 +40,8 @@ describe('GameHistory', () => {
     // A full three centuries, unless the game itself ended first.
     expect(history.length).toBeGreaterThan(sim.status === 'playing' ? 250 : 50);
     const now = history.snapshotsAt(history.years.at(-1)!);
-    expect(now.length).toBe(sim.poleis.length);
+    // Every polis there was when the year was recorded (a colony may be founded after the last record).
+    expect(now.length).toBe(recorded);
     expect(history.series(0, 'population').length).toBeGreaterThan(0);
     expect(history.bytes).toBeLessThan(5 * 1024 * 1024);
     console.info(`history: ${history.length} years (status ${sim.status}), ${sim.poleis.length} poleis, ${(history.bytes / 1024).toFixed(0)} KB`);

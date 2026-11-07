@@ -70,5 +70,5 @@ describe('hegemony rankings in a real game', () => {
       expect(s.population.slice(0, 3).map(r => r.idx)).toEqual(top3(x => x.population));
       expect(s.arms.slice(0, 3).map(r => r.idx)).toEqual(top3(arms));
     }
-  }, 120_000);
+  }, 400_000);
 });

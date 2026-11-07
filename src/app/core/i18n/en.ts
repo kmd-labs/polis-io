@@ -1,3 +1,4 @@
+import { DILEMMAS_EN, WORLD_NOTES_EN } from './dilemmas.en';
 import { Dict } from './i18n.types';
 
 export const EN: Dict = {
@@ -37,8 +38,12 @@ export const EN: Dict = {
       desc: 'Illyrians in the north-west, Paeonians on the Axios and Thracians between the Axios and the Strymon live beyond the Greek border and cannot be conquered. Every few years one of them sends a warband against a rich, poorly guarded city within reach: warbands of 400 to 2,000 men carry off people and silver and sour the citizens’ mood, then go home. A city they enter chooses: pay them six months of its income to plunder someone else, or fight them in the name of Hellas — power projection and every Greek city’s regard at once, more renown if they are driven off — and send out defenders. A warband that loses half its men turns back. The Olympic truce means nothing to them. Walls halve what they carry off.'
     },
     {
+      term: 'Choices and the wider world',
+      desc: 'Now and then the city must choose: a letter with a painted scene, the story and two or three answers, each listing what it will cost and bring. Some come in their historical year — Solon’s laws, the Sacred War, Thales’ eclipse, the gold of Croesus, the fall of Sardis, the Persian Wars — others at any time. They come often while the game is young and ever more rarely later; putting a letter aside takes its last answer. At most ten letters a year stop the game, and after a century at most one chance event a year. The chronicle notes what happens in the wider world in its year.'
+    },
+    {
       term: 'Great works and neutral harbours',
-      desc: 'Silver no fund can spend can raise a great work (Polis tab): a treasury at Delphi, a great temple, city walls or a water tunnel. Small islands with neutral harbours (Delos, Syros, Thera, Aegina…) belong to no one and cannot be taken; merchantmen sell there at a premium. No land above 1500 metres can be taken, settled or laid waste.'
+      desc: 'Silver no fund can spend can raise a great work (Polis tab): a treasury at Delphi, a great temple, city walls or a water tunnel. Small islands with neutral harbours (Delos, Syros, Ios…) belong to no one and cannot be taken; merchantmen sell there at a premium. Four neutral merchant cities — Aegina, Siphnos, Thera and Keos — hold their islands and go to war with no one: their many ships call at every harbour, and a city receiving one keeps half of what it brings. No land above 1500 metres can be taken, settled or laid waste.'
     },
     {
       term: 'Twists of fortune',
@@ -339,10 +344,7 @@ export const EN: Dict = {
     delos: 'Delos',
     syros: 'Syros',
     seriphos: 'Seriphos',
-    siphnos: 'Siphnos',
-    thera: 'Thera',
     ios: 'Ios',
-    aegina: 'Aegina',
     skiathos: 'Skiathos',
     peparethos: 'Peparethos',
     psara: 'Psara',
@@ -361,6 +363,29 @@ export const EN: Dict = {
   raidTextPoor: 'A warband of {n} {name} has crossed into our fields to carry off our people and our silver. Their chief asks {d} drachmae — more than we have. We must fight them in the name of Hellas: all Greeks will honour us for it.',
   raidBribe: 'Pay {d} dr',
   raidFight: 'Fight for Hellas',
+  dilemmas: DILEMMAS_EN,
+  dilemmaPutAside: 'Putting the letter aside takes the last answer.',
+  worldNotes: WORLD_NOTES_EN,
+  evDilemma: '{a}: {w}',
+  evWorld: '{w}',
+  fx: {
+    silver: '{v} dr',
+    colonize: '{v} dr for colonization',
+    prestige: '{v} prestige',
+    mood: '{v} contentment',
+    culture: '{v} culture',
+    militarism: '{v} militarism',
+    regard: '{v} regard of every Greek city',
+    hoplitesUp: '{v}% of the people take up arms',
+    hoplitesDown: '{v}% of the garrison sent away',
+    people: '{v}% population',
+    prosperity: '{v}% prosperity',
+    none: 'Nothing changes',
+    cantAfford: 'We cannot afford it'
+  },
+  traderNames: { aegina: 'Aegina', siphnos: 'Siphnos', thera: 'Thera', keos: 'Keos' },
+  traderNeutral: 'A neutral merchant city: it holds its island, goes to war with no one and lives by the sea trade. Its ships call at every harbour — the city receiving one keeps half of what it brings.',
+  hoverTrader: 'neutral merchant city',
   buyMercenaries: 'Hire {n} mercenaries now · {d} dr',
   buyMercenariesIdle: 'Hire mercenaries now',
   buyMercenariesHint: 'Paid at once out of all our savings, at twice the price the military fund pays (and never less than three months of income). They march out today and serve until the peace.',

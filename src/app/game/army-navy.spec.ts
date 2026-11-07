@@ -215,7 +215,7 @@ describe('enclaves', () => {
     throw new Error('no room');
   }
 
-  it('a patch under 20 cells touching an enemy falls to it after two years', () => {
+  it('a patch under enclaveSize cells touching an enemy falls to it after two years', () => {
     const sim = game();
     const athens = byId(sim, 'athens');
     const thebes = byId(sim, 'thebes');
@@ -231,11 +231,11 @@ describe('enclaves', () => {
     expect(block.every(c => sim.owner[c] === athens.idx)).toBe(true);
   }, 30_000);
 
-  it('a patch of 20 cells or more stays put, and so does any patch in peacetime', () => {
+  it('a patch of enclaveSize cells or more stays put, and so does any patch in peacetime', () => {
     const sim = game();
     const athens = byId(sim, 'athens');
     const thebes = byId(sim, 'thebes');
-    const big = plant(sim, athens.idx, thebes.idx, 5);
+    const big = plant(sim, athens.idx, thebes.idx, Math.ceil(Math.sqrt(RULES.enclaveSize)));
     sim.declareWar(athens.idx, thebes.idx);
     (sim as any).tidyBorders();
     sim.time += 3 * RULES.secondsPerYear;
@@ -246,7 +246,7 @@ describe('enclaves', () => {
     (sim as any).tidyBorders();
     sim.time += 3 * RULES.secondsPerYear;
     (sim as any).tidyBorders();
-    // Not an enclave in peacetime; four cells or fewer wedged against another city revert to the wild instead.
+    // Not an enclave in peacetime; a stray pocket wedged against another city reverts to the wild instead.
     expect(small.every(c => sim.owner[c] !== athens.idx)).toBe(true);
   }, 30_000);
 });

@@ -27,7 +27,7 @@ export class DiplomacyListComponent {
     const order: Record<Standing, number> = { war: 0, ally: 1, vassal: 2, client: 2, peace: 3 };
     return this.game
       .poleis()
-      .filter(p => p.alive && !p.tribe && p.idx !== me.idx)
+      .filter(p => p.alive && !p.tribe && !p.trader && p.idx !== me.idx)
       .map(p => {
         const standing: Standing = me.wars.includes(p.idx)
           ? 'war'

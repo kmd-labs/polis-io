@@ -3,7 +3,7 @@ import { drawFightCloud, FightCloudStyle } from './fight-cloud';
 import { hash01, mulberry32 } from './rng';
 import { SpriteAtlas, SpritePalette } from './sprites';
 import { RULES, Simulation } from './simulation';
-import { Terrain } from './world';
+import { GRID_SCALE, Terrain } from './world';
 
 /** Screen transform: screenX = ox + mapX * scale. */
 export interface Camera {
@@ -134,7 +134,7 @@ export class MapRenderer {
     // A handful of slow cumulus shadows drifting east with the meltemi.
     const rnd = mulberry32(99);
     this.clouds = Array.from({ length: 8 }, () => {
-      const r = 22 + rnd() * 40;
+      const r = (22 + rnd() * 40) * GRID_SCALE;
       return {
         x: rnd() * cols,
         y: rnd() * rows,
@@ -264,10 +264,10 @@ export class MapRenderer {
         if (nbrs.some(n => isSea(n) && seaBand(n) !== band)) col = mix(col, c['primary-400'], 0.14);
         // Land lit from the north-west throws a short shadow south-east over the water.
         let shadow = 0;
-        for (let k = 1; k <= 4; k++) {
+        for (let k = 1; k <= 4 * GRID_SCALE; k++) {
           const sx = x - k;
           const sy = y - k;
-          if (sx >= 0 && sy >= 0 && !isSea(sy * cols + sx)) shadow = Math.max(shadow, 0.22 - k * 0.045);
+          if (sx >= 0 && sy >= 0 && !isSea(sy * cols + sx)) shadow = Math.max(shadow, 0.22 - (k / GRID_SCALE) * 0.045);
         }
         col = mix(col, cool, shadow);
         col = mix(col, [col[0] * s, col[1] * s, col[2] * s], 0.4);
@@ -473,13 +473,13 @@ export class MapRenderer {
     const [cr, cg, cb] = this.rgb['neutral-0'];
     const layers: [number, number, string, number][] = [
       [0, 0, `${sr}, ${sg}, ${sb}`, 0.06],
-      [-7, -9, `${cr}, ${cg}, ${cb}`, 0.28]
+      [-7 * GRID_SCALE, -9 * GRID_SCALE, `${cr}, ${cg}, ${cb}`, 0.28]
     ];
     ctx.save();
     for (const [lx, ly, rgb, alpha] of layers) {
       for (const cloud of this.clouds) {
-        const span = cols + 160;
-        const cx = ((((cloud.x + t * 1.3) % span) + span) % span) - 80;
+        const span = cols + 160 * GRID_SCALE;
+        const cx = ((((cloud.x + t * 1.3 * GRID_SCALE) % span) + span) % span) - 80 * GRID_SCALE;
         for (const [dx, dy, pr] of cloud.puffs) {
           const x = cam.ox + (cx + dx + lx) * cam.scale;
           const y = cam.oy + (cloud.y + dy + ly) * cam.scale;
@@ -518,7 +518,7 @@ export class MapRenderer {
   /** Little merchantmen: wooden hull, a sail in the owner's colour and a white wake. */
   private drawShips(ctx: CanvasRenderingContext2D, cam: Camera, now: number, width: number, height: number) {
     const sim = this.sim;
-    const l = Math.max(8, Math.min(16, cam.scale * 3.2));
+    const l = Math.max(8, Math.min(16, cam.scale * GRID_SCALE * 3.2));
     ctx.save();
     ctx.lineCap = 'round';
     for (const ship of sim.ships) {
@@ -575,7 +575,7 @@ export class MapRenderer {
       const x = cam.ox + p.cx * cam.scale;
       const y = cam.oy + p.cy * cam.scale;
       if (x < -80 || y < -40 || x > width + 80 || y > height + 40) continue;
-      const s = Math.max(6, Math.min(12, cam.scale * 2.2));
+      const s = Math.max(6, Math.min(12, cam.scale * GRID_SCALE * 2.2));
       ctx.fillStyle = this.colorOf(p.idx);
       ctx.strokeStyle = this.css['neutral-0'];
       ctx.lineWidth = 1;
@@ -601,7 +601,7 @@ export class MapRenderer {
       ctx.fillText(label, x, y + s * 0.7 + 8.5);
     }
     // Neutral harbours: an anchor in a ring, named once the map is zoomed in a little.
-    const r = Math.max(4, Math.min(8, cam.scale * 1.6));
+    const r = Math.max(4, Math.min(8, cam.scale * GRID_SCALE * 1.6));
     sim.neutralPorts.forEach((port, i) => {
       const x = cam.ox + ((port.cell % w.cols) + 0.5) * cam.scale;
       const y = cam.oy + (Math.floor(port.cell / w.cols) + 0.5) * cam.scale;
@@ -623,7 +623,7 @@ export class MapRenderer {
       ctx.moveTo(x - r * 0.5, y + r * 0.15);
       ctx.quadraticCurveTo(x, y + r * 0.85, x + r * 0.5, y + r * 0.15);
       ctx.stroke();
-      if (cam.scale >= 2.2 && opt.portNames?.[i]) {
+      if (cam.scale * GRID_SCALE >= 2.2 && opt.portNames?.[i]) {
         ctx.font = `600 10px ${this.display}`;
         ctx.fillStyle = this.css['text-main'];
         ctx.fillText(opt.portNames[i], x, y + r + 8);
@@ -635,7 +635,7 @@ export class MapRenderer {
   /** War galleys: a long dark hull with a ram, a bank of oars and the owner's sail, and the galley count above. */
   private drawFleets(ctx: CanvasRenderingContext2D, cam: Camera, now: number, width: number, height: number) {
     const sim = this.sim;
-    const l = Math.max(11, Math.min(22, cam.scale * 4.2));
+    const l = Math.max(11, Math.min(22, cam.scale * GRID_SCALE * 4.2));
     ctx.save();
     ctx.lineCap = 'round';
     for (const f of sim.fleets) {
@@ -708,7 +708,7 @@ export class MapRenderer {
   private drawBlockades(ctx: CanvasRenderingContext2D, cam: Camera, now: number) {
     const sim = this.sim;
     const w = sim.world;
-    const r = Math.max(10, cam.scale * 5);
+    const r = Math.max(10, cam.scale * GRID_SCALE * 5);
     ctx.save();
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 4]);
@@ -843,7 +843,7 @@ export class MapRenderer {
     ctx.translate(cam.ox, cam.oy);
     ctx.scale(cam.scale, cam.scale);
     ctx.strokeStyle = this.css['accent'];
-    ctx.lineWidth = Math.max(1.25, Math.min(3, cam.scale * 0.35)) / cam.scale;
+    ctx.lineWidth = Math.max(1.25, Math.min(3, cam.scale * GRID_SCALE * 0.35)) / cam.scale;
     ctx.lineCap = 'square';
     ctx.stroke(this.outline);
     ctx.restore();
@@ -860,7 +860,7 @@ export class MapRenderer {
       ctx.globalAlpha = (1 - age) * 0.85;
       const x = c.cell % cols;
       const y = Math.floor(c.cell / cols);
-      const grow = (1 - age) * Math.max(1.5, cam.scale * 0.6);
+      const grow = (1 - age) * Math.max(1.5, cam.scale * GRID_SCALE * 0.6);
       ctx.fillRect(cam.ox + x * cam.scale - grow / 2, cam.oy + y * cam.scale - grow / 2, cam.scale + grow, cam.scale + grow);
     }
     ctx.restore();
@@ -883,8 +883,8 @@ export class MapRenderer {
 
   /** Whole-number sprite pixel size: one screen pixel on the overview, chunkier as you zoom in. */
   private pixelSize(cam: Camera, factor: number): number {
-    if (cam.scale < 1.6) return 1;
-    return Math.max(2, Math.min(4, Math.round(cam.scale * factor)));
+    if (cam.scale * GRID_SCALE < 1.6) return 1;
+    return Math.max(2, Math.min(4, Math.round(cam.scale * GRID_SCALE * factor)));
   }
 
   /** Farms as a barn by a striped field, ports as an anchor plaque — both pixel art. */
@@ -1082,7 +1082,7 @@ export class MapRenderer {
   private drawArmies(ctx: CanvasRenderingContext2D, cam: Camera, now: number, opt?: RenderOptions) {
     const sim = this.sim;
     const me = sim.poleis[sim.player];
-    const base = Math.max(5, Math.min(16, cam.scale * 2.6));
+    const base = Math.max(5, Math.min(16, cam.scale * GRID_SCALE * 2.6));
     ctx.save();
     for (const a of sim.armies) {
       if (a.battle || a.dead) continue;
@@ -1177,7 +1177,7 @@ export class MapRenderer {
       }
 
       const involvesMe = isMe || (!!me && me.wars.has(a.owner));
-      if (cam.scale >= 1.6 || involvesMe) {
+      if (cam.scale * GRID_SCALE >= 1.6 || involvesMe) {
         const text = String(Math.round(a.strength));
         ctx.font = `600 10px ${this.mono}`;
         const w = ctx.measureText(text).width + 8;
@@ -1208,7 +1208,7 @@ export class MapRenderer {
   }
 
   private drawBattles(ctx: CanvasRenderingContext2D, cam: Camera) {
-    const r = Math.max(16, Math.min(36, cam.scale * 7));
+    const r = Math.max(16, Math.min(36, cam.scale * GRID_SCALE * 7));
     for (const b of this.sim.battles) {
       const style: FightCloudStyle = {
         font: this.font,

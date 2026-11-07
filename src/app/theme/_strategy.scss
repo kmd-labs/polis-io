@@ -1,0 +1,112 @@
+// Grand-strategy furniture for the Polis HUD: vellum panels in carved bronze frames with a gilt rule
+// and gilt corner pieces, carved tiles for buttons, and gilt rules under titles.
+@use "sass:color";
+@use "sass:string";
+@use "variables" as *;
+
+$bronze: palette("warning-900");
+$bronze-mid: palette("warning-800");
+$gold: palette("warning-500");
+$gold-light: palette("warning-300");
+$vellum: color.mix(palette("warning-50"), palette("neutral-0"), 70%);
+$vellum-deep: color.mix(palette("warning-100"), palette("warning-50"), 45%);
+$ink: palette("neutral-900");
+
+@function -enc($color) {
+  @return "%23" + string.slice("#{$color}", 2);
+}
+
+/** A gilt corner piece (an L bracket ending in a small lozenge), turned to fit the given corner. */
+@function corner($angle) {
+  @return url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cg transform='rotate(#{$angle} 8 8)'%3E%3Cpath d='M1.5 14V4.5a3 3 0 0 1 3-3H14' fill='none' stroke='#{-enc($gold)}' stroke-width='1.6'/%3E%3Cpath d='M1.5 9.5V5.5a1 1 0 0 1 1-1' fill='none' stroke='#{-enc($bronze)}' stroke-width='0.8' opacity='0.6'/%3E%3Cpath d='M6 3.4l1.6 1.6L6 6.6 4.4 5z' fill='#{-enc($gold)}'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/** A vellum panel in a bronze frame with a gilt inner rule and gilt corners. */
+@mixin frame($corners: true, $radius: 3px) {
+  background-color: $vellum;
+  @if $corners {
+    background-image:
+      corner(0),
+      corner(90),
+      corner(270),
+      corner(180),
+      radial-gradient(ellipse at 25% 0%, rgba(palette("neutral-0"), 0.55), transparent 60%),
+      linear-gradient(180deg, $vellum 0%, $vellum-deep 100%);
+    background-repeat: no-repeat;
+    background-position:
+      3px 3px,
+      calc(100% - 3px) 3px,
+      3px calc(100% - 3px),
+      calc(100% - 3px) calc(100% - 3px),
+      0 0,
+      0 0;
+    background-size:
+      16px 16px,
+      16px 16px,
+      16px 16px,
+      16px 16px,
+      100% 100%,
+      100% 100%;
+  } @else {
+    background-image: linear-gradient(180deg, $vellum 0%, $vellum-deep 100%);
+  }
+  border: 1px solid $bronze;
+  border-radius: $radius;
+  box-shadow:
+    inset 0 0 0 1px rgba(palette("neutral-0"), 0.75),
+    inset 0 0 0 2px rgba($gold, 0.85),
+    inset 0 0 0 3px rgba(palette("neutral-0"), 0.45),
+    inset 0 0 26px rgba($bronze, 0.1),
+    0 1px 0 rgba($bronze, 0.35),
+    0 8px 22px rgba($ink, 0.26);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/** A carved tile (rail and map-mode buttons): vellum with a bronze edge; gilt when chosen. */
+@mixin tile {
+  border: 1px solid rgba($bronze, 0.45);
+  border-radius: 2px;
+  background: linear-gradient(180deg, $vellum 0%, $vellum-deep 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(palette("neutral-0"), 0.8),
+    0 1px 1px rgba($bronze, 0.2);
+  color: $bronze-mid;
+}
+
+@mixin tile-hover {
+  border-color: $bronze;
+  background: linear-gradient(180deg, palette("warning-50") 0%, palette("warning-100") 100%);
+  color: $bronze;
+}
+
+@mixin tile-active {
+  border-color: $bronze;
+  background: linear-gradient(180deg, $gold-light 0%, $gold 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(palette("neutral-0"), 0.55),
+    inset 0 -6px 10px rgba($bronze, 0.25),
+    0 0 8px rgba($gold, 0.55);
+  color: $bronze;
+}
+
+/** A title set over a gilt rule fading out at both ends. */
+@mixin title-rule {
+  padding-bottom: 5px;
+  background-image: linear-gradient(90deg, rgba($gold, 0) 0%, $gold 18%, $gold 82%, rgba($gold, 0) 100%);
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 100% 1px;
+}
+
+/** A dark bronze cartouche with gilt lettering (the date, a banner). */
+@mixin cartouche {
+  border: 1px solid $bronze;
+  border-radius: 2px;
+  background: linear-gradient(180deg, $bronze-mid 0%, $bronze 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba($gold, 0.7),
+    inset 0 0 0 2px rgba($bronze, 0.9),
+    0 1px 2px rgba($ink, 0.3);
+  color: palette("warning-100");
+}

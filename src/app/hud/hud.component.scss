@@ -1,5 +1,6 @@
 @use "variables" as *;
 @use "app/theme/greek" as greek;
+@use "app/theme/strategy" as strategy;
 
 $drawer-w: 360px;
 $rail-w: 48px;
@@ -95,8 +96,8 @@ $outliner-w: 260px;
     gap: 4px;
     flex: none;
     width: $rail-w;
-    padding: 6px 0;
-    border-radius: radius("card");
+    padding: 8px 0;
+    gap: 5px;
     pointer-events: auto;
   }
 
@@ -126,6 +127,7 @@ $outliner-w: 260px;
 
   &__title {
     @include greek.display-type(0.06em);
+    @include strategy.title-rule;
     margin: 4px 0 spacing("sm");
     font-size: font-size("md");
     font-weight: font-weight("bold");
@@ -141,6 +143,7 @@ $outliner-w: 260px;
 
   &__subtitle {
     @include greek.display-type(0.06em);
+    @include strategy.title-rule;
     margin: spacing("lg") 0 spacing("xs");
     font-size: font-size("sm");
     font-weight: font-weight("bold");
@@ -159,15 +162,12 @@ $outliner-w: 260px;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid transparent;
-  border-radius: radius("sm");
-  background: transparent;
-  color: color("text-main");
+  @include strategy.tile;
   cursor: pointer;
   transition: background transition("fast"), color transition("fast");
 
   &:hover {
-    background: color("btn-hover");
+    @include strategy.tile-hover;
   }
 
   &:focus-visible {
@@ -175,10 +175,9 @@ $outliner-w: 260px;
     outline-offset: 1px;
   }
 
-  &--active {
-    background: color("accent-glow-soft");
-    border-color: color("accent");
-    color: color("warning-800");
+  &--active,
+  &--active:hover {
+    @include strategy.tile-active;
   }
 
   &--quiet {
@@ -239,8 +238,8 @@ $outliner-w: 260px;
   align-items: center;
   gap: 2px;
   margin-left: auto;
-  padding: 4px;
-  border-radius: radius("pill");
+  padding: 6px;
+  gap: 4px;
   pointer-events: auto;
 
   &__btn {
@@ -249,14 +248,11 @@ $outliner-w: 260px;
     justify-content: center;
     width: 32px;
     height: 32px;
-    border: 1px solid transparent;
-    border-radius: radius("pill");
-    background: transparent;
-    color: color("text-main");
+    @include strategy.tile;
     cursor: pointer;
 
     &:hover {
-      background: color("btn-hover");
+      @include strategy.tile-hover;
     }
 
     &:focus-visible {
@@ -264,10 +260,9 @@ $outliner-w: 260px;
       outline-offset: 1px;
     }
 
-    &--on {
-      background: color("accent-glow-soft");
-      border-color: color("accent");
-      color: color("warning-800");
+    &--on,
+    &--on:hover {
+      @include strategy.tile-active;
     }
   }
 

@@ -4,7 +4,7 @@
 <div class="bar glass-panel" role="region" [attr.aria-label]="t.topBarLabel">
   @if (me && !bp.tablet()) {
     <span class="bar__polis">
-      <app-polis-flag [def]="game.sim.poleis[me.idx].def" [size]="18" [label]="name()"></app-polis-flag>
+      <span class="bar__medal"><app-polis-flag [def]="game.sim.poleis[me.idx].def" [size]="30" [label]="name()"></app-polis-flag></span>
       <span class="bar__name">{{ name() }}</span>
     </span>
   }

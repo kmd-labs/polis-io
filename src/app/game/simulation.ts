@@ -1,6 +1,7 @@
 import { Delegation, OlympicResults, holdGames, isOlympicYear, isTriumph, olympiadOf } from './olympics';
 import { Fortune, rollFortune } from './fortune';
-import { GREAT_WORKS, GreatWorkId, NEUTRAL_PORTS, NeutralPortId, TRIBES } from './data/frontier';
+import { DILEMMAS, DILEMMA_BY_ID, DilemmaDef, DilemmaEffects, DilemmaId, WORLD_NOTES } from './data/dilemmas';
+import { GREAT_WORKS, GreatWorkId, NEUTRAL_PORTS, TRADERS, NeutralPortId, TRIBES } from './data/frontier';
 import { POLEIS, PolisDef, SITES, SiteId } from './data/poleis';
 import {
   IMPROVEMENT_BY_ID,
@@ -12,7 +13,7 @@ import {
 } from './data/improvements';
 import { MinHeap } from './heap';
 import { hash01 } from './rng';
-import { Terrain, World } from './world';
+import { GRID_SCALE, Terrain, World } from './world';
 
 /** The five funds every drachma of income is split into. */
 export type BudgetKey = 'military' | 'colonization' | 'agriculture' | 'trade' | 'culture';
@@ -91,16 +92,25 @@ export const WILD = -1;
 const YEAR = 64;
 
 /** Tunable game balance. Times are in game seconds (1 game second = 1 real second at 1× speed). */
+/** The wider world's news in the order it happens. */
+const WORLD_NOTES_BY_YEAR = [...WORLD_NOTES].sort((a, b) => b.year - a.year);
+
+/** Lengths in cells scale with the grid (L), areas and cell counts with its square (A). */
+const L = GRID_SCALE;
+const A = L * L;
+/** How far (cells) to look for land around a point given in degrees. */
+const NEAR = Math.ceil(4 * L);
+
 export const RULES = {
   startYear: 600,
   secondsPerYear: YEAR,
   /** Travel budget (cells) of the founding territory; climbing 1000 m doubles the cost of a step. */
-  startReach: 15,
+  startReach: 15 * L,
   /**
    * Carrying capacity per unit of owned fertility. ~60 gives 25–35 people/km² on good lowland,
    * close to estimates for Archaic and Classical Greece (≈3 million if all of Hellas were settled).
    */
-  peoplePerFertility: 60,
+  peoplePerFertility: 60 / A,
   /** Share of the founding capacity already populated in 600 BC. */
   startPopulation: 0.6,
   /** Hoplites per civilian at the start: base + per point of militarism. */
@@ -115,10 +125,10 @@ export const RULES = {
   settleShare: 0.05,
   /** …and only once the city has filled this share of its land's capacity. */
   settleCrowding: 0.7,
-  settlersPerCell: 12,
+  settlersPerCell: 12 / A,
   /** Cells claimed per second by an expedition. */
-  settleRate: 11,
-  prosperityPerCell: 0.00055,
+  settleRate: 11 * A,
+  prosperityPerCell: 0.00055 / A,
   maxProsperity: 2,
   /** A levy takes this share of workers, plus the military share times trainPerShare (small levies, often)… */
   trainShare: 0.01,
@@ -154,31 +164,31 @@ export const RULES = {
   /** Galleys in one polis's fleet at most. */
   maxWarships: 12,
   /** Cells per second: war galleys row far faster than merchantmen sail (a few years around the Peloponnese). */
-  fleetSpeed: 16,
+  fleetSpeed: 16 * L,
   /** Hostile fleets this close fight; a fleet sinks hostile merchantmen this close; it blockades a harbour this close. */
-  navalRange: 4,
-  raidRange: 4,
-  blockadeRange: 5,
+  navalRange: 4 * L,
+  raidRange: 4 * L,
+  blockadeRange: 5 * L,
   /** A sunk merchantman yields this many voyages' worth of plunder. */
   raidPlunder: 2,
   /** Seconds an army keeps chasing one enemy army before giving up on it for chaseCooldown seconds. */
   chaseTime: 3,
   chaseCooldown: 20,
   /** Armies look this many cells ahead to keep to the valleys; every this many metres of height weighs like a full detour. */
-  valleyLook: 3,
+  valleyLook: 3 * L,
   valleyElevation: 400,
   /** Travel budget (cells) of a vassal's founding land. */
-  vassalReach: 7,
+  vassalReach: 7 * L,
   /** Drachmae earned by the owner for every completed trade voyage, before the culture bonus. */
   tradeIncome: 1,
   /** Cells per second. */
-  shipSpeed: 6,
+  shipSpeed: 6 * L,
   /** Mean seconds between departures from a coastal polis. */
   shipInterval: 8,
   /** Trade ships at sea per polis: one, plus one per port, up to this many. */
   maxShips: 4,
   /** Sea routes are planned on a grid this many times coarser than the map. */
-  routeCoarse: 3,
+  routeCoarse: 3 * L,
   /** Share of a voyage's value also earned by the receiving harbour. */
   tradeReceiverShare: 0.3,
   /** Spoils of a won battle: drachmae per fallen enemy, plus a flat purse. */
@@ -214,7 +224,7 @@ export const RULES = {
   satisfactionBattleLost: -4,
   satisfactionWarWon: 8,
   satisfactionWarLost: -6,
-  satisfactionPerCellLost: -0.02,
+  satisfactionPerCellLost: -0.02 / A,
   satisfactionSettle: -1,
   satisfactionTrain: -1,
   /** Income and growth run at this multiplier at 0% satisfaction, and its mirror at 100%. */
@@ -244,7 +254,7 @@ export const RULES = {
   tributeShare: 0.3,
   tributeWorkers: 0.003,
   /** Travel budget (cells) of the land a client state keeps around its capital. */
-  clientReach: 12,
+  clientReach: 12 * L,
   /** Fate chosen by the player for a conquered city: odds of the intended outcome. */
   razeSuccess: 0.8,
   subjugateSuccess: 0.6,
@@ -258,8 +268,8 @@ export const RULES = {
   generalPower: 0.05,
   /** An army with a lesser general within generalJoinRadius cells of a better one of the same city marches to it,
    * and merges once within generalMergeRadius. */
-  generalJoinRadius: 20,
-  generalMergeRadius: 3,
+  generalJoinRadius: 20 * L,
+  generalMergeRadius: 3 * L,
   /** A city only picks a war with one of its nearest neighbours: this many nearest by border and by capital. */
   warNeighbours: 3,
   /** Seconds over which a city's cash inflow is smoothed (spoils and trade arrive in lumps). */
@@ -277,7 +287,7 @@ export const RULES = {
   raidMax: 2000,
   raidEveryMin: 3,
   raidEveryMax: 7,
-  raidReach: 200,
+  raidReach: 200 * L,
   /** A raid ends after this many cells plundered or this many years, whichever comes first. */
   raidLoot: 8,
   raidYears: 1.5,
@@ -297,8 +307,26 @@ export const RULES = {
   defenceRatio: 1.3,
   /** Merchantmen value a neutral harbour this much more than a city's (exotic goods, no tolls)… */
   neutralPortBonus: 1.3,
+  /** Choices put before the player: years between them while the game is young, then ever fewer
+   * (until `years` years have passed, a gap of min–max years); one comes up at most this often again. */
+  dilemmaGaps: [
+    { years: 10, min: 0.8, max: 1.4 },
+    { years: 30, min: 1.5, max: 2.5 },
+    { years: 100, min: 2.5, max: 4 },
+    { years: Infinity, min: 4, max: 6 }
+  ] as readonly { years: number; min: number; max: number }[],
+  dilemmaRepeatYears: 30,
+  /** After this many years the player meets at most one chance event (a choice or a twist of fortune) a year. */
+  randomCapYears: 100,
   /** …and are drawn to one as much as to a city with no renown. */
   neutralPortPull: 1,
+  /** Neutral merchant cities: the largest island one may hold (cells), their extra merchantmen, how much more
+   * often they sail, how strongly they draw other cities' ships, and the share a city receiving their ship keeps. */
+  traderIsland: 200 * A,
+  traderShips: 3,
+  traderSailing: 0.5,
+  traderPull: 2,
+  traderReceiverShare: 0.5,
   /** Every this many years a twist of fortune befalls each city: a windfall for one budget branch (in
    * months of its income) or a misfortune costing up to fortuneMaxMonths of its full income. */
   fortuneYears: 2,
@@ -321,16 +349,16 @@ export const RULES = {
   wildernessNear: 0.2,
   wildernessFar: 0.5,
   /** Distance (cells) from the victor's capital at which the far chance applies. */
-  wildernessRange: 150,
+  wildernessRange: 150 * L,
   /** An army flees a hostile force this many times stronger within this radius (cells)… */
   retreatRatio: 2.5,
-  retreatRadius: 9,
+  retreatRadius: 9 * L,
   /** …losing this share of its men per second while it runs… */
   retreatAttrition: 0.012,
   /** …and sometimes scatters into two smaller armies. */
   splitChance: 0.3,
   /** Armies this close (cells) to a raging battle join their side, up to this many per side. */
-  joinRange: 6,
+  joinRange: 6 * L,
   maxArmiesPerSide: 4,
   /** Budget costs: a settlers' expedition, a colony, a farm, a port and a festival. */
   expeditionBase: 20,
@@ -361,7 +389,7 @@ export const RULES = {
   developMonthsMin: 1,
   developMonthsMax: 12,
   /** A stray pocket of land this small, cut off from its capital, goes back to the wild after this many seconds (4 years). */
-  strayPocket: 4,
+  strayPocket: 4 * A,
   strayDecay: 4 * YEAR,
   /** The Games are held in this month (0 = the first) of every Olympic year; the sacred truce runs from
    * truceBefore months earlier to truceAfter months later. */
@@ -392,7 +420,7 @@ export const RULES = {
   /** …and seek one ally against it (chance per AI decision); these pacts lapse when the coalition ends. */
   coalitionAllyChance: 0.05,
   /** Cells more than the enemy a side must have taken for a war ending in peace to count as won. */
-  warWonMargin: 5,
+  warWonMargin: 5 * A,
   /** At war a polis fields between this many armies… */
   armiesMin: 2,
   armiesMax: 5,
@@ -407,10 +435,10 @@ export const RULES = {
   /** …gaining this much per second… */
   holdPowerRate: 0.05,
   /** …and it engages any enemy army that comes within this many cells. */
-  holdRadius: 30,
+  holdRadius: 30 * L,
   /** In wartime, a patch of land smaller than this (not the capital) that touches an enemy and has not
    * grown to this size for enclaveYears passes to that enemy (the one along most of its edge). */
-  enclaveSize: 20,
+  enclaveSize: 20 * A,
   enclaveYears: 2,
   /** …checked this often (seconds). */
   borderTidyInterval: 2,
@@ -420,27 +448,27 @@ export const RULES = {
   siegeMinimum: 200,
   /** An army this much stronger (in power or numbers) hunts enemy armies within chaseRadius cells. */
   chaseRatio: 1.5,
-  chaseRadius: 14,
+  chaseRadius: 14 * L,
   /** Armies within this many cells of a besieged friendly capital march to lift the siege. */
-  reliefRadius: 70,
+  reliefRadius: 70 * L,
   /** Island poleis that do not feel the pull of border wars. */
   islandPoleis: ['samos', 'naxos', 'korkyra', 'chios'] as readonly string[],
   /** A bordering rival looks this much weaker to an ambitious neighbour. */
   neighbourAggression: 1.35,
   /** Cells per second. */
-  armySpeedLand: 6.5,
-  armySpeedSea: 4.2,
+  armySpeedLand: 6.5 * L,
+  armySpeedSea: 4.2 * L,
   /** Speed lost per 1000 m of altitude. */
   mountainSlowdown: 0.35,
   captureDwell: 1.4,
   /** Radius (cells) of ground seized each time an army settles in. */
-  captureRadius: 1.6,
+  captureRadius: 1.6 * L,
   battleDuration: 1.8,
-  battleRange: 3.6,
+  battleRange: 3.6 * L,
   wallsBonus: 1.25,
   aiWarGrace: 45,
   aiPlayerGrace: 90,
-  aiWarRange: 165,
+  aiWarRange: 165 * L,
   maxWorldWars: 4,
   victoryShare: 0.5
 } as const;
@@ -535,6 +563,8 @@ export interface PolisState {
   inflow: number;
   /** A people beyond the frontier rather than a Greek city: it raids, it cannot be taken. */
   tribe: boolean;
+  /** A neutral merchant city on its island: never at war, lives by the sea trade. */
+  trader: boolean;
   /** Raiders: when the next warband sets out. */
   nextRaid: number;
   /** Where spare silver goes (a great work, or null to share it among the other funds), the silver
@@ -848,7 +878,9 @@ export type GameEventKind =
   | 'raidRepelled'
   | 'raidBribed'
   | 'raidStand'
-  | 'greatWork';
+  | 'greatWork'
+  | 'dilemma'
+  | 'world';
 
 export interface GameEvent {
   id: number;
@@ -876,6 +908,14 @@ export class Simulation {
   neutralPorts: NeutralPort[] = [];
   /** Warbands awaiting the player's answer (pay or fight). */
   private raidChoices: { band: number; tribe: number; cost: number }[] = [];
+  /** The player's choices: when the next comes, which came when (year BC), the one awaiting an answer. */
+  private nextDilemma = 0;
+  private dilemmaSeen = new Map<DilemmaId, number>();
+  private dilemmaQueue: { id: DilemmaId; year: number }[] = [];
+  pendingDilemma: DilemmaId | null = null;
+  /** Game year (counted from the start) of the player's last chance event, and the next world note due. */
+  private randomYear = -1;
+  private worldNote = 0;
   /** Per people beyond the frontier: its non-Greek cells touching Greek land (where warbands cross). */
   private tribeBorders = new Map<number, number[]>();
   seaFights: SeaFight[] = [];
@@ -1029,6 +1069,7 @@ export class Simulation {
       hegemonyScore: 0,
       dominantYears: 0,
       tribe: def.kind === 'tribe',
+      trader: def.kind === 'trader',
       nextRaid: 0,
       greatWork: null,
       greatFund: 0,
@@ -1150,6 +1191,12 @@ export class Simulation {
     this.olympicInvites = [];
     this.olympicResults = [];
     this.raidChoices = [];
+    this.nextDilemma = 0.5 * RULES.secondsPerYear;
+    this.dilemmaSeen = new Map();
+    this.dilemmaQueue = [];
+    this.pendingDilemma = null;
+    this.randomYear = -1;
+    this.worldNote = 0;
     this.nextFortune = RULES.fortuneYears * RULES.secondsPerYear;
     this.fortunes = [];
     this.frontierOwners = new Set();
@@ -1191,32 +1238,24 @@ export class Simulation {
       }
       this.tribeBorders.set(idx, border);
     }
+    // Neutral merchant cities hold their whole (small) island.
+    for (const def of TRADERS) {
+      const found = this.smallIsland(def.lon, def.lat, RULES.traderIsland);
+      if (!found) continue;
+      const idx = this.poleis.length;
+      const trader = this.createPolis(def, idx, found.land, -1);
+      this.poleis.push(trader);
+      for (const c of found.island) this.setOwner(c, idx, false);
+      this.populate(trader);
+      trader.budget = this.traderBudget();
+    }
     this.neutralPorts = [];
     for (const spec of NEUTRAL_PORTS) {
       const p = w.project(spec.lon, spec.lat);
-      let land = -1;
+      const found = this.smallIsland(spec.lon, spec.lat, 70 * A);
+      if (!found) continue;
+      const { land, island } = found;
       let best = Infinity;
-      for (let dy = -4; dy <= 4; dy++) {
-        for (let dx = -4; dx <= 4; dx++) {
-          const c = w.cellAt(p.x + dx, p.y + dy);
-          if (c < 0 || w.terrain[c] !== Terrain.Greek || Math.hypot(dx, dy) >= best) continue;
-          best = Math.hypot(dx, dy);
-          land = c;
-        }
-      }
-      if (land < 0) continue;
-      // The whole island, if it is small and nobody's.
-      const island = [land];
-      const seen = new Set(island);
-      for (let i = 0; i < island.length && island.length <= 70; i++) {
-        const x = island[i] % w.cols;
-        for (const n of w.neighbours4(x, (island[i] - x) / w.cols)) {
-          if (seen.has(n) || w.terrain[n] === Terrain.Sea) continue;
-          seen.add(n);
-          island.push(n);
-        }
-      }
-      if (island.length > 70 || island.some(c => this.owner[c] !== WILD || w.terrain[c] !== Terrain.Greek)) continue;
       let harbour = -1;
       best = Infinity;
       for (const c of island) {
@@ -1235,6 +1274,43 @@ export class Simulation {
       this.wildCells -= island.length;
       this.neutralPorts.push({ id: spec.id, cell: land, harbour });
     }
+  }
+
+  /**
+   * The Greek land cell nearest a point (within a few cells) and the whole island it lies on, if that
+   * island is no bigger than maxCells and all of it is unclaimed.
+   */
+  private smallIsland(lon: number, lat: number, maxCells: number): { land: number; island: number[] } | null {
+    const w = this.world;
+    const p = w.project(lon, lat);
+    let land = -1;
+    let best = Infinity;
+    for (let dy = -NEAR; dy <= NEAR; dy++) {
+      for (let dx = -NEAR; dx <= NEAR; dx++) {
+        const c = w.cellAt(p.x + dx, p.y + dy);
+        if (c < 0 || w.terrain[c] !== Terrain.Greek || Math.hypot(dx, dy) >= best) continue;
+        best = Math.hypot(dx, dy);
+        land = c;
+      }
+    }
+    if (land < 0) return null;
+    const island = [land];
+    const seen = new Set(island);
+    for (let i = 0; i < island.length && island.length <= maxCells; i++) {
+      const x = island[i] % w.cols;
+      for (const n of w.neighbours4(x, (island[i] - x) / w.cols)) {
+        if (seen.has(n) || w.terrain[n] === Terrain.Sea) continue;
+        seen.add(n);
+        island.push(n);
+      }
+    }
+    if (island.length > maxCells || island.some(c => this.owner[c] !== WILD || w.terrain[c] !== Terrain.Greek)) return null;
+    return { land, island };
+  }
+
+  /** A merchant city's purse: mostly the harbour, a little of everything else, nothing for colonies. */
+  private traderBudget(): Budget {
+    return normalizeBudget({ military: 8, colonization: 5, agriculture: 22, trade: 45, culture: 20 });
   }
 
   /** The non-Greek land cell nearest a point (the seat of a people beyond the frontier). */
@@ -1512,10 +1588,14 @@ export class Simulation {
     const frontier = new MinHeap();
     const queued = new Set<number>();
     const w = this.world;
+    const own = this.owner;
+    const touches = (c: number) => {
+      for (let k = 0; k < 4; k++) if (own[w.neighbour(c, k)] === idx) return true;
+      return false;
+    };
     for (const c of w.greekCells) {
-      if (this.owner[c] !== WILD) continue;
-      const x = c % w.cols;
-      if (w.neighbours4(x, (c - x) / w.cols).some(n => this.owner[n] === idx)) {
+      if (own[c] !== WILD) continue;
+      if (touches(c)) {
         queued.add(c);
         if (w.elevation[c] <= RULES.maxElevation) frontier.push(c, this.settleCost(p, c));
       }
@@ -1593,7 +1673,7 @@ export class Simulation {
   declareWar(a: number, b: number) {
     const pa = this.poleis[a];
     const pb = this.poleis[b];
-    if (a === b || !pa?.alive || !pb?.alive || pa.wars.has(b) || this.truce) return;
+    if (a === b || !pa?.alive || !pb?.alive || pa.wars.has(b) || this.truce || pa.trader || pb.trader) return;
     const mine = this.bloc(a);
     if (mine.includes(b)) return;
     // Attacking an ally tears up the treaty.
@@ -1678,7 +1758,7 @@ export class Simulation {
     let best: PolisState | null = null;
     let bestD = Infinity;
     for (const q of this.poleis) {
-      if (!q.alive || q.tribe || q.idx === p.idx || q.overlord >= 0 || pacted(q) || p.allies.has(q.idx) || p.wars.has(q.idx)) continue;
+      if (!q.alive || q.tribe || q.trader || q.idx === p.idx || q.overlord >= 0 || pacted(q) || p.allies.has(q.idx) || p.wars.has(q.idx)) continue;
       if (q.idx === this.player && !this.autoplay) continue;
       if (!this.inCoalition(q, target) || this.relation(p.idx, q.idx) < -20) continue;
       const d = Math.hypot(q.cx - p.cx, q.cy - p.cy) * (q.wars.has(target) ? 0.5 : 1);
@@ -1717,8 +1797,8 @@ export class Simulation {
     for (const c of w.greekCells) {
       const o = own[c];
       if (o < 0) continue;
-      const x = c % w.cols;
-      for (const n of [x < w.cols - 1 ? c + 1 : -1, c + w.cols < w.size ? c + w.cols : -1]) {
+      for (let k = 1; k < 4; k += 2) {
+        const n = w.neighbour(c, k);
         const q = n >= 0 ? own[n] : -1;
         if (q >= 0 && q !== o) set.add(Math.min(o, q) * 4096 + Math.max(o, q));
       }
@@ -1805,7 +1885,7 @@ export class Simulation {
     if (!stats || this.status !== 'playing') return;
     this.playerWars.delete(enemy);
     const me = this.poleis[this.player];
-    const balance = stats.cellsGained - stats.cellsLost + (stats.battlesWon - stats.battlesLost) * 20;
+    const balance = (stats.cellsGained - stats.cellsLost) / A + (stats.battlesWon - stats.battlesLost) * 20;
     const satisfaction =
       outcome === 'conquest' || balance > 0
         ? RULES.satisfactionWarWon
@@ -1997,12 +2077,12 @@ export class Simulation {
   private farmSite(p: PolisState): number {
     const w = this.world;
     const candidates = w.greekCells.filter(
-      c => this.owner[c] === p.idx && c !== p.capital && !this.nearBuilding(c, 4) && !this.nearPending(c, 4)
+      c => this.owner[c] === p.idx && c !== p.capital && !this.nearBuilding(c, 4 * L) && !this.nearPending(c, 4 * L)
     );
     return this.weightedPick([...candidates], c => {
       const lowland = Math.exp(-Math.max(0, w.elevation[c]) / 600);
-      const coast = this.nearSea(c, 2) ? 2.5 : 1;
-      const walls = this.distanceFrom(p, c) < 10 ? 0.05 : 1;
+      const coast = this.nearSea(c, Math.round(2 * L)) ? 2.5 : 1;
+      const walls = this.distanceFrom(p, c) < 10 * L ? 0.05 : 1;
       return w.fertility[c] * lowland * coast * walls;
     });
   }
@@ -2014,12 +2094,12 @@ export class Simulation {
       if (this.owner[c] !== p.idx || c === p.capital) return false;
       const x = c % w.cols;
       if (!w.neighbours4(x, (c - x) / w.cols).some(n => w.terrain[n] === Terrain.Sea)) return false;
-      return !this.nearBuilding(c, 6, 'port') && !this.nearBuilding(c, 2) && !this.nearPending(c, 4);
+      return !this.nearBuilding(c, 6 * L, 'port') && !this.nearBuilding(c, 2 * L) && !this.nearPending(c, 4 * L);
     });
     return this.weightedPick([...candidates], c => {
       const d = this.distanceFrom(p, c);
       const lowland = Math.exp(-Math.max(0, w.elevation[c]) / 400);
-      return lowland * (d < 10 ? 0.05 : 1) * Math.exp(-Math.abs(d - 25) / 60);
+      return lowland * (d < 10 * L ? 0.05 : 1) * Math.exp(-Math.abs(d - 25 * L) / (60 * L));
     });
   }
 
@@ -2032,10 +2112,10 @@ export class Simulation {
       .map(s => {
         const d = this.distanceFrom(p, s.cell);
         const score =
-          d * 0.02 + Math.max(0, this.world.elevation[s.cell]) / 400 - (this.nearSea(s.cell, 3) ? 0.6 : 0) + this.rand() * 0.3;
+          (d / L) * 0.02 + Math.max(0, this.world.elevation[s.cell]) / 400 - (this.nearSea(s.cell, Math.round(3 * L)) ? 0.6 : 0) + this.rand() * 0.3;
         return { ...s, d, score };
       })
-      .filter(s => s.d >= 12 && s.d < 220)
+      .filter(s => s.d >= 12 * L && s.d < 220 * L)
       .sort((a, b) => a.score - b.score)[0];
   }
 
@@ -2093,8 +2173,18 @@ export class Simulation {
     this.olympicCalendar();
     if (this.time >= this.nextFortune) {
       this.nextFortune += RULES.fortuneYears * RULES.secondsPerYear;
-      for (const p of this.poleis) if (p.alive && !p.captured && !p.tribe) this.befall(p);
+      for (const p of this.poleis) {
+        if (!p.alive || p.captured || p.tribe) continue;
+        if (p.idx === this.player && !this.autoplay) {
+          // Late in the game the player meets at most one chance event a year.
+          if (!this.randomAllowed()) continue;
+          this.randomYear = this.gameYear;
+        }
+        this.befall(p);
+      }
     }
+    this.dilemmaTurn();
+    this.worldNotes();
 
     this.finishDevelopments();
     for (const p of this.poleis) p.farms = p.ports = p.besieged = 0;
@@ -2126,7 +2216,7 @@ export class Simulation {
       }
       if (this.time >= p.nextShip) {
         this.launchShip(p);
-        p.nextShip = this.time + RULES.shipInterval * (0.6 + this.rand() * 0.8);
+        p.nextShip = this.time + RULES.shipInterval * (0.6 + this.rand() * 0.8) * (p.trader ? RULES.traderSailing : 1);
       }
     }
 
@@ -2303,7 +2393,7 @@ export class Simulation {
         if (this.canTrain(p) && this.levySize(p) >= RULES.levyMinimum) return { kind: 'hoplites', cost: this.trainCost(p) };
         return this.surplusPurchase(p);
       case 'colonization':
-        if (p.expedition) return null;
+        if (p.expedition || p.trader) return null;
         // Once a generation (sooner with a bigger share) the city founds a colony: one new city on a historical site…
         if (this.time >= p.nextColonyAt && this.vassalSite(p)) {
           return {
@@ -2409,11 +2499,15 @@ export class Simulation {
     const x = cell % w.cols;
     const y = (cell - x) / w.cols;
     const d = Math.hypot(x + 0.5 - p.cx, y + 0.5 - p.cy);
-    return w.elevation[cell] / 600 + d * 0.0035 - w.fertility[cell] * 0.4 + hash01(x, y, p.idx) * 0.25;
+    return w.elevation[cell] / 600 + (d / L) * 0.0035 - w.fertility[cell] * 0.4 + hash01(x, y, p.idx) * 0.25;
   }
 
   private think(p: PolisState) {
     if (p.captured) return;
+    if (p.trader) {
+      p.budget = this.traderBudget();
+      return;
+    }
     // The AI steers through its budget: arm in wartime, settle while land is free.
     p.budget = normalizeBudget({
       military: 15 + 6 * p.militarism + (p.wars.size ? 25 : 0),
@@ -2459,7 +2553,7 @@ export class Simulation {
       const island = (x: PolisState) => RULES.islandPoleis.includes(x.def.id);
       const near = this.nearestNeighbours(p);
       for (const q of this.poleis) {
-        if (!q.alive || q.tribe || q.captured || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0 || p.allies.has(q.idx)) continue;
+        if (!q.alive || q.tribe || q.trader || q.captured || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0 || p.allies.has(q.idx)) continue;
         // Only the nearest neighbours — except that the leagued cities of Hellas may march on the dominant one.
         if (!near.has(q.idx) && !(leagued && q.idx === rival)) continue;
         if (q.idx === this.player && this.time < RULES.aiPlayerGrace) continue;
@@ -2529,7 +2623,7 @@ export class Simulation {
     const oy = port ? Math.floor(port.cell / w.cols) + 0.5 : p.cy;
     let best = -1;
     let bestD = Infinity;
-    for (const c of w.greekCells) {
+    for (const c of w.coastalGreek) {
       if (this.owner[c] !== p.idx) continue;
       const x = c % w.cols;
       const y = (c - x) / w.cols;
@@ -2554,7 +2648,7 @@ export class Simulation {
   /** Sends a merchant to a random friendly coastal polis, nearer ones more often. */
   private launchShip(p: PolisState) {
     if (p.blockadedBy >= 0) return;
-    if (this.shipsOf(p.idx) >= Math.min(RULES.maxShips, 1 + p.ports) + p.effects.ships) return;
+    if (this.shipsOf(p.idx) >= Math.min(RULES.maxShips, 1 + p.ports) + p.effects.ships + (p.trader ? RULES.traderShips : 0)) return;
     const from = this.harbourOf(p);
     if (from < 0) return;
     const w = this.world;
@@ -2568,14 +2662,15 @@ export class Simulation {
         (1 + RULES.prestigeTradePull * q.prestige) *
         (p.allies.has(q.idx) ? 2 : 1) *
         (1 + this.relation(p.idx, q.idx) / 200) *
-        (q.idx === this.hegemon ? 1 + RULES.hegemonTradeBonus : 1);
-      options.push({ q, harbour, weight: pull / (d + 60) });
+        (q.idx === this.hegemon ? 1 + RULES.hegemonTradeBonus : 1) *
+        (q.trader ? RULES.traderPull : 1);
+      options.push({ q, harbour, weight: pull / (d + 60 * L) });
     }
     // Neutral island harbours trade with anyone.
     for (let i = 0; i < this.neutralPorts.length; i++) {
       const port = this.neutralPorts[i];
       const d = Math.hypot((port.harbour % w.cols) - (from % w.cols), Math.floor(port.harbour / w.cols) - Math.floor(from / w.cols));
-      options.push({ q: null, port: i, harbour: port.harbour, weight: RULES.neutralPortPull / (d + 60) });
+      options.push({ q: null, port: i, harbour: port.harbour, weight: RULES.neutralPortPull / (d + 60 * L) });
     }
     if (!options.length) return;
     let pick = this.rand() * options.reduce((sum, o) => sum + o.weight, 0);
@@ -2781,7 +2876,7 @@ export class Simulation {
    * warNeighbours nearest by capital.
    */
   nearestNeighbours(p: PolisState): Set<number> {
-    const others = this.poleis.filter(q => q.alive && !q.tribe && q.idx !== p.idx);
+    const others = this.poleis.filter(q => q.alive && !q.tribe && !q.trader && q.idx !== p.idx);
     const radius = (x: PolisState) => Math.sqrt(Math.max(1, x.cells) / Math.PI);
     const capital = (q: PolisState) => Math.hypot(q.cx - p.cx, q.cy - p.cy);
     const border = (q: PolisState) => (this.bordering(p.idx, q.idx) ? 0 : Math.max(0, capital(q) - radius(p) - radius(q)));
@@ -2805,10 +2900,10 @@ export class Simulation {
     if (!border.length) return;
     const w = this.world;
     const targets = this.poleis
-      .filter(q => q.alive && !q.tribe && !q.captured && q.cells > 0)
+      .filter(q => q.alive && !q.tribe && !q.trader && !q.captured && q.cells > 0)
       .map(q => ({ q, d: Math.hypot(q.cx - t.cx, q.cy - t.cy) }))
       .filter(x => x.d <= RULES.raidReach)
-      .map(x => ({ ...x, weight: (1 + this.treasury(x.q) / 500) / ((1 + x.q.garrison / 800) * (1 + x.d / 60)) }));
+      .map(x => ({ ...x, weight: (1 + this.treasury(x.q) / 500) / ((1 + x.q.garrison / 800) * (1 + x.d / (60 * L))) }));
     if (!targets.length) return;
     let pick = this.rand() * targets.reduce((s, x) => s + x.weight, 0);
     const victim = (targets.find(x => (pick -= x.weight) <= 0) ?? targets[targets.length - 1]).q;
@@ -2918,7 +3013,7 @@ export class Simulation {
     for (const c of w.greekCells) {
       if (this.owner[c] !== victim.idx || c === victim.capital || w.elevation[c] > RULES.maxElevation) continue;
       const x = c % w.cols;
-      const d = Math.hypot(x + 0.5 - a.x, (c - x) / w.cols + 0.5 - a.y) + w.elevation[c] / 200 + this.rand() * 3;
+      const d = Math.hypot(x + 0.5 - a.x, (c - x) / w.cols + 0.5 - a.y) + (w.elevation[c] / 200 + this.rand() * 3) * L;
       if (d < bestD) {
         bestD = d;
         best = c;
@@ -2961,7 +3056,7 @@ export class Simulation {
     if (choice === 'bribe' && this.spend(victim, cost)) {
       this.emit('raidBribed', victim.idx, band.owner, cost);
       const next = this.poleis
-        .filter(q => q.alive && !q.tribe && !q.captured && q.cells > 0 && q.idx !== victim.idx)
+        .filter(q => q.alive && !q.tribe && !q.trader && !q.captured && q.cells > 0 && q.idx !== victim.idx)
         .map(q => ({ q, d: Math.hypot(q.cx - band.x, q.cy - band.y) }))
         .filter(x => x.d <= RULES.raidReach)
         .sort((x, y) => x.d - y.d)[0];
@@ -3000,7 +3095,7 @@ export class Simulation {
       const v = this.poleis[band.raid];
       // Only a city that chose to fight sends out defenders.
       if (!v?.alive || !band.fought || band.asked !== v.idx || this.armies.some(a => !a.dead && a.defend === band.id)) continue;
-      const near = Math.hypot(band.x - v.cx, band.y - v.cy) < 40 || this.owner[this.world.cellAt(band.x, band.y)] === v.idx;
+      const near = Math.hypot(band.x - v.cx, band.y - v.cy) < 40 * L || this.owner[this.world.cellAt(band.x, band.y)] === v.idx;
       if (!near) continue;
       const floor = v.wars.size ? RULES.garrisonFloor : 30;
       const spare = v.garrison - floor;
@@ -3040,7 +3135,7 @@ export class Simulation {
 
   private defendMove(a: Army, p: PolisState, dt: number) {
     const band = this.armies.find(o => o.id === a.defend && !o.dead);
-    if (band && !band.homeward && Math.hypot(band.x - p.cx, band.y - p.cy) < 70) {
+    if (band && !band.homeward && Math.hypot(band.x - p.cx, band.y - p.cy) < 70 * L) {
       this.walk(a, band.x, band.y, dt);
       return;
     }
@@ -3221,6 +3316,135 @@ export class Simulation {
     if (p.idx === this.player && !this.autoplay) this.fortunes.push({ ...roll, amount, year: this.year });
   }
 
+  /** Whole years since the game began. */
+  get gameYear(): number {
+    return Math.floor(this.time / RULES.secondsPerYear);
+  }
+
+  /** Whether the player may meet another chance event this year (always, until late in the game). */
+  private randomAllowed(): boolean {
+    return this.gameYear < RULES.randomCapYears || this.randomYear !== this.gameYear;
+  }
+
+  /** The wider world's news, as its year comes. */
+  private worldNotes() {
+    if (this.status !== 'playing') return;
+    while (this.worldNote < WORLD_NOTES_BY_YEAR.length && this.year <= WORLD_NOTES_BY_YEAR[this.worldNote].year) {
+      this.emit('world', -1, -1, undefined, WORLD_NOTES_BY_YEAR[this.worldNote].id);
+      this.worldNote++;
+    }
+  }
+
+  /** Puts a choice before the player: a historical one in its year, otherwise now and then (often at first). */
+  private dilemmaTurn() {
+    if (this.player < 0 || this.autoplay || this.status !== 'playing' || this.pendingDilemma) return;
+    const p = this.poleis[this.player];
+    if (!p?.alive || !this.randomAllowed()) return;
+    const due = DILEMMAS.find(
+      d => d.year !== undefined && !this.dilemmaSeen.has(d.id) && this.year <= d.year && this.year >= d.year - 3 && this.dilemmaFits(p, d)
+    );
+    if (due) {
+      this.offerDilemma(due);
+      return;
+    }
+    if (this.time < this.nextDilemma) return;
+    const gap = RULES.dilemmaGaps.find(g => this.gameYear < g.years)!;
+    this.nextDilemma = this.time + (gap.min + this.rand() * (gap.max - gap.min)) * RULES.secondsPerYear;
+    const pool = DILEMMAS.filter(
+      d => d.year === undefined && this.dilemmaFits(p, d) && (this.dilemmaSeen.get(d.id) ?? Infinity) - this.year >= RULES.dilemmaRepeatYears
+    );
+    if (pool.length) this.offerDilemma(pool[Math.floor(this.rand() * pool.length)]);
+  }
+
+  private dilemmaFits(p: PolisState, d: DilemmaDef): boolean {
+    switch (d.need) {
+      case 'coastal':
+        return this.harbourOf(p) >= 0;
+      case 'war':
+        return p.wars.size > 0;
+      case 'peace':
+        return p.wars.size === 0;
+      case 'militant':
+        return p.militarism >= 2;
+      case 'warlike':
+        return p.militarism >= 4;
+      default:
+        return true;
+    }
+  }
+
+  private offerDilemma(d: DilemmaDef) {
+    this.pendingDilemma = d.id;
+    this.dilemmaSeen.set(d.id, this.year);
+    this.randomYear = this.gameYear;
+    this.dilemmaQueue.push({ id: d.id, year: this.year });
+  }
+
+  /** Choices that have just come up for the player. */
+  takeDilemmas(): { id: DilemmaId; year: number }[] {
+    const out = this.dilemmaQueue;
+    this.dilemmaQueue = [];
+    return out;
+  }
+
+  /** A month of the city's income (what silver in a choice is counted in). */
+  private monthIncome(p: PolisState): number {
+    return (Math.max(0, p.gross, p.inflow) * RULES.secondsPerYear) / 12;
+  }
+
+  /** The answers to a choice as the city stands now: drachmae gained (+) or paid (−), and whether it can pay. */
+  dilemmaChoices(
+    p: PolisState,
+    id: DilemmaId
+  ): { id: string; effects: DilemmaEffects; silver: number; colonize: number; affordable: boolean }[] {
+    const def = DILEMMA_BY_ID.get(id);
+    if (!def) return [];
+    const month = this.monthIncome(p);
+    const treasury = this.treasury(p);
+    return def.options.map(o => {
+      const silver = Math.round((o.effects.silver ?? 0) * month);
+      const colonize = Math.round((o.effects.colonize ?? 0) * month);
+      return { id: o.id, effects: o.effects, silver, colonize, affordable: silver >= 0 || treasury >= -silver };
+    });
+  }
+
+  /** The player answers the open choice (an answer the city cannot pay for falls back to the last one). */
+  answerDilemma(optionId: string) {
+    const id = this.pendingDilemma;
+    if (!id || this.player < 0) return;
+    this.pendingDilemma = null;
+    const p = this.poleis[this.player];
+    const choices = this.dilemmaChoices(p, id);
+    const choice = choices.find(c => c.id === optionId && c.affordable) ?? choices[choices.length - 1];
+    if (!choice) return;
+    this.applyDilemma(p, choice.effects);
+    this.emit('dilemma', p.idx, -1, undefined, `${id}.${choice.id}`);
+  }
+
+  private applyDilemma(p: PolisState, e: DilemmaEffects) {
+    const month = this.monthIncome(p);
+    if (e.silver) {
+      const amount = Math.round(Math.abs(e.silver) * month);
+      if (e.silver > 0) p.drachmae += amount;
+      else if (!this.spend(p, amount)) this.plunder(p, 1);
+    }
+    if (e.colonize) p.funds.colonization += Math.round(e.colonize * month);
+    if (e.prestige) p.prestige = Math.max(0, p.prestige + e.prestige);
+    if (e.mood) this.mood(p, e.mood);
+    if (e.culture) p.culture = Math.max(0, Math.min(5, p.culture + e.culture));
+    if (e.militarism) p.militarism = Math.max(0, Math.min(5, p.militarism + e.militarism));
+    if (e.regard) for (const q of this.poleis) if (q.alive && !q.tribe && q.idx !== p.idx) this.shiftRelation(p.idx, q.idx, e.regard);
+    if (e.hoplites && e.hoplites > 0) {
+      const men = Math.round(p.civilians * e.hoplites);
+      p.civilians -= men;
+      p.garrison += men;
+    } else if (e.hoplites) {
+      p.garrison = Math.round(p.garrison * (1 + e.hoplites));
+    }
+    if (e.people) p.civilians = Math.max(0, p.civilians * (1 + e.people));
+    if (e.prosperity) p.prosperity = Math.max(0.2, Math.min(RULES.maxProsperity, p.prosperity + e.prosperity));
+  }
+
   takeFortunes(): Fortune[] {
     const out = this.fortunes;
     this.fortunes = [];
@@ -3262,11 +3486,11 @@ export class Simulation {
     this.mood(owner, amount * RULES.satisfactionPerTrade);
     this.tradeFx.push({ x: s.x, y: s.y, t: this.time, amount, owner: owner.idx });
     // The receiving harbour profits too, though less than the shipowner.
-    const share = amount * RULES.tradeReceiverShare;
+    const share = amount * (owner.trader ? RULES.traderReceiverShare : RULES.tradeReceiverShare);
     dest.drachmae += share;
     dest.tradeEarned += share;
     this.mood(dest, share * RULES.satisfactionPerTrade);
-    this.tradeFx.push({ x: s.x, y: s.y - 1.5, t: this.time, amount: share, owner: dest.idx });
+    this.tradeFx.push({ x: s.x, y: s.y - 1.5 * L, t: this.time, amount: share, owner: dest.idx });
   }
 
   /** A* over the coarse sea grid, smoothed into a gentle polyline; cached per harbour pair. */
@@ -3772,11 +3996,11 @@ export class Simulation {
         a.strength /= 2;
         a.fleeAngle = -0.7;
         a.split = true;
-        this.armies.push({ ...a, id: this.nextId++, fleeAngle: 0.7, x: a.x + 0.4, y: a.y + 0.4 });
+        this.armies.push({ ...a, id: this.nextId++, fleeAngle: 0.7, x: a.x + 0.4 * L, y: a.y + 0.4 * L });
       }
     }
     const away = Math.atan2(a.y - threat.y, a.x - threat.x) + a.fleeAngle;
-    this.walk(a, a.x + Math.cos(away) * 4, a.y + Math.sin(away) * 4, dt);
+    this.walk(a, a.x + Math.cos(away) * 4 * L, a.y + Math.sin(away) * 4 * L, dt);
     a.strength *= 1 - RULES.retreatAttrition * dt;
   }
 
@@ -3819,7 +4043,7 @@ export class Simulation {
     const dx = tx - a.x;
     const dy = ty - a.y;
     const d = Math.hypot(dx, dy);
-    if (d < 0.35) return true;
+    if (d < 0.35 * L) return true;
     const cell = this.world.cellAt(a.x, a.y);
     const atSea = cell < 0 || this.world.terrain[cell] === Terrain.Sea;
     const speed = atSea
@@ -3829,7 +4053,7 @@ export class Simulation {
         (1 - Math.min(0.6, (this.world.elevation[cell] / 1000) * RULES.mountainSlowdown));
     const step = Math.min(d, speed * dt);
     // On land, keep to the valleys: bend the line of march away from heights (and water).
-    const [ux, uy] = atSea || d < 2 ? [dx / d, dy / d] : this.valleyHeading(a.x, a.y, dx / d, dy / d);
+    const [ux, uy] = atSea || d < 2 * L ? [dx / d, dy / d] : this.valleyHeading(a.x, a.y, dx / d, dy / d);
     a.x += ux * step;
     a.y += uy * step;
     return false;
@@ -3883,7 +4107,7 @@ export class Simulation {
       const x = c % w.cols;
       const y = (c - x) / w.cols;
       // Lowland first: a thousand metres of height weighs like 25 cells of distance.
-      const d = Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) + this.rand() * 18 + Math.max(0, w.elevation[c]) / 40;
+      const d = Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) + (this.rand() * 18 + Math.max(0, w.elevation[c]) / 40) * L;
       if (d < bestD) {
         bestD = d;
         best = c;
@@ -3898,8 +4122,8 @@ export class Simulation {
     const x0 = a.target % w.cols;
     const y0 = Math.floor(a.target / w.cols);
     const options: number[] = [];
-    for (let dy = -4; dy <= 4; dy++) {
-      for (let dx = -4; dx <= 4; dx++) {
+    for (let dy = -NEAR; dy <= NEAR; dy++) {
+      for (let dx = -NEAR; dx <= NEAR; dx++) {
         if (!w.inBounds(x0 + dx, y0 + dy)) continue;
         const c = w.index(x0 + dx, y0 + dy);
         if (this.isEnemyCell(a, c)) options.push(c);
@@ -3913,6 +4137,7 @@ export class Simulation {
     if (a === b) return false;
     const pa = this.poleis[a];
     const pb = this.poleis[b];
+    if (pa.trader || pb.trader) return false;
     if (pa.tribe || pb.tribe) return pa.tribe !== pb.tribe;
     return !this.truce && pa.wars.has(b);
   }
@@ -4147,8 +4372,9 @@ export class Simulation {
       while (stack.length) {
         const c = stack.pop()!;
         pocket.push(c);
-        const x = c % w.cols;
-        for (const n of w.neighbours4(x, (c - x) / w.cols)) {
+        for (let k = 0; k < 4; k++) {
+          const n = w.neighbour(c, k);
+          if (n < 0) continue;
           const q = own[n];
           if (q === o) {
             if (!seen[n]) {
@@ -4222,10 +4448,13 @@ export class Simulation {
   private updateFrontiers() {
     const w = this.world;
     const out = new Set<number>();
+    const own = this.owner;
     for (const c of w.greekCells) {
-      if (this.owner[c] !== WILD) continue;
-      const x = c % w.cols;
-      for (const n of w.neighbours4(x, (c - x) / w.cols)) if (this.owner[n] >= 0) out.add(this.owner[n]);
+      if (own[c] !== WILD) continue;
+      for (let k = 0; k < 4; k++) {
+        const n = w.neighbour(c, k);
+        if (n >= 0 && own[n] >= 0) out.add(own[n]);
+      }
     }
     this.frontierOwners = out;
   }
@@ -4476,7 +4705,7 @@ export class Simulation {
 
   /** In the chaos of a fall, an outlying town declares itself an independent polis. */
   private secede(l: PolisState) {
-    if (l.cells < 60) return;
+    if (l.cells < 60 * A) return;
     const capitals = new Set(this.poleis.map(q => q.capital));
     const site = this.siteCells.find(
       s => !this.usedSites.has(s.id) && !capitals.has(s.cell) && this.owner[s.cell] === l.idx
@@ -4501,7 +4730,7 @@ export class Simulation {
     );
     this.poleis.push(nova);
     const before = l.cells;
-    this.floodClaim([{ cell: site.cell, idx }], RULES.vassalReach + 2, c => this.owner[c] === l.idx && c !== l.capital);
+    this.floodClaim([{ cell: site.cell, idx }], RULES.vassalReach + 2 * L, c => this.owner[c] === l.idx && c !== l.capital);
     const share = (before - l.cells) / Math.max(1, before);
     nova.civilians = l.civilians * share;
     l.civilians -= nova.civilians;
@@ -4518,7 +4747,7 @@ export class Simulation {
     }
     const mine = this.bloc(this.player);
     const cells = mine.reduce((sum, i) => sum + this.poleis[i].cells, 0);
-    const rivals = this.poleis.some(p => p.alive && !p.tribe && !mine.includes(p.idx));
+    const rivals = this.poleis.some(p => p.alive && !p.tribe && !p.trader && !mine.includes(p.idx));
     if (!rivals || cells >= this.world.greekCells.length * RULES.victoryShare) this.status = 'won';
   }
 

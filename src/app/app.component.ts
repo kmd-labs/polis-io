@@ -49,6 +49,8 @@ import { APP_VERSION } from './version';
 import { GreatWorkId } from './game/data/frontier';
 import { SiteId } from './game/data/poleis';
 import { StartScreenComponent } from './hud/start-screen.component';
+import { EventCardComponent } from './hud/event-card.component';
+import { DilemmaChoice, DilemmaId } from './game/data/dilemmas';
 import { HudComponent } from './hud/hud.component';
 import { HudStateService } from './hud/hud-state.service';
 
@@ -279,6 +281,7 @@ export class AppComponent {
         else if (n.kind === 'olympicsInvite') this.openOlympicsInvite(n.olympiad, n.year, n.annualIncome, n.treasury);
         else if (n.kind === 'olympics') this.openOlympicsReport(n.report);
         else if (n.kind === 'fortune') this.openFortune(n.fortune);
+        else if (n.kind === 'dilemma') this.openDilemma(n.id, n.year, n.choices);
         else if (n.kind === 'built') this.openBuilt(n.what, n.id);
         else if (n.kind === 'greatWork') this.openGreatWork(n.id);
         else if (n.kind === 'raidChoice') this.openRaidChoice(n.band, n.tribe, n.men, n.cost, n.treasury);
@@ -562,6 +565,30 @@ export class AppComponent {
   }
 
   /** A twist of fortune, read from the alerts row. */
+  /**
+   * A choice for the city, painted like a grand-strategy event: the scene, the story and one button per
+   * answer with its consequences. Putting the letter aside takes the last answer.
+   */
+  private openDilemma(id: DilemmaId, year: number, choices: DilemmaChoice[]) {
+    let answered = false;
+    const choose = (option: string) => {
+      answered = true;
+      this.game.answerDilemma(option);
+      this.popup.close();
+    };
+    this.popup.open({
+      id: 'dilemma',
+      title: computed(() => this.i18n.t().dilemmas[id].title),
+      component: EventCardComponent,
+      componentInputs: { id, year, choices, choose },
+      size: 'md',
+      onClose: () => {
+        if (!answered) this.game.answerDilemma(choices[choices.length - 1]?.id ?? '');
+        this.game.closeNotice();
+      }
+    });
+  }
+
   private openFortune(f: Fortune) {
     const t = () => this.i18n.t();
     const story = () => (f.boon ? t().boons[f.branch] : t().banes[f.bane]);

@@ -80,7 +80,7 @@ export class GameHistory {
       const tribute = (p.tributeGold - (this.lastTribute[p.idx] ?? p.tributeGold)) / 12;
       this.lastTribute[p.idx] = p.tributeGold;
       // Peoples beyond the frontier are not ranked among the cities.
-      data[o + COL.alive] = p.alive && !p.tribe ? 1 : 0;
+      data[o + COL.alive] = p.alive && !p.tribe && !p.trader ? 1 : 0;
       data[o + COL.drachmae] = sim.treasury(p);
       data[o + COL.incomePerMonth] = (p.income * RULES.secondsPerYear) / 12 + tribute;
       data[o + COL.population] = sim.totalPopulation(p);

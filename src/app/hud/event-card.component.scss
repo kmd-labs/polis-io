@@ -1,0 +1,152 @@
+@use "variables" as *;
+
+// A black-figure vase: terracotta ground, black glaze figures, a reserved line.
+:host {
+  --vase-ground: #{palette("warning-500")};
+  --vase-figure: #{palette("neutral-900")};
+  --vase-line: #{palette("warning-200")};
+  display: block;
+}
+
+.event {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__scene {
+    margin: 0;
+    aspect-ratio: 400 / 150;
+    border: 2px solid #{palette("warning-900")};
+    border-radius: 2px;
+    box-shadow:
+      0 0 0 3px #{palette("warning-100")},
+      0 0 0 4px #{rgba(palette("warning-700"), 0.6)},
+      inset 0 0 24px #{rgba(palette("neutral-900"), 0.35)};
+    overflow: hidden;
+    line-height: 0;
+
+    ::ng-deep svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  &__date {
+    margin: 2px 0 0;
+    font-family: var(--font-family-display);
+    font-size: font-size("xs");
+    letter-spacing: 0.08em;
+    text-align: center;
+    color: #{palette("warning-800")};
+  }
+
+  &__text {
+    margin: 0;
+    font-size: font-size("sm");
+    line-height: 1.55;
+    color: color("text-main");
+    text-wrap: pretty;
+
+    &::first-letter {
+      float: left;
+      margin: 3px 6px 0 0;
+      font-family: var(--font-family-display);
+      font-size: 2.4em;
+      line-height: 0.85;
+      color: #{palette("warning-700")};
+    }
+  }
+
+  &__options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: font-size("xxs");
+    font-style: italic;
+    text-align: center;
+    color: color("text-dim");
+  }
+}
+
+// One answer: a long carved button, its consequences underneath.
+.option {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 14px 9px;
+  border: 1px solid #{palette("warning-800")};
+  border-radius: 3px;
+  background: linear-gradient(180deg, #{palette("warning-50")} 0%, #{palette("warning-100")} 100%);
+  box-shadow:
+    inset 0 0 0 2px #{rgba(palette("neutral-0"), 0.6)},
+    inset 0 0 0 3px #{rgba(palette("warning-600"), 0.35)},
+    0 1px 2px #{rgba(palette("neutral-900"), 0.15)};
+  font: inherit;
+  text-align: left;
+  color: color("text-main");
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: linear-gradient(180deg, #{palette("warning-100")} 0%, #{palette("warning-200")} 100%);
+    box-shadow:
+      inset 0 0 0 2px #{rgba(palette("neutral-0"), 0.6)},
+      inset 0 0 0 3px #{palette("warning-600")},
+      0 2px 8px #{rgba(palette("warning-900"), 0.25)};
+    outline: none;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &__label {
+    font-family: var(--font-family-display);
+    font-size: font-size("sm");
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #{palette("warning-900")};
+  }
+
+  &__effects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+}
+
+.fx {
+  font-size: font-size("xxs");
+  font-variant-numeric: tabular-nums;
+
+  &--good {
+    color: #{palette("success-700")};
+  }
+
+  &--bad {
+    color: #{palette("danger-700")};
+  }
+
+  &--none {
+    color: color("text-dim");
+    font-style: italic;
+  }
+}
