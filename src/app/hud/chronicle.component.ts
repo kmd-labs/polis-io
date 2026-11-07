@@ -1,7 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { LucideAngularModule, ScrollText } from 'lucide-angular';
 import { I18nService } from '../core/i18n/i18n.service';
-import { formatPlural, formatYear, interpolate } from '../core/i18n/format';
+import { formatNumber, formatPlural, formatYear, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { GameEventKind } from '../game/simulation';
 import { ImprovementId } from '../game/data/improvements';
@@ -33,7 +33,11 @@ const TEMPLATE_KEY = {
   podium: 'evPodium',
   hegemon: 'evHegemon',
   coalition: 'evCoalition',
-  coalitionEnd: 'evCoalitionEnd'
+  coalitionEnd: 'evCoalitionEnd',
+  mercenaries: 'evMercenaries',
+  warship: 'evWarship',
+  navalBattle: 'evNavalBattle',
+  blockade: 'evBlockade'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Feed of the latest wars, treaties, colonies and conquests: a few lines in the outliner, the full record in the drawer. */
@@ -63,7 +67,12 @@ export class ChronicleComponent {
     return this.game
       .events()
       // Other poleis' settling and building are routine; only the player's own projects are news.
-      .filter(e => !['settle', 'colony', 'farm', 'port', 'allianceOffer', 'siege', 'festival', 'farmPlanned', 'portPlanned', 'built'].includes(e.kind) || (e.kind === 'siege' ? e.a === player || e.b === player : e.a === player && e.kind !== 'allianceOffer'))
+      .filter(e => {
+        // Sieges and the war at sea are news when they touch the player; their own hiring and building likewise.
+        if (['siege', 'navalBattle', 'blockade'].includes(e.kind)) return e.a === player || e.b === player;
+        if (['settle', 'colony', 'farm', 'port', 'festival', 'farmPlanned', 'portPlanned', 'built', 'mercenaries', 'warship'].includes(e.kind)) return e.a === player;
+        return e.kind !== 'allianceOffer';
+      })
       .slice(-limit)
       .reverse()
       .map(e => ({
@@ -73,6 +82,7 @@ export class ChronicleComponent {
           a: name(e.a),
           b: name(e.b),
           m: e.n ? formatPlural(e.n, t.monthsOne, t.monthsFew, t.monthsMany) : '',
+          n: e.n ? formatNumber(e.n, this.i18n.lang()) : '',
           w:
             e.kind === 'built' && e.tag
               ? (t.improvements[e.tag as ImprovementId]?.name ?? '')
@@ -81,7 +91,7 @@ export class ChronicleComponent {
                 : ''
         }),
         mine: e.a === player || e.b === player,
-        hostile: ['war', 'fall', 'siege', 'client', 'annexed', 'revolt'].includes(e.kind)
+        hostile: ['war', 'fall', 'siege', 'client', 'annexed', 'revolt', 'blockade', 'navalBattle'].includes(e.kind) && e.a !== player
       }));
   });
 }

@@ -72,7 +72,7 @@ function normalizeBudget(weights: Budget): Budget {
 /** What a fund is saving for next. */
 export type Purchase =
   | { kind: 'improvement'; id: ImprovementId; cost: number }
-  | { kind: 'hoplites' | 'expedition' | 'colony' | 'farm' | 'port' | 'festival'; cost: number };
+  | { kind: 'hoplites' | 'expedition' | 'colony' | 'farm' | 'port' | 'festival' | 'mercenaries' | 'warship'; cost: number };
 
 /** Palette tokens for poleis that break away during a fall (unused by the founding cities). */
 const SECESSION_COLORS = ['success-700', 'info-600', 'danger-700', 'purple-400', 'primary-500', 'info-800', 'neutral-800'];
@@ -103,8 +103,8 @@ export const RULES = {
   growthRate: 0.02,
   incomePerWorker: 0.0025,
   upkeepPerWarrior: 0.003,
-  /** "Settle the wilderness" sends this share of workers away for good… */
-  settleShare: 0.1,
+  /** "Settle the wilderness" sends this share of workers away for good (small parties, often)… */
+  settleShare: 0.05,
   /** …and only once the city has filled this share of its land's capacity. */
   settleCrowding: 0.7,
   settlersPerCell: 12,
@@ -112,9 +112,12 @@ export const RULES = {
   settleRate: 11,
   prosperityPerCell: 0.00055,
   maxProsperity: 2,
-  /** A levy takes this share of workers, plus the military share times trainPerShare (faster recruiting). */
-  trainShare: 0.02,
-  trainPerShare: 0.08,
+  /** A levy takes this share of workers, plus the military share times trainPerShare (small levies, often)… */
+  trainShare: 0.01,
+  trainPerShare: 0.04,
+  /** …at least this many men, and a levy smaller than levyMinimum is not worth calling. */
+  trainMinimum: 25,
+  levyMinimum: 10,
   trainCostPerHoplite: 1.2,
   /** Battle strength bonus per point of militarism. */
   militarismBonus: 0.04,
@@ -122,8 +125,33 @@ export const RULES = {
   cultureBonus: 0.08,
   /** People of carrying capacity added by each farm. */
   farmCapacity: 2500,
-  /** Income bonus per port. */
+  /** Income bonus per port… */
   portBonus: 0.12,
+  /** …plus harbour dues: drachmae per second each port brings in by itself (none while blockaded). */
+  portIncome: 1.5,
+  /** Mercenaries: drachmae per man to hire (a citizen levy costs trainCostPerHoplite), and their pay multiplier. */
+  mercenaryCost: 3.5,
+  mercenaryPay: 2,
+  /** A war galley: base price, plus per head of population, dearer by this much for each galley already afloat. */
+  warshipBase: 120,
+  warshipPerCapita: 0.004,
+  warshipGrowth: 0.25,
+  /** Galleys in one polis's fleet at most. */
+  maxWarships: 12,
+  /** Cells per second: war galleys row far faster than merchantmen sail (a few years around the Peloponnese). */
+  fleetSpeed: 16,
+  /** Hostile fleets this close fight; a fleet sinks hostile merchantmen this close; it blockades a harbour this close. */
+  navalRange: 4,
+  raidRange: 4,
+  blockadeRange: 5,
+  /** A sunk merchantman yields this many voyages' worth of plunder. */
+  raidPlunder: 2,
+  /** Seconds an army keeps chasing one enemy army before giving up on it for chaseCooldown seconds. */
+  chaseTime: 3,
+  chaseCooldown: 6,
+  /** Armies look this many cells ahead to keep to the valleys; every this many metres of height weighs like a full detour. */
+  valleyLook: 3,
+  valleyElevation: 400,
   /** Travel budget (cells) of a vassal's founding land. */
   vassalReach: 7,
   /** Drachmae earned by the owner for every completed trade voyage, before the culture bonus. */
@@ -234,7 +262,7 @@ export const RULES = {
   joinRange: 6,
   maxArmiesPerSide: 4,
   /** Budget costs: a settlers' expedition, a colony, a farm, a port and a festival. */
-  expeditionBase: 40,
+  expeditionBase: 20,
   expeditionPerSettler: 0.25,
   colonyBase: 1200,
   colonyPerCapita: 0.03,
@@ -420,6 +448,9 @@ export interface PolisState {
   upkeep: number;
   /** Smoothed drachmae per second reaching the funds from every source (taxes, trade, tribute, spoils). */
   inflow: number;
+  /** What the military fund buys once the army is full; the polis whose fleet blockades our harbour (-1 if none). */
+  surplus: SurplusUse;
+  blockadedBy: number;
   /** Hegemony points (0–9) this year, and years in a row at or above the coalition threshold. */
   hegemonyScore: number;
   dominantYears: number;
@@ -551,9 +582,47 @@ export interface Army {
   stance: 'march' | 'hold';
   /** Battle power multiplier from digging in (1 … RULES.holdPowerMax). */
   fortify: number;
+  /** Hired with money rather than levied: they cost double pay and go home (disband) at peace. */
+  mercenary: boolean;
+  /** The enemy army being chased and since when; an army given up on is ignored until ignoreUntil. */
+  chaseId: number;
+  chaseSince: number;
+  ignoreId: number;
+  ignoreUntil: number;
 }
 
 export type ArmyRole = 'main' | 'raider';
+
+/** What the military fund does with money once the army is at full strength. */
+export type SurplusUse = 'none' | 'mercenaries' | 'fleet';
+
+/** A polis's war fleet: galleys that blockade enemy harbours, sink merchantmen and fight other fleets. */
+export interface Fleet {
+  id: number;
+  owner: number;
+  /** Galleys in the fleet. */
+  strength: number;
+  x: number;
+  y: number;
+  angle: number;
+  /** Sea cell it is sailing to (an enemy harbour at war, its own at peace), and the route there. */
+  dest: number;
+  path: number[];
+  seg: number;
+  along: number;
+  dead: boolean;
+}
+
+/** A clash at sea, kept briefly for the fight cloud. */
+export interface SeaFight {
+  id: number;
+  x: number;
+  y: number;
+  a: number;
+  b: number;
+  start: number;
+  end: number;
+}
 
 export interface Battle {
   id: number;
@@ -618,7 +687,11 @@ export type GameEventKind =
   | 'podium'
   | 'hegemon'
   | 'coalition'
-  | 'coalitionEnd';
+  | 'coalitionEnd'
+  | 'mercenaries'
+  | 'warship'
+  | 'navalBattle'
+  | 'blockade';
 
 export interface GameEvent {
   id: number;
@@ -642,6 +715,8 @@ export class Simulation {
   readonly owner: Int16Array;
   poleis: PolisState[] = [];
   armies: Army[] = [];
+  fleets: Fleet[] = [];
+  seaFights: SeaFight[] = [];
   battles: Battle[] = [];
   buildings: Building[] = [];
   pendingDevelopments: PendingDevelopment[] = [];
@@ -778,6 +853,8 @@ export class Simulation {
       unpaid: false,
       hegemonyScore: 0,
       dominantYears: 0,
+      surplus: 'none',
+      blockadedBy: -1,
       gross: 0,
       upkeep: 0,
       inflow: 0,
@@ -883,6 +960,8 @@ export class Simulation {
     this.hegemon = -1;
     this.coalitionTarget = -1;
     this.coalitionPacts = new Set();
+    this.fleets = [];
+    this.seaFights = [];
     this.strayAt = new Float64Array(this.world.size);
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
@@ -926,7 +1005,9 @@ export class Simulation {
       workers: this.workers(p),
       base,
       culture: RULES.cultureBonus * p.culture,
-      ports: RULES.portBonus * p.ports,
+      ports: p.blockadedBy >= 0 ? 0 : RULES.portBonus * p.ports,
+      dues: p.blockadedBy >= 0 ? 0 : RULES.portIncome * p.ports,
+      blockaded: p.blockadedBy >= 0,
       buildings: p.effects.income,
       mood: this.moodFactor(p),
       prosperity: p.prosperity,
@@ -992,7 +1073,7 @@ export class Simulation {
 
   trainBatch(p: PolisState): number {
     const share = p.budget.military / 100;
-    return Math.max(50, Math.round(this.workers(p) * (RULES.trainShare + RULES.trainPerShare * share)));
+    return Math.max(RULES.trainMinimum, Math.round(this.workers(p) * (RULES.trainShare + RULES.trainPerShare * share)));
   }
 
   /** Hoplites the next levy raises: a share-sized batch, never past the army the budget aims for. */
@@ -1002,6 +1083,44 @@ export class Simulation {
 
   trainCost(p: PolisState): number {
     return Math.ceil(this.levySize(p) * RULES.trainCostPerHoplite * (1 - p.effects.train));
+  }
+
+  /** With the army at full strength, the military fund hires mercenaries (at war) or builds galleys, if so ordered. */
+  private surplusPurchase(p: PolisState): Purchase | null {
+    if (p.surplus === 'mercenaries' && p.wars.size) {
+      return { kind: 'mercenaries', cost: Math.round(this.mercenaryBand(p) * RULES.mercenaryCost) };
+    }
+    if (p.surplus === 'fleet' && this.harbourOf(p) >= 0 && this.fleetStrength(p.idx) < RULES.maxWarships) {
+      return { kind: 'warship', cost: this.warshipCost(p) };
+    }
+    return null;
+  }
+
+  /** Men in one band of mercenaries: about a levy's worth. */
+  mercenaryBand(p: PolisState): number {
+    return Math.max(30, this.trainBatch(p));
+  }
+
+  warshipCost(p: PolisState): number {
+    const base = RULES.warshipBase + this.totalPopulation(p) * RULES.warshipPerCapita;
+    return Math.round(base * (1 + RULES.warshipGrowth * this.fleetStrength(p.idx)));
+  }
+
+  /** Galleys in a polis's war fleet. */
+  fleetStrength(idx: number): number {
+    return this.fleets.find(f => f.owner === idx && !f.dead)?.strength ?? 0;
+  }
+
+  /** Mercenaries under contract in the field. */
+  mercenaries(idx: number): number {
+    let n = 0;
+    for (const a of this.armies) if (a.owner === idx && !a.dead && a.mercenary) n += a.strength;
+    return n;
+  }
+
+  setSurplus(idx: number, use: SurplusUse) {
+    const p = this.poleis[idx];
+    if (p) p.surplus = use;
   }
 
   /** All the drachmae a polis holds: its five funds plus anything not yet allocated. */
@@ -1673,6 +1792,7 @@ export class Simulation {
     }
 
     this.sailShips(dt);
+    this.moveFleets(dt);
     this.tradeFx = this.tradeFx.filter(f => this.time - f.t < 2);
 
     this.moveArmies(dt);
@@ -1707,10 +1827,14 @@ export class Simulation {
 
     const avgFertility = p.fertility / Math.max(1, p.cells);
     const culture = 1 + RULES.cultureBonus * p.culture;
-    const trade = 1 + RULES.portBonus * p.ports;
+    // A blockaded harbour earns nothing: no port bonus, no dues.
+    const ports = p.blockadedBy >= 0 ? 0 : p.ports;
+    const trade = 1 + RULES.portBonus * ports;
     const bonus = (1 + p.effects.income) * mood;
-    const gross = this.workers(p) * RULES.incomePerWorker * p.prosperity * (0.7 + 0.3 * avgFertility) * culture * trade * bonus;
-    const upkeep = this.warriors(p) * RULES.upkeepPerWarrior;
+    const gross =
+      this.workers(p) * RULES.incomePerWorker * p.prosperity * (0.7 + 0.3 * avgFertility) * culture * trade * bonus +
+      ports * RULES.portIncome;
+    const upkeep = (this.warriors(p) + this.mercenaries(p.idx) * (RULES.mercenaryPay - 1)) * RULES.upkeepPerWarrior;
     p.income = gross - upkeep;
     p.gross = gross;
     p.upkeep = upkeep;
@@ -1817,7 +1941,8 @@ export class Simulation {
     };
     switch (key) {
       case 'military':
-        return this.canTrain(p) && this.levySize(p) >= 20 ? { kind: 'hoplites', cost: this.trainCost(p) } : null;
+        if (this.canTrain(p) && this.levySize(p) >= RULES.levyMinimum) return { kind: 'hoplites', cost: this.trainCost(p) };
+        return this.surplusPurchase(p);
       case 'colonization':
         if (p.expedition) return null;
         // While wilderness remains, save for the next expedition (it leaves once the city fills up)…
@@ -1850,6 +1975,12 @@ export class Simulation {
         return;
       case 'hoplites':
         this.train(p.idx);
+        break;
+      case 'mercenaries':
+        this.hireMercenaries(p);
+        break;
+      case 'warship':
+        this.buildWarship(p);
         break;
       case 'expedition':
         done = this.canSettle(p);
@@ -1948,6 +2079,13 @@ export class Simulation {
       trade: 15,
       culture: 6 + 4 * p.culture
     });
+    // A full military chest: warlike harbour cities build galleys, others hire swords in wartime.
+    p.surplus =
+      this.harbourOf(p) >= 0 && (p.militarism >= 3 || p.wars.size > 0)
+        ? 'fleet'
+        : p.wars.size && p.militarism >= 2
+          ? 'mercenaries'
+          : 'none';
     // Vassals follow their overlord in war and peace.
     if (p.overlord >= 0 && this.poleis[p.overlord].alive) return;
 
@@ -2060,13 +2198,14 @@ export class Simulation {
 
   /** Sends a merchant to a random friendly coastal polis, nearer ones more often. */
   private launchShip(p: PolisState) {
+    if (p.blockadedBy >= 0) return;
     if (this.shipsOf(p.idx) >= Math.min(RULES.maxShips, 1 + p.ports) + p.effects.ships) return;
     const from = this.harbourOf(p);
     if (from < 0) return;
     const w = this.world;
     const options: { q: PolisState; harbour: number; weight: number }[] = [];
     for (const q of this.poleis) {
-      if (!q.alive || q === p || p.wars.has(q.idx)) continue;
+      if (!q.alive || q === p || p.wars.has(q.idx) || q.blockadedBy >= 0) continue;
       const harbour = this.harbourOf(q);
       if (harbour < 0) continue;
       const d = Math.hypot((harbour % w.cols) - (from % w.cols), Math.floor(harbour / w.cols) - Math.floor(from / w.cols));
@@ -2125,6 +2264,149 @@ export class Simulation {
       }
     }
     this.ships = this.ships.filter(s => !s.done);
+  }
+
+  // ─── War fleets ───────────────────────────────────────────────────────────
+
+  /** A new galley joins the polis's fleet (launched from its harbour if it has none afloat). */
+  private buildWarship(p: PolisState) {
+    const harbour = this.harbourOf(p);
+    if (harbour < 0) return;
+    const fleet = this.fleets.find(f => f.owner === p.idx && !f.dead);
+    if (fleet) {
+      fleet.strength++;
+    } else {
+      const w = this.world;
+      const x = (harbour % w.cols) + 0.5;
+      const y = Math.floor(harbour / w.cols) + 0.5;
+      this.fleets.push({ id: this.nextId++, owner: p.idx, strength: 1, x, y, angle: 0, dest: harbour, path: [], seg: 0, along: 0, dead: false });
+    }
+    this.emit('warship', p.idx, -1, this.fleetStrength(p.idx));
+  }
+
+  /**
+   * Fleets at war sail for the nearest enemy harbour and lie off it (a blockade); at peace they
+   * return home. Hostile fleets that meet fight; hostile merchantmen in reach are sunk.
+   */
+  private moveFleets(dt: number) {
+    const w = this.world;
+    for (const f of this.fleets) {
+      const owner = this.poleis[f.owner];
+      if (f.dead || !owner.alive || f.strength <= 0) {
+        f.dead = true;
+        continue;
+      }
+      const dest = this.fleetDestination(owner, f);
+      if (dest >= 0 && dest !== f.dest) {
+        const here = w.cellAt(f.x, f.y);
+        const path = here >= 0 ? this.seaRoute(here, dest) : null;
+        if (path) {
+          f.dest = dest;
+          f.path = path;
+          f.seg = 0;
+          f.along = 0;
+        }
+      }
+      // Sail along the route; at its end the fleet holds station.
+      f.along += RULES.fleetSpeed * dt;
+      const pts = f.path;
+      while (pts.length >= 4) {
+        const i = f.seg * 2;
+        if (i + 3 >= pts.length) break;
+        const dx = pts[i + 2] - pts[i];
+        const dy = pts[i + 3] - pts[i + 1];
+        const len = Math.hypot(dx, dy);
+        if (f.along < len) {
+          f.x = pts[i] + (dx / len) * f.along;
+          f.y = pts[i + 1] + (dy / len) * f.along;
+          f.angle = Math.atan2(dy, dx);
+          break;
+        }
+        f.along -= len;
+        f.seg++;
+        f.x = pts[i + 2];
+        f.y = pts[i + 3];
+      }
+      // Merchantmen of the enemy go to the bottom; their cargo to the victors.
+      for (const s of this.ships) {
+        if (s.done || !owner.wars.has(s.owner) || Math.hypot(s.x - f.x, s.y - f.y) > RULES.raidRange) continue;
+        s.done = true;
+        const plunder = this.tradeValue(this.poleis[s.owner]) * RULES.raidPlunder;
+        owner.drachmae += plunder;
+      }
+    }
+    this.navalBattles();
+    this.fleets = this.fleets.filter(f => !f.dead);
+    this.seaFights = this.seaFights.filter(b => this.time < b.end);
+    this.updateBlockades();
+  }
+
+  /** The nearest enemy harbour while at war (the fleet's current one if it still serves), else home. */
+  private fleetDestination(owner: PolisState, f: Fleet): number {
+    const w = this.world;
+    let best = -1;
+    let bestD = Infinity;
+    for (const e of owner.wars) {
+      const q = this.poleis[e];
+      if (!q.alive) continue;
+      const h = this.harbourOf(q);
+      if (h < 0) continue;
+      const d = Math.hypot((h % w.cols) + 0.5 - f.x, Math.floor(h / w.cols) + 0.5 - f.y) * (h === f.dest ? 0.7 : 1);
+      if (d < bestD) {
+        bestD = d;
+        best = h;
+      }
+    }
+    return best >= 0 ? best : this.harbourOf(owner);
+  }
+
+  /** Hostile fleets within reach of each other fight it out; the loser is sunk, the victor bloodied. */
+  private navalBattles() {
+    const fleets = this.fleets;
+    for (let i = 0; i < fleets.length; i++) {
+      const a = fleets[i];
+      if (a.dead) continue;
+      for (let j = i + 1; j < fleets.length; j++) {
+        const b = fleets[j];
+        if (b.dead || !this.poleis[a.owner].wars.has(b.owner)) continue;
+        if (Math.hypot(a.x - b.x, a.y - b.y) > RULES.navalRange) continue;
+        const power = (f: Fleet) => f.strength * this.battleMultiplier(f.owner) * (0.75 + this.rand() * 0.5);
+        const [win, lose] = power(a) >= power(b) ? [a, b] : [b, a];
+        win.strength -= Math.ceil(lose.strength * 0.4);
+        if (win.strength <= 0) win.dead = true;
+        lose.dead = true;
+        lose.strength = 0;
+        this.seaFights.push({ id: this.nextId++, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, a: a.owner, b: b.owner, start: this.time, end: this.time + 1.2 });
+        this.emit('navalBattle', win.owner, lose.owner);
+        if (a.dead) break;
+      }
+    }
+  }
+
+  /** A harbour is blockaded while an enemy fleet lies within reach of it. */
+  private updateBlockades() {
+    const w = this.world;
+    for (const q of this.poleis) {
+      if (!q.alive) {
+        q.blockadedBy = -1;
+        continue;
+      }
+      const h = q.ports || this.fleets.length ? this.harbourOf(q) : -1;
+      let by = -1;
+      if (h >= 0) {
+        const hx = (h % w.cols) + 0.5;
+        const hy = Math.floor(h / w.cols) + 0.5;
+        for (const f of this.fleets) {
+          if (f.dead || !this.poleis[f.owner].wars.has(q.idx)) continue;
+          if (Math.hypot(f.x - hx, f.y - hy) <= RULES.blockadeRange) {
+            by = f.owner;
+            break;
+          }
+        }
+      }
+      if (by >= 0 && q.blockadedBy !== by) this.emit('blockade', by, q.idx);
+      q.blockadedBy = by;
+    }
   }
 
   /** A completed voyage pays its owner, unless the destination has turned hostile meanwhile. */
@@ -2271,8 +2553,50 @@ export class Simulation {
       siegeEnd: 0,
       role: main ? 'raider' : 'main',
       stance: 'march',
-      fortify: 1
+      fortify: 1,
+      mercenary: false,
+      chaseId: -1,
+      chaseSince: 0,
+      ignoreId: -1,
+      ignoreUntil: 0
     });
+  }
+
+  /** A band of mercenaries marches out of the city at once; it costs no citizens. */
+  private hireMercenaries(p: PolisState) {
+    const band = this.mercenaryBand(p);
+    const own = this.armies.filter(a => a.owner === p.idx && !a.dead);
+    if (own.length >= RULES.armiesMax) {
+      // No room for another banner: they reinforce the largest army.
+      own.sort((x, y) => y.strength - x.strength)[0].strength += band;
+      return;
+    }
+    this.armies.push({
+      id: this.nextId++,
+      owner: p.idx,
+      x: p.cx,
+      y: p.cy,
+      strength: band,
+      target: -1,
+      dwell: 0,
+      battle: 0,
+      dead: false,
+      fleeing: false,
+      split: false,
+      fleeAngle: 0,
+      siege: -1,
+      siegeStart: 0,
+      siegeEnd: 0,
+      role: own.some(a => a.role === 'main') ? 'raider' : 'main',
+      stance: 'march',
+      fortify: 1,
+      mercenary: true,
+      chaseId: -1,
+      chaseSince: 0,
+      ignoreId: -1,
+      ignoreUntil: 0
+    });
+    this.emit('mercenaries', p.idx, -1, band);
   }
 
   private isEnemyCell(army: Army, cell: number): boolean {
@@ -2299,7 +2623,11 @@ export class Simulation {
       a.fleeing = false;
       if (a.siege >= 0 && this.besiege(a, dt)) continue;
       if (!p.wars.size) {
-        // Peace: march home and rejoin the garrison.
+        // Peace: mercenaries take their pay and leave; citizens march home and rejoin the garrison.
+        if (a.mercenary) {
+          a.dead = true;
+          continue;
+        }
         if (this.walk(a, p.cx, p.cy, dt)) {
           p.garrison += a.strength;
           a.dead = true;
@@ -2308,9 +2636,8 @@ export class Simulation {
       }
       // The main army lifts nearby sieges, then seeks out the enemy's armies; raiders keep to plunder.
       const quarry = a.role === 'main' ? (this.reliefTarget(a) ?? this.rivalMain(a) ?? this.preyFor(a)) : null;
-      if (quarry) {
+      if (quarry && this.pursue(a, quarry, dt)) {
         a.dwell = 0;
-        this.walk(a, quarry.x, quarry.y, dt);
         continue;
       }
       if (!this.isEnemyCell(a, a.target)) {
@@ -2348,6 +2675,36 @@ export class Simulation {
     }
   }
 
+  /**
+   * Marches on an enemy army. Lifting a siege or seeking out a distant foe has no time limit, but
+   * a close chase lasts RULES.chaseTime seconds: then the army gives up on that foe for a while.
+   * Returns false when it will not (or no longer) chase.
+   */
+  private pursue(a: Army, quarry: Army, dt: number): boolean {
+    if (this.ignoring(a, quarry)) return false;
+    const close = Math.hypot(quarry.x - a.x, quarry.y - a.y) <= RULES.chaseRadius * 2;
+    if (close && quarry.siege < 0) {
+      if (a.chaseId !== quarry.id) {
+        a.chaseId = quarry.id;
+        a.chaseSince = this.time;
+      } else if (this.time - a.chaseSince > RULES.chaseTime) {
+        a.ignoreId = quarry.id;
+        a.ignoreUntil = this.time + RULES.chaseCooldown;
+        a.chaseId = -1;
+        return false;
+      }
+    } else {
+      a.chaseId = -1;
+    }
+    this.walk(a, quarry.x, quarry.y, dt);
+    return true;
+  }
+
+  /** An enemy army this one has recently given up chasing. */
+  private ignoring(a: Army, o: Army): boolean {
+    return a.ignoreId === o.id && this.time < a.ignoreUntil;
+  }
+
   /** A polis whose main army has fallen hands the command to its largest raiding party. */
   private promoteMainArmies() {
     const best = new Map<number, Army>();
@@ -2366,7 +2723,7 @@ export class Simulation {
     let best: Army | null = null;
     let bestD = Infinity;
     for (const o of this.armies) {
-      if (o.dead || o.role !== 'main' || !p.wars.has(o.owner)) continue;
+      if (o.dead || o.role !== 'main' || !p.wars.has(o.owner) || this.ignoring(a, o)) continue;
       const d = Math.hypot(o.x - a.x, o.y - a.y);
       if (d < bestD) {
         bestD = d;
@@ -2408,14 +2765,14 @@ export class Simulation {
     let intruder: Army | null = null;
     let nearest: number = RULES.holdRadius;
     for (const o of this.armies) {
-      if (o.dead || !p.wars.has(o.owner)) continue;
+      if (o.dead || !p.wars.has(o.owner) || this.ignoring(a, o)) continue;
       const d = Math.hypot(o.x - a.x, o.y - a.y);
       if (d <= nearest) {
         nearest = d;
         intruder = o;
       }
     }
-    if (intruder) this.walk(a, intruder.x, intruder.y, dt);
+    if (intruder) this.pursue(a, intruder, dt);
     return true;
   }
 
@@ -2445,7 +2802,7 @@ export class Simulation {
     let best: Army | null = null;
     let bestD = Infinity;
     for (const o of this.armies) {
-      if (o.dead || o.battle || !p.wars.has(o.owner)) continue;
+      if (o.dead || o.battle || !p.wars.has(o.owner) || this.ignoring(a, o)) continue;
       const d = Math.hypot(o.x - a.x, o.y - a.y);
       if (d > RULES.chaseRadius || d >= bestD) continue;
       const stronger = power >= RULES.chaseRatio * this.armyPower(o) || a.strength >= RULES.chaseRatio * o.strength;
@@ -2536,9 +2893,34 @@ export class Simulation {
         (1 + this.poleis[a.owner].effects.armySpeed) *
         (1 - Math.min(0.6, (this.world.elevation[cell] / 1000) * RULES.mountainSlowdown));
     const step = Math.min(d, speed * dt);
-    a.x += (dx / d) * step;
-    a.y += (dy / d) * step;
+    // On land, keep to the valleys: bend the line of march away from heights (and water).
+    const [ux, uy] = atSea || d < 2 ? [dx / d, dy / d] : this.valleyHeading(a.x, a.y, dx / d, dy / d);
+    a.x += ux * step;
+    a.y += uy * step;
     return false;
+  }
+
+  /**
+   * The heading, at most ~45° off the direct line, whose ground a few cells ahead is lowest —
+   * weighing height against the length of the detour. Water ahead counts as rough going.
+   */
+  private valleyHeading(x: number, y: number, ux: number, uy: number): [number, number] {
+    const w = this.world;
+    const base = Math.atan2(uy, ux);
+    let best: [number, number] = [ux, uy];
+    let bestCost = Infinity;
+    for (const off of [0, -0.4, 0.4, -0.8, 0.8]) {
+      const hx = Math.cos(base + off);
+      const hy = Math.sin(base + off);
+      const cell = w.cellAt(x + hx * RULES.valleyLook, y + hy * RULES.valleyLook);
+      const ground = cell < 0 || w.terrain[cell] === Terrain.Sea ? 1 : Math.max(0, w.elevation[cell]) / RULES.valleyElevation;
+      const cost = ground + Math.abs(off) * 0.6;
+      if (cost < bestCost) {
+        bestCost = cost;
+        best = [hx, hy];
+      }
+    }
+    return best;
   }
 
   private pickArmyTarget(a: Army): number {
@@ -2564,7 +2946,8 @@ export class Simulation {
       if (o < 0 || !p.wars.has(o)) continue;
       const x = c % w.cols;
       const y = (c - x) / w.cols;
-      const d = Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) + this.rand() * 18;
+      // Lowland first: a thousand metres of height weighs like 25 cells of distance.
+      const d = Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) + this.rand() * 18 + Math.max(0, w.elevation[c]) / 40;
       if (d < bestD) {
         bestD = d;
         best = c;

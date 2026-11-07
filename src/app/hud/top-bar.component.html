@@ -28,6 +28,9 @@
               }
               <tr class="income__total"><th scope="row">{{ t.incTotal }}</th><td>{{ b.total }}</td></tr>
             </table>
+            @if (b.blockaded) {
+              <p class="income__hint income__hint--note income__hint--danger">{{ t.incBlockaded }}</p>
+            }
             <p class="income__hint income__hint--note">{{ t.incTreasuryNote }}</p>
           </div>
         }

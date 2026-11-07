@@ -70,7 +70,7 @@ export const PL: Dict = {
     },
     {
       term: 'Handel morski',
-      desc: 'Polis nad morzem wysyła małe statki kupieckie do portów nadmorskich polis, z którymi nie prowadzi wojny. Każdy ukończony rejs daje właścicielowi 1 drachmę, powiększoną przez kulturę (+8% za punkt), a miastu docelowemu 30% tej kwoty. Każdy port pozwala wysłać jednocześnie o jeden statek więcej.'
+      desc: 'Polis nad morzem wysyła małe statki kupieckie do portów nadmorskich polis, z którymi nie prowadzi wojny. Każdy ukończony rejs daje właścicielowi 1 drachmę, powiększoną przez kulturę (+8% za punkt), a miastu docelowemu 30% tej kwoty. Każdy port pozwala wysłać jednocześnie o jeden statek więcej i sam przynosi opłaty portowe — chyba że port blokuje wroga flota.'
     },
     {
       term: 'Zwycięstwa i projekcja siły',
@@ -90,7 +90,11 @@ export const PL: Dict = {
     },
     {
       term: 'Armia główna i oddziały łupieżcze',
-      desc: 'Na wojnie polis wystawia od dwóch do pięciu armii. Armia główna (większa tarcza) bierze mniej więcej połowę wolnych hoplitów i szuka starcia z armią główną wroga; mniejsze oddziały łupią ziemie przeciwnika i uciekają przed każdą siłą zbliżoną do swojej. Armia główna słabsza od wrogiej zatrzymuje się i okopuje (pierścień palisady): w ciągu kilku lat jej siła rośnie do 150%, a każda wroga armia, która podejdzie na 30 pól, zostaje zaatakowana. Kilku hoplitów zawsze zostaje za murami.'
+      desc: 'Na wojnie polis wystawia od dwóch do pięciu armii. Armia główna (większa tarcza) bierze mniej więcej połowę wolnych hoplitów i szuka starcia z armią główną wroga; mniejsze oddziały łupią ziemie przeciwnika i uciekają przed każdą siłą zbliżoną do swojej. Armia główna słabsza od wrogiej zatrzymuje się i okopuje (pierścień palisady): w ciągu kilku lat jej siła rośnie do 150%, a każda wroga armia, która podejdzie na 30 pól, zostaje zaatakowana. Kilku hoplitów zawsze zostaje za murami. Armia rezygnuje z pościgu po trzech sekundach, a armie trzymają się dolin, omijając wzgórza i góry.'
+    },
+    {
+      term: 'Najemnicy i flota wojenna',
+      desc: 'Pobory są małe i częste. Gdy armia osiągnie liczebność, do której dąży suwak Wojsko, wybierz, co fundusz wojskowy robi z resztą: oszczędza (przechodzi do innych funduszy), najmuje najemników w czasie wojny (bez utraty obywateli, ale drodzy w najmie, podwójny żołd, odchodzą po pokoju) albo buduje galery wojenne. Na wojnie flota płynie do najbliższego portu wroga i go blokuje — bez handlu, premii portowej i opłat portowych — zatapiając wrogie statki kupieckie i walcząc z wrogimi flotami.'
     },
     {
       term: 'Oblężenia i upadek polis',
@@ -176,7 +180,9 @@ export const PL: Dict = {
     colony: 'nowa kolonia',
     farm: 'nowa farma',
     port: 'nowy port',
-    festival: 'święto'
+    festival: 'święto',
+    mercenaries: 'najemnicy',
+    warship: 'galera wojenna'
   },
   nextPurchase: 'dalej: {what} ({c})',
   savingOnly: 'oszczędza',
@@ -308,6 +314,32 @@ export const PL: Dict = {
   evPodium: '{a} wyprzedza: {b} — {w}',
   evHegemon: '{a} zostaje nowym Hegemonem Hellady',
   evCoalition: 'Hellada lęka się potęgi polis {a}: miasta jednoczą się przeciw niej',
+  evMercenaries: '{a} najmuje {n} najemników',
+  evWarship: '{a} spuszcza na wodę galerę wojenną (flota: {n})',
+  evNavalBattle: 'Flota polis {a} zatapia flotę polis {b}',
+  evBlockade: 'Flota polis {a} blokuje port polis {b}',
+  surplusLabel: 'Gdy armia jest pełna:',
+  surplusUses: {
+    none: { name: 'Oszczędzaj', hint: 'Nic dodatkowego: czego fundusz wojskowy nie potrzebuje, przechodzi do innych funduszy.' },
+    mercenaries: {
+      name: 'Najemnicy',
+      hint: 'W czasie wojny najmuj oddziały najemników: nie kosztują obywateli, ale są drodzy w najmie i biorą podwójny żołd. Odchodzą po zawarciu pokoju.'
+    },
+    fleet: {
+      name: 'Flota wojenna',
+      hint: 'Buduj galery wojenne. Na wojnie flota płynie do najbliższego portu wroga i go blokuje (bez handlu i opłat portowych), zatapia wrogie statki kupieckie i walczy z wrogimi flotami.'
+    }
+  },
+  surplusNoHarbour: 'Flota wojenna wymaga portu.',
+  fcMercenaries: '+{n} najemników · podwójny żołd',
+  fcWarship: 'flota {n} → {m} galer',
+  fcMercenariesPeace: 'najemników najmuje się tylko w czasie wojny',
+  incDues: 'Opłaty portowe',
+  incBlockaded: 'Blokada: bez premii portowej, opłat i handlu.',
+  alertBlockaded: 'Nasz port blokuje flota polis {name}: bez handlu i opłat portowych. Zbudujcie galery albo zawrzyjcie pokój.',
+  alertBlockading: 'Nasza flota blokuje port polis {name}.',
+  warships: 'Galery',
+  mercenariesLabel: 'Najemnicy',
   evCoalitionEnd: 'Koalicja przeciw polis {a} się rozpada',
 
   // Conquest decision
