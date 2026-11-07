@@ -1,0 +1,37 @@
+@let t = i18n.t();
+
+@if (view(); as v) {
+  <section class="great" [attr.aria-label]="t.greatTitle">
+    <h3 class="great__title">{{ t.greatTitle }}</h3>
+    <p class="great__intro">{{ t.greatIntro }}</p>
+    <ul class="great__list">
+      @for (w of v.works; track w.id) {
+        <li class="work" [class.work--chosen]="w.chosen" [class.work--done]="!w.open">
+          <div class="work__head">
+            <span class="work__name">{{ w.name }}</span>
+            <span class="work__status">{{ w.status }}</span>
+          </div>
+          <p class="work__desc">{{ w.desc }}</p>
+          @if (w.chosen) {
+            <span class="work__bar"><span [style.width.%]="w.progress * 100"></span></span>
+          }
+          <div class="work__foot">
+            @if (w.built) {
+              <span class="work__built">{{ w.built }}</span>
+            }
+            @if (w.open) {
+              @if (w.chosen) {
+                <button type="button" class="work__btn work__btn--chosen" (click)="choose(null)" [attr.aria-pressed]="true">{{ t.greatChosen }}</button>
+              } @else {
+                <button type="button" class="work__btn" (click)="choose(w.id)" [attr.aria-pressed]="false">{{ t.greatChoose }}</button>
+              }
+            }
+          </div>
+        </li>
+      }
+    </ul>
+    @if (v.chosen) {
+      <button type="button" class="great__stop" (click)="choose(null)">{{ t.greatStop }}</button>
+    }
+  </section>
+}

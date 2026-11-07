@@ -29,6 +29,7 @@ import { ChronicleComponent } from './chronicle.component';
 import { DiplomacyListComponent } from './diplomacy-list.component';
 import { HistoryChartsComponent } from './history-charts.component';
 import { HegemonyPanelComponent } from './hegemony-panel.component';
+import { GreatWorksComponent } from './great-works.component';
 import { DiplomacyPanelComponent } from './diplomacy-panel.component';
 import { HUD_TABS, HudStateService, HudTab } from './hud-state.service';
 import { OutlinerComponent } from './outliner.component';
@@ -57,6 +58,7 @@ import { TopBarComponent } from './top-bar.component';
     DiplomacyListComponent,
     HistoryChartsComponent,
     HegemonyPanelComponent,
+    GreatWorksComponent,
     DiplomacyPanelComponent,
     ChronicleComponent,
     OutlinerComponent

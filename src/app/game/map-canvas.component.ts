@@ -15,7 +15,7 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, interpolate, polisName } from '../core/i18n/format';
 import { GameService } from './game.service';
 import { Camera, MapLabel, MapRenderer, MapView } from './map-renderer';
-import { FOREIGN, WILD } from './simulation';
+import { FOREIGN, NEUTRAL, WILD } from './simulation';
 
 const MAX_SCALE = 48;
 const CLICK_SLOP = 5;
@@ -290,6 +290,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         {
           view: this.view(),
           podium: this.game.hegemonyPodium(),
+          selectedArmy: this.game.selectedArmy(),
+          portNames: this.game.sim.neutralPorts.map(port => t.neutralPortNames[port.id]),
           hover: this.hover >= 0 ? this.hover : preview,
           selected: this.game.selected(),
           names: this.game.sim.poleis.map(p => polisName(t, p.def)),
@@ -411,11 +413,21 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     if (!this.pointers.has(e.pointerId)) return;
     this.pointers.delete(e.pointerId);
     if (!this.dragged && this.pointers.size === 0 && this.game.ready()) {
-      const { x, y } = this.toMap(e.clientX, e.clientY);
-      const cell = this.game.world.cellAt(x, y);
-      const owner = cell >= 0 ? this.game.sim.owner[cell] : -1;
-      this.zone.run(() => this.game.select(owner >= 0 ? owner : -1));
-      if (e.pointerType !== 'mouse') this.updateHover(e.clientX, e.clientY, 1800);
+      // An army under the pointer takes the click: its general's stars appear above it.
+      const army = this.armyAt(e.clientX, e.clientY);
+      if (army) {
+        this.zone.run(() => this.game.selectedArmy.set(army.id));
+        this.showArmy(army, e.clientX, e.clientY, e.pointerType !== 'mouse' ? 2200 : 0);
+      } else {
+        const { x, y } = this.toMap(e.clientX, e.clientY);
+        const cell = this.game.world.cellAt(x, y);
+        const owner = cell >= 0 ? this.game.sim.owner[cell] : -1;
+        this.zone.run(() => {
+          this.game.selectedArmy.set(-1);
+          this.game.select(owner >= 0 ? owner : -1);
+        });
+        if (e.pointerType !== 'mouse') this.updateHover(e.clientX, e.clientY, 1800);
+      }
     }
     this.startGesture();
   };
@@ -425,8 +437,47 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     this.hideTooltip();
   };
 
+  /** The army drawn under a screen point, if any (shields are a little bigger than their mark). */
+  private armyAt(clientX: number, clientY: number) {
+    const rect = this.canvasRef.nativeElement.getBoundingClientRect();
+    const px = clientX - rect.left;
+    const py = clientY - rect.top;
+    const r = Math.max(5, Math.min(16, this.cam.scale * 2.6)) + 5;
+    let best: (typeof this.game.sim.armies)[number] | null = null;
+    let bestD = r;
+    for (const a of this.game.sim.armies) {
+      if (a.dead || a.battle || a.siege >= 0) continue;
+      const d = Math.hypot(this.cam.ox + a.x * this.cam.scale - px, this.cam.oy + a.y * this.cam.scale - py);
+      if (d < bestD) {
+        bestD = d;
+        best = a;
+      }
+    }
+    return best;
+  }
+
+  /** Tooltip for an army: whose, what kind, how many men, and its general. */
+  private showArmy(a: (typeof this.game.sim.armies)[number], clientX: number, clientY: number, autoHideMs = 0) {
+    const t = this.i18n.t();
+    const kind = a.raid >= 0 ? 'raid' : a.defend >= 0 ? 'defend' : a.mercenary ? 'mercenary' : a.role;
+    const text = interpolate(t.armyInfo, {
+      kind: t.armyKinds[kind],
+      name: this.game.name(a.owner),
+      n: formatNumber(a.strength, this.i18n.lang()),
+      stars: '★'.repeat(a.stars) + '☆'.repeat(3 - a.stars),
+      bonus: Math.round((this.game.sim.generalBonus(a) - 1) * 100)
+    });
+    this.canvasRef.nativeElement.style.cursor = 'pointer';
+    this.zone.run(() => this.tooltip.show(text, clientX, clientY - 18, 'top', autoHideMs, { noWrap: true }));
+  }
+
   private updateHover(clientX: number, clientY: number, autoHideMs = 0) {
     if (!this.game.ready()) return;
+    const army = this.armyAt(clientX, clientY);
+    if (army) {
+      this.showArmy(army, clientX, clientY, autoHideMs);
+      return;
+    }
     const { x, y } = this.toMap(clientX, clientY);
     const world = this.game.world;
     const cell = world.cellAt(x, y);
@@ -448,13 +499,29 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       text += ` · ${altitude}`;
     } else if (owner === WILD) {
       text = `${t.hoverWild} · ${altitude}`;
+    } else if (owner === NEUTRAL) {
+      const port = this.game.sim.neutralPorts.find(np => this.sameIsland(np.cell, cell));
+      text = port ? interpolate(t.hoverNeutralPort, { name: t.neutralPortNames[port.id] }) : t.hoverForeign;
     } else if (owner === FOREIGN) {
-      text = t.hoverForeign;
+      // Beyond the frontier: the nearest people's land.
+      let best: { name: string; d: number } | null = null;
+      for (const p of this.game.sim.poleis) {
+        if (!p.tribe) continue;
+        const d = Math.hypot(p.cx - x, p.cy - y);
+        if (!best || d < best.d) best = { name: polisName(t, p.def), d };
+      }
+      text = best && best.d < 120 ? interpolate(t.hoverTribe, { name: best.name }) : t.hoverForeign;
     }
     this.zone.run(() => {
       if (text) this.tooltip.show(text, clientX, clientY - 14, 'top', autoHideMs, { noWrap: true });
       else this.tooltip.hide();
     });
+  }
+
+  /** Whether two land cells lie within a few cells of each other (the same small island). */
+  private sameIsland(a: number, b: number): boolean {
+    const w = this.game.world;
+    return Math.hypot((a % w.cols) - (b % w.cols), Math.floor(a / w.cols) - Math.floor(b / w.cols)) < 10;
   }
 
   private hideTooltip() {

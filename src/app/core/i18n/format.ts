@@ -27,7 +27,7 @@ export function formatYear(year: number, t: Dict): string {
 
 /** Display name of a polis, including vassals founded on historical sites. */
 export function polisName(t: Dict, def: PolisDef): string {
-  return def.kind === 'site' ? t.siteNames[def.id] : t.polisNames[def.id];
+  return def.kind === 'site' ? t.siteNames[def.id] : def.kind === 'tribe' ? t.tribeNames[def.id] : t.polisNames[def.id];
 }
 
 /** Picks one/few/many plural forms (1 / 2–4 / 5+, Polish-style; English uses the same "many" form). */

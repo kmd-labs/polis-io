@@ -29,6 +29,7 @@ import { Annals, AnnalsYear } from './annals';
 import { DecadeReport, decadeReport } from './decade';
 import { olympiadOf } from './olympics';
 import { Fortune } from './fortune';
+import { GREAT_WORKS, GreatWorkId } from './data/frontier';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
 export interface PolisView {
@@ -83,6 +84,15 @@ export interface PolisView {
   mercenaries: number;
   blockadedBy: number;
   hasHarbour: boolean;
+  /** Player only: mercenaries and an extra expedition to be bought at once out of savings (null if not possible). */
+  mercenaryOffer: { men: number; cost: number } | null;
+  expeditionOffer: { settlers: number; cost: number } | null;
+  /** A people beyond the frontier rather than a city. */
+  tribe: boolean;
+  /** Player only: the great work receiving spare silver, saved so far, and cost / completions / availability of each. */
+  greatWork: GreatWorkId | null;
+  greatFund: number;
+  greatWorks: { id: GreatWorkId; cost: number; built: number; open: boolean }[];
   /** Seconds until this polis may found its next colony city. */
   colonyIn: number;
   /** Player only: hoplites are deserting for want of pay; colonization has nowhere to go. */
@@ -139,6 +149,8 @@ export type Notice =
   | { kind: 'olympics'; report: OlympicReport }
   | { kind: 'fortune'; fortune: Fortune }
   | { kind: 'built'; what: 'improvement' | 'farm' | 'port'; id: ImprovementId | null }
+  | { kind: 'greatWork'; id: GreatWorkId }
+  | { kind: 'raidChoice'; band: number; tribe: number; men: number; cost: number; treasury: number }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
 /** Clock multipliers behind the five speed keys (1–5). */
@@ -205,6 +217,8 @@ export class GameService {
   readonly player = signal(-1);
   /** Polis inspected on the map (or pre-selected on the start screen). */
   readonly selected = signal(-1);
+  /** The army clicked on the map (its id), or -1: its general's stars are shown above it. */
+  readonly selectedArmy = signal(-1);
   /** The map camera flies to this polis whenever a new request is set. */
   readonly focusRequest = signal<{ idx: number } | null>(null);
   /** Polis highlighted while hovering the start screen list. */
@@ -518,6 +532,30 @@ export class GameService {
     this.publish();
   }
 
+  /** Hires a band of mercenaries at once out of the player's savings. */
+  buyMercenaries() {
+    this.sim.buyMercenaries(this.sim.player);
+    this.publish();
+  }
+
+  /** Sends an extra settlers' expedition at once out of the player's savings. */
+  buyExpedition() {
+    this.sim.buyExpedition(this.sim.player);
+    this.publish();
+  }
+
+  /** The player's answer to a warband on their land. */
+  answerRaid(band: number, choice: 'bribe' | 'fight') {
+    this.sim.answerRaid(band, choice);
+    this.publish();
+  }
+
+  /** Chooses the great work that receives spare silver (null shares it among the funds again). */
+  setGreatWork(id: GreatWorkId | null) {
+    this.sim.setGreatWork(this.sim.player, id);
+    this.publish();
+  }
+
   /** Sends the player's delegation to Olympia: a share of a year's income (0 = stay at home). */
   sendDelegation(share: number) {
     this.sim.sendDelegation(this.sim.player, share);
@@ -619,8 +657,17 @@ export class GameService {
         mercenaries: sim.mercenaries(p.idx),
         blockadedBy: p.blockadedBy,
         hasHarbour: p.idx === sim.player && sim.harbourOf(p) >= 0,
+        mercenaryOffer: p.idx === sim.player ? sim.mercenaryOffer(p) : null,
+        expeditionOffer: p.idx === sim.player ? sim.expeditionOffer(p) : null,
         colonyBlocked: p.idx === sim.player && this.colonyBlocked(p),
         colonyIn: Math.max(0, p.nextColonyAt - sim.time),
+        tribe: p.tribe,
+        greatWork: p.greatWork,
+        greatFund: p.greatFund,
+        greatWorks:
+          p.idx === sim.player
+            ? GREAT_WORKS.map(g => ({ id: g.id, cost: sim.greatWorkCost(p, g.id), built: p.greatBuilt[g.id] ?? 0, open: sim.greatWorkOpen(p, g.id) }))
+            : [],
         relation: sim.player >= 0 ? sim.relation(sim.player, p.idx) : 0,
         tributeGold: Math.round(p.tributeGold),
         tributeWorkers: Math.round(p.tributeWorkers),
@@ -685,6 +732,7 @@ export class GameService {
       } else if (e.kind === 'built' && e.a === sim.player && e.tag) {
         this.history.addEvent({ kind: 'built', year: e.year, id: e.tag });
       }
+      if (e.kind === 'greatWork' && e.a === sim.player && e.tag) incoming.push({ kind: 'greatWork', id: e.tag as GreatWorkId });
       // Every finished building of the player's gets its own message.
       if (e.a === sim.player && ((e.kind === 'built' && e.tag) || e.kind === 'farm' || e.kind === 'port')) {
         incoming.push(
@@ -725,6 +773,11 @@ export class GameService {
       incoming.push({ kind: 'olympicsInvite', year, olympiad: olympiadOf(year), annualIncome: sim.annualIncome(me), treasury: sim.treasury(me) });
     }
     for (const report of games) incoming.push({ kind: 'olympics', report });
+    // A warband on our land: pay it off or fight it.
+    for (const c of sim.takeRaidChoices()) {
+      const band = sim.armies.find(a => a.id === c.band);
+      incoming.push({ kind: 'raidChoice', band: c.band, tribe: c.tribe, men: Math.round(band?.strength ?? 0), cost: c.cost, treasury: sim.treasury(me) });
+    }
     for (const r of warReports) filed.push({ kind: 'warEnd', ...r });
     // The player's budget founded a colony: say where and when.
     for (const { owner, plan } of sim.takePlans()) {

@@ -15,8 +15,12 @@ describe('hegemony rankings in a real game', () => {
   it('agree with a hand recount from the snapshots in three random years', () => {
     const png = decodePng(readFileSync('src/assets/map/hellas.png'));
     const world = new World(decodeMapPixels(png.data, png.channels, png.width, png.height));
+    // Decades at the game's real pace take too long for a test; these rules are counted in years.
+    const rules = RULES as unknown as Record<string, number>;
+    const year = rules['secondsPerYear'];
+    rules['secondsPerYear'] = 16;
     const sim = new Simulation(world, { seed: 11, autoplay: true });
-    sim.choose(1);
+    sim.choose(0);
     const history = new GameHistory();
     const standings = new Map<number, ReturnType<typeof rankHegemony>>();
     for (let y = 0; y < 80; y++) {
@@ -29,6 +33,7 @@ describe('hegemony rankings in a real game', () => {
       for (const c of sim.takeConquests()) sim.resolveConquest(c, 'subjugate');
     }
 
+    rules['secondsPerYear'] = year;
     const years = history.years;
     // The game may end early (a city can fall); pick from the years that were played, past the 25-year arms window.
     expect(years.length).toBeGreaterThan(28);

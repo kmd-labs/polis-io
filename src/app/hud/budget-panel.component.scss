@@ -119,6 +119,34 @@
   }
 }
 
+.buy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 3px 10px;
+  border: 1px solid color("warning-500");
+  border-radius: 999px;
+  background: transparent;
+  color: color("warning-900");
+  font: inherit;
+  font-size: font-size("xxs");
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: color("warning-100");
+  }
+
+  &:disabled {
+    border-color: color("neutral-300");
+    color: color("text-dim");
+    cursor: default;
+  }
+}
+
 .surplus {
   display: flex;
   flex-wrap: wrap;

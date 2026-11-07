@@ -82,8 +82,12 @@ export class AlertsComponent {
     if (me.colonyBlocked) {
       out.push({ key: 'colony', icon: Sprout, tone: 'warn', text: t.alertColonyBlocked, act: budget });
     }
+    for (const band of this.game.sim.armies) {
+      if (band.dead || band.raid !== me.idx || band.homeward) continue;
+      out.push({ key: `raid-${band.id}`, icon: Flame, tone: 'danger', text: interpolate(t.alertRaid, { name: name(band.owner) }), act: () => this.game.focusRequest.set({ idx: me.idx }) });
+    }
     for (const key of BUDGET_KEYS) {
-      if (key === 'colonization' || me.purchases[key] !== null) continue;
+      if (key === 'colonization' || me.purchases[key] !== null || me.greatWork) continue;
       out.push({
         key: `idle-${key}`,
         icon: PiggyBank,

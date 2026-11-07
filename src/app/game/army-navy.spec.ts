@@ -168,6 +168,10 @@ describe('colonies', () => {
   }, 30_000);
 
   it('never scatter settlers across the sea: no "colony across the sea" in a century', () => {
+    // Decades at the game's real pace take too long for a test; these rules are counted in years.
+    const rules = RULES as unknown as Record<string, number>;
+    const year = rules['secondsPerYear'];
+    rules['secondsPerYear'] = 16;
     const sim = new Simulation(world, { seed: 2, autoplay: true });
     sim.choose(0);
     const founded = new Map<number, number[]>();
@@ -178,6 +182,7 @@ describe('colonies', () => {
       sim.takePlans();
       for (const c of sim.takeConquests()) sim.resolveConquest(c, 'subjugate');
     }
+    rules['secondsPerYear'] = year;
     expect(sim.events.some(e => e.kind === 'colony')).toBe(false);
     for (const p of sim.poleis) if (p.def.kind === 'site') founded.set(p.overlord, [...(founded.get(p.overlord) ?? []), p.idx]);
     // At most one colony per polis per sixteen years, whatever its budget.

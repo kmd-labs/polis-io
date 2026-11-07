@@ -1,0 +1,140 @@
+@use "variables" as *;
+@use "app/theme/greek" as greek;
+
+:host {
+  display: block;
+  margin-top: spacing("lg");
+}
+
+.great {
+  &__title {
+    @include greek.display-type(0.06em);
+    margin: 0 0 spacing("xxs");
+    font-size: font-size("sm");
+    font-weight: font-weight("bold");
+    color: color("text-bright");
+  }
+
+  &__intro {
+    margin: 0 0 spacing("sm");
+    font-size: font-size("xs");
+    line-height: 1.45;
+    color: color("text-desc");
+  }
+
+  &__list {
+    display: grid;
+    gap: spacing("xs");
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__stop {
+    margin-top: spacing("xs");
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: font-size("xs");
+    color: color("text-dim");
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+.work {
+  padding: 8px 10px;
+  border: 1px solid color("line");
+  border-radius: radius("sm");
+  background: color("panel-bg-solid");
+
+  &--chosen {
+    border-color: color("accent");
+    background: color("accent-glow-soft");
+  }
+
+  &--done {
+    opacity: 0.7;
+  }
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  &__name {
+    font-size: font-size("sm");
+    font-weight: font-weight("semibold");
+    color: color("text-bright");
+  }
+
+  &__status {
+    font-family: var(--font-family-mono);
+    font-size: font-size("xxs");
+    color: color("text-main");
+    white-space: nowrap;
+  }
+
+  &__desc {
+    margin: 4px 0;
+    font-size: font-size("xs");
+    line-height: 1.4;
+    color: color("text-desc");
+  }
+
+  &__bar {
+    display: block;
+    height: 5px;
+    margin: 4px 0;
+    border-radius: radius("pill");
+    background: color("line");
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      background: color("accent");
+    }
+  }
+
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  &__built {
+    margin-right: auto;
+    font-size: font-size("xxs");
+    color: color("success-700");
+  }
+
+  &__btn {
+    padding: 3px 10px;
+    border: 1px solid color("line-strong");
+    border-radius: radius("pill");
+    background: color("panel-bg-solid");
+    font: inherit;
+    font-size: font-size("xxs");
+    font-weight: font-weight("semibold");
+    color: color("text-main");
+    cursor: pointer;
+
+    &:hover {
+      background: color("btn-hover");
+    }
+
+    &:focus-visible {
+      outline: 2px solid color("accent");
+      outline-offset: 1px;
+    }
+
+    &--chosen {
+      border-color: color("accent");
+      color: color("warning-800");
+    }
+  }
+}
