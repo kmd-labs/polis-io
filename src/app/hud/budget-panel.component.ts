@@ -162,7 +162,9 @@ export class BudgetPanelComponent {
     const warn = fc.desertIn !== null ? interpolate(t.fcDesert, { t: eta(fc.desertIn) }) : '';
     if (!next) {
       const idle =
-        key === 'colonization' && me.colonyBlocked
+        key === 'colonization' && me.colonyIn > 0 && !me.colonyBlocked
+          ? interpolate(t.fcColonyWait, { t: eta(me.colonyIn) })
+          : key === 'colonization' && me.colonyBlocked
           ? t.fcBlocked
           : key === 'military' && me.surplus === 'mercenaries' && !me.wars.length
             ? t.fcMercenariesPeace
@@ -184,7 +186,7 @@ export class BudgetPanelComponent {
             : next.kind === 'expedition'
               ? interpolate(t.fcExpedition, { n: formatNumber(me.settlers, lang) })
               : next.kind === 'colony'
-                ? t.fcColonyOnly
+                ? t.fcColonyCity
                 : next.kind === 'mercenaries'
                   ? interpolate(t.fcMercenaries, { n: formatNumber(Math.round(next.cost / RULES.mercenaryCost), lang) })
                   : next.kind === 'warship'

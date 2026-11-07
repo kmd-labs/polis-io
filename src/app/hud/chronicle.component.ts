@@ -1,7 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { LucideAngularModule, ScrollText } from 'lucide-angular';
 import { I18nService } from '../core/i18n/i18n.service';
-import { formatNumber, formatPlural, formatYear, interpolate } from '../core/i18n/format';
+import { formatNumber, formatOrdinal, formatPlural, formatYear, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { GameEventKind } from '../game/simulation';
 import { ImprovementId } from '../game/data/improvements';
@@ -37,7 +37,10 @@ const TEMPLATE_KEY = {
   mercenaries: 'evMercenaries',
   warship: 'evWarship',
   navalBattle: 'evNavalBattle',
-  blockade: 'evBlockade'
+  blockade: 'evBlockade',
+  truce: 'evTruce',
+  truceEnd: 'evTruceEnd',
+  olympics: 'evOlympics'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Feed of the latest wars, treaties, colonies and conquests: a few lines in the outliner, the full record in the drawer. */
@@ -82,7 +85,7 @@ export class ChronicleComponent {
           a: name(e.a),
           b: name(e.b),
           m: e.n ? formatPlural(e.n, t.monthsOne, t.monthsFew, t.monthsMany) : '',
-          n: e.n ? formatNumber(e.n, this.i18n.lang()) : '',
+          n: e.n ? (e.kind === 'truce' ? formatOrdinal(e.n, this.i18n.lang()) : formatNumber(e.n, this.i18n.lang())) : '',
           w:
             e.kind === 'built' && e.tag
               ? (t.improvements[e.tag as ImprovementId]?.name ?? '')

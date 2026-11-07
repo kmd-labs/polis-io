@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 // @ts-expect-error plain JS helper shared with the map build script
 import { decodePng } from '../../../scripts/png.mjs';
 import { GameHistory, budgetChanged } from './history';
-import { Simulation } from './simulation';
+import { RULES, Simulation } from './simulation';
 import { World, decodeMapPixels } from './world';
 
 describe('budgetChanged', () => {
@@ -25,7 +25,9 @@ describe('GameHistory', () => {
     for (let year = 0; year < 300; year++) {
       history.record(sim);
       history.record(sim); // twice in the same year is ignored
-      sim.step(4);
+      // Play a little of every year and skip the rest: the test is about what the history keeps.
+      sim.step(1);
+      sim.time += RULES.secondsPerYear - 1;
       sim.takeReports();
       sim.takeWarReports();
       sim.takePlans();
@@ -40,5 +42,5 @@ describe('GameHistory', () => {
     expect(history.series(0, 'population').length).toBeGreaterThan(0);
     expect(history.bytes).toBeLessThan(5 * 1024 * 1024);
     console.info(`history: ${history.length} years (status ${sim.status}), ${sim.poleis.length} poleis, ${(history.bytes / 1024).toFixed(0)} KB`);
-  }, 120_000);
+  }, 400_000);
 });

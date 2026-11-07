@@ -2,6 +2,7 @@
 
 <main class="viewport">
   <app-splash></app-splash>
+  <span class="app-version" [attr.aria-label]="t.versionLabel + ' ' + version">v{{ version }}</span>
 
   <!-- Fullscreen Visualization Stage -->
   <section class="stage" [attr.aria-label]="t.stageAriaLabel">
@@ -59,6 +60,49 @@
         </div>
       }
     </dl>
+  </ng-template>
+
+  <ng-template #inviteTpl>
+    <div class="invite" role="group" [attr.aria-label]="t.olyChoose">
+      @for (o of inviteOptions(); track o.key) {
+        <button type="button" class="invite__btn" [class.invite__btn--stay]="!o.share" (click)="chooseDelegation(o.share)">{{ o.label }}</button>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template #olympicsTpl>
+    @if (olympicsView(); as o) {
+      <p class="decade__verdict">{{ o.verdict }}</p>
+      @if (o.reward) {
+        <p class="olympics__reward">{{ o.reward }}</p>
+      }
+      @if (o.triumph) {
+        <p class="olympics__triumph">{{ o.triumph }}</p>
+      }
+      @for (line of o.others; track $index) {
+        <p class="olympics__other">{{ line }}</p>
+      }
+      <h3 class="decade__heading">{{ t.olyTable }}</h3>
+      <ol class="olympics__table">
+        @for (row of o.top; track row.idx) {
+          <li class="olympics__row" [class.olympics__row--mine]="row.mine">
+            <span class="olympics__place">{{ row.place }}</span>
+            <app-polis-flag [def]="row.def" [size]="14"></app-polis-flag>
+            <span class="olympics__name">{{ row.name }}</span>
+            <span class="olympics__wreaths">{{ row.wreaths }} 🌿</span>
+          </li>
+        }
+      </ol>
+      <h3 class="decade__heading">{{ t.olyEvents }}</h3>
+      <dl class="olympics__events">
+        @for (e of o.events; track $index) {
+          <div class="olympics__event" [class.olympics__event--mine]="e.mine">
+            <dt>{{ e.event }}</dt>
+            <dd>{{ e.winner }}</dd>
+          </div>
+        }
+      </dl>
+    }
   </ng-template>
 
   <ng-template #decadeTpl>

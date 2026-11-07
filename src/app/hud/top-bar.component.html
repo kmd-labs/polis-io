@@ -51,6 +51,9 @@
   }
 
   <div class="bar__clock">
+    @if (game.truce()) {
+      <span class="truce" [appTooltip]="t.truceHint" tabindex="0">🕊 {{ bp.mobile() ? '' : t.truce }}</span>
+    }
     <span class="bar__date" aria-live="off">{{ year() }}</span>
     @if (ended()) {
       <app-button variant="play" [hot]="true" [active]="true" (btnClick)="restart.emit()">

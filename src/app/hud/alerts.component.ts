@@ -5,6 +5,8 @@ import {
   Crown,
   Hammer,
   Mail,
+  Sparkles,
+  Flame,
   Anchor,
   LucideIconData,
   PiggyBank,
@@ -143,11 +145,15 @@ export class AlertsComponent {
           ? interpolate(t.alertVictory, { place: name(n.near) })
           : n.kind === 'warEnd'
             ? interpolate(t.alertWarEnd, { name: name(n.enemy) })
-            : t.alertDevelop;
+            : n.kind === 'fortune'
+              ? n.fortune.boon
+                ? t.boons[n.fortune.branch].title
+                : t.banes[n.fortune.bane].title
+              : t.alertDevelop;
       out.push({
         key: `report-${r.id}`,
-        icon: n.kind === 'victory' ? Trophy : n.kind === 'warEnd' ? ScrollText : Hammer,
-        tone: n.kind === 'develop' ? 'info' : 'good',
+        icon: n.kind === 'victory' ? Trophy : n.kind === 'warEnd' ? ScrollText : n.kind === 'fortune' ? (n.fortune.boon ? Sparkles : Flame) : Hammer,
+        tone: n.kind === 'develop' ? 'info' : n.kind === 'fortune' && !n.fortune.boon ? 'danger' : 'good',
         text: `${when} · ${text} — ${t.alertOpen}`,
         act: () => this.game.openReport(r.id)
       });

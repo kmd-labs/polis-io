@@ -29,6 +29,14 @@ export const PL: Dict = {
       desc: 'Spacja wstrzymuje grę, 1–5 ustawiają prędkość, B otwiera budżet, H ranking hegemonii, Esc zwija boczny panel.'
     },
     {
+      term: 'Igrzyska olimpijskie',
+      desc: 'Co cztery lata (licząc od pierwszej olimpiady w 776 p.n.e.) w Olimpii odbywają się igrzyska z konkurencjami swojej epoki: dwanaście w 600 p.n.e., później osiemnaście i więcej (biegi, zapasy, pięściarstwo, pankration, pięciobój, wyścigi rydwanów, bieg w zbroi, heroldowie i trębacze). Święty rozejm trwa od dwóch miesięcy przed do miesiąca po igrzyskach: nikt nie prowadzi wojny, armie wracają do miast. Ty decydujesz, jaką część rocznego dochodu przeznaczyć na reprezentację; najlepiej radzą sobie duże, bogate i hojne miasta (wojownicze w sportach walki, kulturalne w biegach i muzyce, bogate w wyścigach rydwanów). Każde startujące miasto zyskuje projekcję siły, a każdy wieniec — sławę i życzliwość innych; triumf (dwie piąte wieńców, co najmniej pięć) daje +1 kultury.'
+    },
+    {
+      term: 'Zrządzenia losu',
+      desc: 'Co dwa lata los odmienia się dla każdego miasta: zastrzyk dla jednej gałęzi budżetu (od jednego do trzech miesięcy dochodu prosto do tego funduszu) albo nieszczęście — pożar, zaraza, susza, piraci, trzęsienie ziemi lub defraudacja — kosztujące do trzech miesięcy pełnych dochodów. Czekają w rzędzie alertów.'
+    },
+    {
       term: 'Hegemonia',
       desc: 'Co roku trzy najlepsze miasta w srebrze (średni dochód z 10 lat, łącznie z daniną), ludziach (bieżąca ludność; wasale liczą się osobno) i orężu (ostatnie 25 lat: wygrana bitwa 1, zdobyta stolica 5, wygrana wojna 3) dostają 3, 2 i 1 punkt. Najwięcej punktów (na 9) czyni Hegemonem Hellady. Każdy punkt daje +0,1 projekcji siły rocznie; Hegemon zarabia o 5% więcej na handlu morskim i przyciąga więcej statków. Miasto, które przez dziesięć lat z rzędu ma 7 lub więcej punktów, jednoczy Helladę przeciw sobie: życzliwość wszystkich maleje o 2 rocznie, a rywale chętniej zawierają sojusze i atakują — dopóki jego wynik nie spadnie poniżej 6. Zobacz zakładkę Hegemonia, wieniec laurowy na górnym pasku i tryb mapy hegemonii.'
     },
@@ -46,7 +54,7 @@ export const PL: Dict = {
     },
     {
       term: 'Zasiedlanie dziczy',
-      desc: 'Zależy od udziału kolonizacji w budżecie: każda wyprawa kosztuje drachmy z tego funduszu i na zawsze zabiera 10% twoich robotników. Osadnicy powoli zajmują wolną ziemię przy granicach — a gdy wybrzeże się zapełni, zakładają kolonię za morzem. Więcej ziemi to większa pojemność, a każdy nowy piksel trwale przyspiesza przyrost ludności i dochody.'
+      desc: 'Zależy od udziału kolonizacji w budżecie: każda niewielka wyprawa kosztuje drachmy z tego funduszu i na zawsze zabiera 5% twoich robotników, a osadnicy powoli zajmują wolną ziemię przy granicach. Raz na pokolenie (co 40 lat, przy dużym udziale kolonizacji nawet co 16) miasto zakłada kolonię: jedno nowe miasto-wasala w historycznym miejscu. Więcej ziemi to większa pojemność, a każdy nowy piksel trwale przyspiesza przyrost ludności i dochody.'
     },
     {
       term: 'Militaryzm i kultura',
@@ -90,7 +98,7 @@ export const PL: Dict = {
     },
     {
       term: 'Armia główna i oddziały łupieżcze',
-      desc: 'Na wojnie polis wystawia od dwóch do pięciu armii. Armia główna (większa tarcza) bierze mniej więcej połowę wolnych hoplitów i szuka starcia z armią główną wroga; mniejsze oddziały łupią ziemie przeciwnika i uciekają przed każdą siłą zbliżoną do swojej. Armia główna słabsza od wrogiej zatrzymuje się i okopuje (pierścień palisady): w ciągu kilku lat jej siła rośnie do 150%, a każda wroga armia, która podejdzie na 30 pól, zostaje zaatakowana. Kilku hoplitów zawsze zostaje za murami. Armia rezygnuje z pościgu po trzech sekundach, a armie trzymają się dolin, omijając wzgórza i góry.'
+      desc: 'Na wojnie polis wystawia od dwóch do pięciu armii. Armia główna (większa tarcza) bierze mniej więcej połowę wolnych hoplitów i szuka starcia z armią główną wroga; mniejsze oddziały łupią ziemie przeciwnika i uciekają przed każdą siłą zbliżoną do swojej. Armia główna słabsza od wrogiej zatrzymuje się i okopuje (pierścień palisady): w ciągu kilku miesięcy jej siła rośnie do 150%, a każda wroga armia, która podejdzie na 30 pól, zostaje zaatakowana. Kilku hoplitów zawsze zostaje za murami. Armia rezygnuje z pościgu po trzech sekundach, a armie trzymają się dolin, omijając wzgórza i góry.'
     },
     {
       term: 'Najemnicy i flota wojenna',
@@ -98,7 +106,7 @@ export const PL: Dict = {
     },
     {
       term: 'Oblężenia i upadek polis',
-      desc: 'Armia, która dotrze do stolicy wroga, obozuje pod jej murami przez mniej więcej dwa i pół roku, zanim przypuści szturm. W tym czasie oblężonemu miastu spada zadowolenie, ludność prawie nie przybywa, a garnizon głoduje — ale oblegający też topnieją. Upadła polis rzadko znika z mapy: może przetrwać jako miasto w granicach zwycięzcy albo zostać państwem klienckim, które płaci daninę w drachmach i robotnikach. Polis założycielskie trudno zrównać z ziemią, młode kolonie — łatwo. Czasem w chaosie oderwie się zupełnie nowa polis.'
+      desc: 'Armia, która dotrze do stolicy wroga, obozuje pod jej murami ponad pół roku, zanim przypuści szturm. W tym czasie oblężonemu miastu spada zadowolenie, ludność prawie nie przybywa, a garnizon głoduje — ale oblegający też topnieją. Upadła polis rzadko znika z mapy: może przetrwać jako miasto w granicach zwycięzcy albo zostać państwem klienckim, które płaci daninę w drachmach i robotnikach. Polis założycielskie trudno zrównać z ziemią, młode kolonie — łatwo. Czasem w chaosie oderwie się zupełnie nowa polis.'
     },
     {
       term: 'Podbój',
@@ -110,7 +118,7 @@ export const PL: Dict = {
     },
     {
       term: 'Bitwa',
-      desc: 'Gdy spotkają się dwie wrogie armie, znikają w chmurze bójki, a przechodzące obok armie dołączają do swoich. Wychodzi z niej tylko jedna strona; zwykle silniejsza, ale nie zawsze. Armia, która napotka wroga dwa i pół raza silniejszego, wycofuje się, gubiąc maruderów, a czasem rozpada się na dwie mniejsze. Ziemia zajęta przez armię nie zawsze zostaje przy zdobywcy — 20% jej, a daleko od domu nawet połowa, pustoszeje i wraca do dziczy. Samotne skrawki ziemi (do czterech pikseli) odcięte od stolicy po około czterech latach również wracają do dziczy.'
+      desc: 'Gdy spotkają się dwie wrogie armie, znikają w chmurze bójki, a przechodzące obok armie dołączają do swoich. Wychodzi z niej tylko jedna strona; zwykle silniejsza, ale nie zawsze. Armia, która napotka wroga dwa i pół raza silniejszego, wycofuje się, gubiąc maruderów, a czasem rozpada się na dwie mniejsze. Ziemia zajęta przez armię nie zawsze zostaje przy zdobywcy — 20% jej, a daleko od domu nawet połowa, pustoszeje i wraca do dziczy. W czasie wojny obszar mniejszy niż 20 pikseli (poza stolicą), który styka się z wrogiem i przez dwa lata nie urośnie do 20, przechodzi do tego wroga; inne samotne skrawki ziemi (do czterech pikseli) odcięte od stolicy po około czterech latach wracają do dziczy.'
     },
     {
       term: 'Zwycięstwo',
@@ -315,6 +323,81 @@ export const PL: Dict = {
   evHegemon: '{a} zostaje nowym Hegemonem Hellady',
   evCoalition: 'Hellada lęka się potęgi polis {a}: miasta jednoczą się przeciw niej',
   evMercenaries: '{a} najmuje {n} najemników',
+  versionLabel: 'Wersja',
+  builtTitle: 'Ukończono: {name}',
+  builtNames: { farm: 'nowa farma', port: 'nowy port' },
+  builtTexts: {
+    farm: 'Pola, klepisko i studnia: ziemia wyżywi o 2500 ludzi więcej.',
+    port: 'Nabrzeża i latarnia: +12% dochodu, własne opłaty portowe i jeden statek kupiecki więcej na morzu.'
+  },
+  builtAction: 'Wspaniale',
+  fcColonyWait: 'następna kolonia możliwa za {t}',
+  fcColonyCity: 'jedno nowe miasto w historycznym miejscu',
+  boons: {
+    military: { title: 'Weterani wracają', text: 'Doświadczeni hoplici wracający ze służby za morzem zgłaszają się, by szkolić naszą młodzież.' },
+    colonization: { title: 'Delfy nam sprzyjają', text: 'Pytia błogosławi nowemu przedsięwzięciu; rodziny z całej okolicy chcą płynąć z naszymi osadnikami.' },
+    agriculture: { title: 'Obfite żniwa', text: 'Deszcz w porę i słońce w porę: spichlerze pękają w szwach.' },
+    trade: { title: 'Kupcy z daleka', text: 'Fenicki dom handlowy otwiera skład przy naszym porcie i hojnie płaci za ten przywilej.' },
+    culture: { title: 'Zima poety', text: 'Słynny poeta spędza u nas zimę; obywatele tłumnie go słuchają, a bogaty wielbiciel funduje święto.' }
+  },
+  banes: {
+    fire: { title: 'Pożar na agorze', text: 'Ogień trawi dzielnicę targową; kramy i składy trzeba odbudować.' },
+    plague: { title: 'Zaraza w mieście', text: 'Gorączka szerzy się w ciasnych domach; lekarze i ofiary dla Asklepiosa sporo kosztują.' },
+    drought: { title: 'Susza', text: 'Źródła wysychają, a jęczmień więdnie; zboże trzeba kupować za morzem.' },
+    pirates: { title: 'Piraci', text: 'Rabusie przejmują ładunki u naszych wybrzeży; płacimy okupy i zbroimy eskorty.' },
+    earthquake: { title: 'Trzęsienie ziemi', text: 'Posejdon wstrząsa ziemią: pękają mury, a dach świątyni się zapada.' },
+    embezzlement: { title: 'Defraudacja', text: 'Skarbnicy zostają przyłapani z ręką w miejskiej kasie; pieniądze przepadły.' }
+  },
+  fortuneGain: '+{d} drachm dla funduszu „{fund}”.',
+  fortuneLoss: 'Kosztuje to {d} drachm (około {m} mies. naszych dochodów).',
+  fortuneAction: 'Tak już bywa',
+  evTruce: 'Heroldowie z Elidy ogłaszają święty rozejm {n} olimpiady: wszystkie wojny ustają',
+  evTruceEnd: 'Rozejm olimpijski dobiegł końca: wojny trwają dalej',
+  evOlympics: '{a} zdobywa w Olimpii wieńce oliwne: {n}',
+  truce: 'Święty rozejm',
+  truceHint: 'Rozejm olimpijski (ekecheiria): od dwóch miesięcy przed igrzyskami do miesiąca po nich nikt nie prowadzi wojny. Armie wracają do miast, floty do portów, a żadne miasto nie może wypowiedzieć wojny.',
+  olympicEvents: {
+    stadion: 'Stadion (jedna długość)',
+    diaulos: 'Diaulos (dwie długości)',
+    dolichos: 'Dolichos (bieg długi)',
+    pentathlon: 'Pięciobój',
+    pale: 'Zapasy',
+    pygme: 'Pięściarstwo',
+    tethrippon: 'Kwadryga',
+    pankration: 'Pankration',
+    keles: 'Wyścig konny',
+    paidesStadion: 'Stadion chłopców',
+    paidesPale: 'Zapasy chłopców',
+    paidesPygme: 'Pięściarstwo chłopców',
+    hoplitodromos: 'Bieg w zbroi',
+    apene: 'Wyścig wozów mulich',
+    kalpe: 'Wyścig klaczy',
+    synoris: 'Dwukółka',
+    kerykes: 'Heroldowie',
+    salpinktai: 'Trębacze',
+    tethripponPolon: 'Kwadryga źrebiąt',
+    synorisPolon: 'Dwukółka źrebiąt',
+    kelesPolon: 'Wyścig źrebiąt',
+    paidesPankration: 'Pankration chłopców'
+  },
+  olyInviteTitle: '{n} olimpiada — {year}',
+  olyInviteText: 'Heroldowie z Elidy ogłaszają święty rozejm: wszystkie wojny ustają do miesiąca po igrzyskach, a armie wracają do domów. Jak liczną reprezentację wyśle {name} do Olimpii (procent rocznego dochodu)? Im więcej srebra, tym lepsi zawodnicy, trenerzy i zaprzęgi.',
+  olyStay: 'Zostajemy w domu',
+  olyChoose: 'Budżet reprezentacji',
+  olyModest: 'Skromna {p}% · {d} dr',
+  olyGenerous: 'Hojna {p}% · {d} dr',
+  olyLavish: 'Wystawna {p}% · {d} dr',
+  olyReportTitle: '{n} olimpiada — {year}',
+  olyReportSubtitle: 'Wieńce oliwne w Olimpii',
+  olyYouWon: 'Nasi zawodnicy zdobyli wieńce oliwne: {n} — {place} miejsce na {of} miast.',
+  olyYouNone: 'Nasi zawodnicy wrócili bez wieńca — {place} miejsce na {of} miast.',
+  olyYouStayed: 'Tym razem nie wysłaliśmy reprezentacji.',
+  olyReward: 'Projekcja siły +{p}; życzliwość wszystkich miast +{r}.',
+  olyTriumph: 'Triumf! Cała Hellada opiewa naszych zawodników: kultura +1.',
+  olyTriumphOther: 'Triumf polis {name}: jej kultura rośnie o jeden.',
+  olyTable: 'Wieńce według miast',
+  olyEvents: 'Konkurencje',
+  olyAction: 'Chwała zwycięzcom',
   evWarship: '{a} spuszcza na wodę galerę wojenną (flota: {n})',
   evNavalBattle: 'Flota polis {a} zatapia flotę polis {b}',
   evBlockade: 'Flota polis {a} blokuje port polis {b}',

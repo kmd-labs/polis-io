@@ -68,7 +68,8 @@
             variant="toggle"
             [hot]="true"
             [active]="true"
-            [titleText]="t.declareWarHint"
+            [disabled]="game.truce()"
+            [titleText]="game.truce() ? t.truceHint : t.declareWarHint"
             (btnClick)="game.declareWar(target.idx)">
             <lucide-icon [img]="icons.Swords" [size]="14"></lucide-icon>
             <span>{{ t.declareWar }}</span>

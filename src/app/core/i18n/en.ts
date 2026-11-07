@@ -29,6 +29,14 @@ export const EN: Dict = {
       desc: 'Space pauses, 1–5 set the speed, B opens the budget, H the hegemony rankings, Esc folds the side panel.'
     },
     {
+      term: 'The Olympic Games',
+      desc: 'Every fourth year (counted from the first Olympiad of 776 BC) the Games are held at Olympia, with the contests of their time: twelve in 600 BC, up to eighteen and more later (races, wrestling, boxing, pankration, pentathlon, chariots, the race in armour, heralds and trumpeters). The sacred truce runs from two months before to a month after: no war is waged, armies march home. You choose how much of a year’s income to spend on your delegation; big, wealthy, well-funded cities do best (warlike ones in combat sports, cultured ones in races and music, rich ones in chariots). Every city that competes gains power projection, and every wreath raises its renown and others’ regard; a triumph (two-fifths of all wreaths, at least five) adds +1 culture.'
+    },
+    {
+      term: 'Twists of fortune',
+      desc: 'Every two years fortune turns for every city: a windfall for one budget branch (one to three months of income straight into that fund) or a misfortune — fire, plague, drought, pirates, earthquake or embezzlement — costing up to three months of full income. They wait in the alerts row.'
+    },
+    {
       term: 'Hegemony',
       desc: 'Every year the three best cities in silver (average income over 10 years, tribute included), people (today’s population; vassals count for themselves) and arms (last 25 years: battle won 1, capital taken 5, war won 3) earn 3, 2 and 1 points. The most points (out of 9) makes the Hegemon of Hellas. Each point brings +0.1 power projection a year; the Hegemon earns 5% more from sea trade and draws more ships. A city holding 7 or more points for ten years running unites Hellas against it: everyone’s regard for it sinks by 2 a year, and its rivals ally and attack more readily, until its score falls below 6. See the Hegemony tab, the laurel in the top bar and the hegemony map mode.'
     },
@@ -46,7 +54,7 @@ export const EN: Dict = {
     },
     {
       term: 'Settle the wilderness',
-      desc: 'Driven by the colonization share of your budget: each expedition costs drachmae from that fund and takes 10% of your workers away for good. The settlers slowly claim free land next to your borders — or found a colony across the sea once your coast is full. More land raises your carrying capacity, and every new pixel permanently speeds up population growth and income.'
+      desc: 'Driven by the colonization share of your budget: each small expedition costs drachmae from that fund and takes 5% of your workers away for good, and the settlers slowly claim free land next to your borders. Once a generation (every 40 years, down to 16 with a large colonization share) the city founds a colony: one new vassal city on a historical site. More land raises your carrying capacity, and every new pixel permanently speeds up population growth and income.'
     },
     {
       term: 'Militarism & culture',
@@ -90,7 +98,7 @@ export const EN: Dict = {
     },
     {
       term: 'Main army and raiders',
-      desc: 'At war a polis fields two to five armies. The main army (the larger shield) takes about half the spare hoplites and seeks out the enemy’s main army; the smaller raiding parties plunder the countryside and run from any force near their size. A main army weaker than the enemy’s halts and digs in (a ring of stakes): over a few years its fighting power grows to 150%, and it falls on any enemy army that comes within 30 cells. A few hoplites always stay behind the walls. An army gives up a chase after three seconds, and armies keep to the valleys, skirting hills and mountains.'
+      desc: 'At war a polis fields two to five armies. The main army (the larger shield) takes about half the spare hoplites and seeks out the enemy’s main army; the smaller raiding parties plunder the countryside and run from any force near their size. A main army weaker than the enemy’s halts and digs in (a ring of stakes): within a few months its fighting power grows to 150%, and it falls on any enemy army that comes within 30 cells. A few hoplites always stay behind the walls. An army gives up a chase after three seconds, and armies keep to the valleys, skirting hills and mountains.'
     },
     {
       term: 'Mercenaries and the war fleet',
@@ -98,7 +106,7 @@ export const EN: Dict = {
     },
     {
       term: 'Sieges and the fall of a polis',
-      desc: 'An army reaching an enemy capital camps before its walls for about two and a half years before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
+      desc: 'An army reaching an enemy capital camps before its walls for over half a year before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
     },
     {
       term: 'Conquest',
@@ -110,7 +118,7 @@ export const EN: Dict = {
     },
     {
       term: 'Battle',
-      desc: 'When two hostile armies meet, they vanish into a brawl cloud, and armies passing nearby join their friends in it. Only one side walks out; the larger usually wins, but not always. An army facing an enemy two and a half times its size falls back instead, losing stragglers, and sometimes scatters into two smaller armies. Land an army overruns is not always kept — 20% of it, and up to half far from home, is simply left as wilderness. Stray scraps of land (four pixels or fewer) cut off from their capital go back to the wild after about four years.'
+      desc: 'When two hostile armies meet, they vanish into a brawl cloud, and armies passing nearby join their friends in it. Only one side walks out; the larger usually wins, but not always. An army facing an enemy two and a half times its size falls back instead, losing stragglers, and sometimes scatters into two smaller armies. Land an army overruns is not always kept — 20% of it, and up to half far from home, is simply left as wilderness. In wartime a patch of fewer than 20 pixels (not the capital) that touches the enemy and does not grow to 20 within two years passes to that enemy; other stray scraps of land (four pixels or fewer) cut off from their capital go back to the wild after about four years.'
     },
     {
       term: 'Victory',
@@ -315,6 +323,81 @@ export const EN: Dict = {
   evHegemon: '{a} is the new Hegemon of Hellas',
   evCoalition: 'Hellas fears the power of {a}: the cities draw together against it',
   evMercenaries: '{a} hires {n} mercenaries',
+  versionLabel: 'Version',
+  builtTitle: '{name} is finished',
+  builtNames: { farm: 'A new farm', port: 'A new port' },
+  builtTexts: {
+    farm: 'Fields, a threshing floor and a well: the land can feed 2,500 more people.',
+    port: 'Quays and a lighthouse: +12% income, harbour dues of its own, and one more merchant ship at sea.'
+  },
+  builtAction: 'Splendid',
+  fcColonyWait: 'next colony city possible in {t}',
+  fcColonyCity: 'one new city on a historical site',
+  boons: {
+    military: { title: 'Veterans come home', text: 'Seasoned hoplites back from service abroad offer to drill our young men.' },
+    colonization: { title: 'Delphi smiles on us', text: 'The Pythia blesses a new venture; families from all around ask to sail with our settlers.' },
+    agriculture: { title: 'A bumper harvest', text: 'Rain at the right time and sun at the right time: the granaries overflow.' },
+    trade: { title: 'Merchants from afar', text: 'A Phoenician trading house opens a warehouse by our harbour and pays well for the privilege.' },
+    culture: { title: 'A poet’s winter', text: 'A famous poet stays the winter; the citizens flock to hear him and a rich admirer endows the festival.' }
+  },
+  banes: {
+    fire: { title: 'Fire in the agora', text: 'A fire tears through the market quarter; stalls and storehouses must be rebuilt.' },
+    plague: { title: 'Sickness in the city', text: 'A fever spreads through the crowded houses; physicians and offerings to Asclepius cost dearly.' },
+    drought: { title: 'Drought', text: 'The springs run low and the barley withers; grain must be bought abroad.' },
+    pirates: { title: 'Pirates', text: 'Raiders seize cargoes off our coast; we pay ransoms and arm escorts.' },
+    earthquake: { title: 'Earthquake', text: 'Poseidon shakes the earth: walls crack and a temple roof falls in.' },
+    embezzlement: { title: 'Embezzlement', text: 'Treasurers are caught with their hands in the city chest; the money is gone.' }
+  },
+  fortuneGain: '+{d} drachmae for {fund}.',
+  fortuneLoss: 'It costs {d} drachmae (about {m} months of our income).',
+  fortuneAction: 'So it goes',
+  evTruce: 'The heralds of Elis proclaim the sacred truce of the {n} Olympiad: all wars stand still',
+  evTruceEnd: 'The Olympic truce is over: the wars resume',
+  evOlympics: '{a} wins {n} olive wreaths at Olympia',
+  truce: 'Sacred truce',
+  truceHint: 'The Olympic truce (ekecheiria): from two months before the Games to a month after, no war is waged. Armies march home, fleets return to harbour, and no city may declare war.',
+  olympicEvents: {
+    stadion: 'Stadion (one length)',
+    diaulos: 'Diaulos (two lengths)',
+    dolichos: 'Dolichos (long race)',
+    pentathlon: 'Pentathlon',
+    pale: 'Wrestling',
+    pygme: 'Boxing',
+    tethrippon: 'Four-horse chariot',
+    pankration: 'Pankration',
+    keles: 'Horse race',
+    paidesStadion: 'Boys’ stadion',
+    paidesPale: 'Boys’ wrestling',
+    paidesPygme: 'Boys’ boxing',
+    hoplitodromos: 'Race in armour',
+    apene: 'Mule-cart race',
+    kalpe: 'Mares’ race',
+    synoris: 'Two-horse chariot',
+    kerykes: 'Heralds',
+    salpinktai: 'Trumpeters',
+    tethripponPolon: 'Four-colt chariot',
+    synorisPolon: 'Two-colt chariot',
+    kelesPolon: 'Colt race',
+    paidesPankration: 'Boys’ pankration'
+  },
+  olyInviteTitle: 'The {n} Olympiad — {year}',
+  olyInviteText: 'The heralds of Elis proclaim the sacred truce: all wars stop until a month after the Games, and armies march home. How large a delegation will {name} send to Olympia (as a share of a year’s income)? The more silver, the better the athletes, trainers and chariot teams.',
+  olyStay: 'Stay home',
+  olyChoose: 'Purse for the delegation',
+  olyModest: 'Modest {p}% · {d} dr',
+  olyGenerous: 'Generous {p}% · {d} dr',
+  olyLavish: 'Lavish {p}% · {d} dr',
+  olyReportTitle: 'The {n} Olympiad — {year}',
+  olyReportSubtitle: 'Olive wreaths at Olympia',
+  olyYouWon: 'Our athletes won {n} olive wreaths — {place} of {of} cities.',
+  olyYouNone: 'Our athletes came home without a wreath — {place} of {of} cities.',
+  olyYouStayed: 'We sent no delegation this time.',
+  olyReward: 'Power projection +{p}; every city’s regard for us +{r}.',
+  olyTriumph: 'A triumph! All Hellas sings of our athletes: culture +1.',
+  olyTriumphOther: 'A triumph for {name}: its culture rises by one.',
+  olyTable: 'Wreaths by city',
+  olyEvents: 'The contests',
+  olyAction: 'Glory to the victors',
   evWarship: '{a} launches a war galley (fleet of {n})',
   evNavalBattle: 'The fleet of {a} sinks the fleet of {b}',
   evBlockade: 'The fleet of {a} blockades the harbour of {b}',

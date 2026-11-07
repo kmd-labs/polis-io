@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 // @ts-expect-error plain JS helper shared with the map build script
 import { decodePng } from '../../../scripts/png.mjs';
 import { forecastFund } from './economy';
-import { BUDGET_KEYS, BudgetKey, PolisState, Simulation } from './simulation';
+import { BUDGET_KEYS, BudgetKey, PolisState, RULES, Simulation } from './simulation';
 import { World, decodeMapPixels } from './world';
 
 /**
@@ -26,6 +26,11 @@ describe('fund forecast accuracy', () => {
   }, 60_000);
 
   it('predicts when funds can afford their purchases (seeded, peacetime)', () => {
+    // Twists of fortune and Olympic delegations jolt the funds on purpose; the forecast is about the steady flow.
+    const rules = RULES as unknown as Record<string, number>;
+    const saved = { fortuneYears: rules['fortuneYears'], gamesMonth: rules['gamesMonth'] };
+    rules['fortuneYears'] = 1e9;
+    rules['gamesMonth'] = 99;
     const sim = new Simulation(world, { seed: 7 });
     sim.choose(0);
 
@@ -80,5 +85,6 @@ describe('fund forecast accuracy', () => {
     expect(errors.length).toBeGreaterThan(20);
     expect(median).toBeLessThanOrEqual(0.2);
     expect(within).toBeGreaterThanOrEqual(0.8);
+    Object.assign(rules, saved);
   }, 120_000);
 });

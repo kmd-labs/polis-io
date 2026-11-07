@@ -13,6 +13,7 @@ import {
   DevelopmentPlan,
   GameEvent,
   GameStatus,
+  OlympicReport,
   PolisState,
   Purchase,
   SurplusUse,
@@ -26,6 +27,8 @@ import { budgetChanged } from './history';
 import { HEGEMONY_CATEGORIES, HEGEMONY_RULES, HegemonyCategory, HegemonyStanding } from './hegemony';
 import { Annals, AnnalsYear } from './annals';
 import { DecadeReport, decadeReport } from './decade';
+import { olympiadOf } from './olympics';
+import { Fortune } from './fortune';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
 export interface PolisView {
@@ -80,6 +83,8 @@ export interface PolisView {
   mercenaries: number;
   blockadedBy: number;
   hasHarbour: boolean;
+  /** Seconds until this polis may found its next colony city. */
+  colonyIn: number;
   /** Player only: hoplites are deserting for want of pay; colonization has nowhere to go. */
   unpaid: boolean;
   colonyBlocked: boolean;
@@ -130,6 +135,10 @@ export type Notice =
   | { kind: 'conquest'; from: number }
   | { kind: 'hegemon'; hegemon: number; previous: number }
   | { kind: 'decade'; report: DecadeReport }
+  | { kind: 'olympicsInvite'; year: number; olympiad: number; annualIncome: number; treasury: number }
+  | { kind: 'olympics'; report: OlympicReport }
+  | { kind: 'fortune'; fortune: Fortune }
+  | { kind: 'built'; what: 'improvement' | 'farm' | 'port'; id: ImprovementId | null }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
 /** Clock multipliers behind the five speed keys (1–5). */
@@ -137,7 +146,7 @@ export const SPEEDS = [1, 2, 4, 8, 16] as const;
 /** A report the player may read when they like (it does not stop the game). */
 export interface ReportItem {
   id: number;
-  notice: Extract<Notice, { kind: 'victory' | 'warEnd' | 'develop' }>;
+  notice: Extract<Notice, { kind: 'victory' | 'warEnd' | 'develop' | 'fortune' }>;
   year: number;
   time: number;
 }
@@ -153,7 +162,7 @@ export interface Embassy {
 }
 
 /** Envoys wait two years (game seconds) for an answer before going home. */
-export const EMBASSY_TTL = 8;
+export const EMBASSY_TTL = 2 * RULES.secondsPerYear;
 const DECADE_KEY = 'polis-io.decade';
 
 /** A change on a hegemony podium that concerns the player (shown in the alerts row). */
@@ -170,7 +179,7 @@ export interface PodiumNews {
 }
 
 /** Unread reports fade from the alerts row after this many game seconds (5 years). */
-const REPORT_TTL = 20;
+const REPORT_TTL = 5 * RULES.secondsPerYear;
 const REPORTS_MAX = 6;
 
 export type GameSpeed = (typeof SPEEDS)[number];
@@ -201,6 +210,8 @@ export class GameService {
   /** Polis highlighted while hovering the start screen list. */
   readonly preview = signal(-1);
   readonly paused = signal(false);
+  /** The sacred truce of the Olympic Games is on. */
+  readonly truce = signal(false);
   readonly speed = signal<GameSpeed>(1);
   readonly year = signal(0);
   readonly poleis = signal<PolisView[]>([]);
@@ -379,6 +390,8 @@ export class GameService {
   /** Nothing for the colonization fund to do: no expedition can set out and no colony site is left. */
   private colonyBlocked(p: PolisState): boolean {
     if (p.expedition) return false;
+    // Waiting for the next colony while there is no free land at home is not being stuck.
+    if (this.sim.time < p.nextColonyAt) return false;
     const next = this.sim.nextPurchase(p, 'colonization');
     return !next || (next.kind === 'expedition' && !this.sim.canSettle(p));
   }
@@ -505,6 +518,12 @@ export class GameService {
     this.publish();
   }
 
+  /** Sends the player's delegation to Olympia: a share of a year's income (0 = stay at home). */
+  sendDelegation(share: number) {
+    this.sim.sendDelegation(this.sim.player, share);
+    this.publish();
+  }
+
   /** Sets all five shares from a preset. */
   applyPreset(id: PresetId) {
     this.sim.setShares(this.sim.player, BUDGET_PRESETS[id]);
@@ -553,6 +572,7 @@ export class GameService {
     const greek = this.world.greekCells.length;
     const cellArea = this.world.cellKm * this.world.cellKm;
     this.status.set(sim.status);
+    this.truce.set(sim.truce);
     this.player.set(sim.player);
     this.year.set(sim.year);
     this.poleis.set(
@@ -600,6 +620,7 @@ export class GameService {
         blockadedBy: p.blockadedBy,
         hasHarbour: p.idx === sim.player && sim.harbourOf(p) >= 0,
         colonyBlocked: p.idx === sim.player && this.colonyBlocked(p),
+        colonyIn: Math.max(0, p.nextColonyAt - sim.time),
         relation: sim.player >= 0 ? sim.relation(sim.player, p.idx) : 0,
         tributeGold: Math.round(p.tributeGold),
         tributeWorkers: Math.round(p.tributeWorkers),
@@ -646,6 +667,8 @@ export class GameService {
     const reports = sim.takeReports();
     const warReports = sim.takeWarReports();
     const conquests = sim.takeConquests();
+    const invites = sim.takeOlympicInvites();
+    const games = sim.takeOlympics();
     if (sim.status !== 'playing') return;
 
     const me = sim.poleis[sim.player];
@@ -653,12 +676,22 @@ export class GameService {
     const incoming: Notice[] = [];
     // Reports do not stop the game: they wait in the alerts row until read or stale.
     const filed: ReportItem['notice'][] = [];
+    // Twists of fortune go to the alerts row: the money has already moved, the story waits to be read.
+    for (const fortune of sim.takeFortunes()) filed.push({ kind: 'fortune', fortune });
     for (const e of fresh) {
       // The player's wars and new buildings mark the history charts.
       if ((e.kind === 'war' || e.kind === 'peace') && (e.a === sim.player || e.b === sim.player)) {
         this.history.addEvent({ kind: e.kind, year: e.year, other: e.a === sim.player ? e.b : e.a });
       } else if (e.kind === 'built' && e.a === sim.player && e.tag) {
         this.history.addEvent({ kind: 'built', year: e.year, id: e.tag });
+      }
+      // Every finished building of the player's gets its own message.
+      if (e.a === sim.player && ((e.kind === 'built' && e.tag) || e.kind === 'farm' || e.kind === 'port')) {
+        incoming.push(
+          e.kind === 'built'
+            ? { kind: 'built', what: 'improvement', id: e.tag as ImprovementId }
+            : { kind: 'built', what: e.kind, id: null }
+        );
       }
       if (e.kind === 'war' && mine.includes(e.b) && !mine.includes(e.a)) {
         const ratio = sim.warriors(sim.poleis[e.a]) / Math.max(1, sim.warriors(me));
@@ -687,6 +720,11 @@ export class GameService {
       });
     }
     for (const c of conquests) incoming.push({ kind: 'conquest', from: c });
+    // The heralds of Elis proclaim the truce: how large a delegation will the city send?
+    for (const year of invites) {
+      incoming.push({ kind: 'olympicsInvite', year, olympiad: olympiadOf(year), annualIncome: sim.annualIncome(me), treasury: sim.treasury(me) });
+    }
+    for (const report of games) incoming.push({ kind: 'olympics', report });
     for (const r of warReports) filed.push({ kind: 'warEnd', ...r });
     // The player's budget founded a colony: say where and when.
     for (const { owner, plan } of sim.takePlans()) {

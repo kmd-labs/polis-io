@@ -145,6 +145,21 @@
   }
 }
 
+// A quiet version tag in the bottom-left corner, under the HUD.
+.app-version {
+  position: fixed;
+  left: 6px;
+  bottom: 1px;
+  z-index: 24;
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: color("text-dim");
+  opacity: 0.75;
+  pointer-events: none;
+  user-select: none;
+}
+
 .stage {
   position: absolute;
   inset: 0;
@@ -248,6 +263,136 @@
   &__warning {
     font-size: font-size("xs");
     color: color("text-desc");
+  }
+}
+
+.invite {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: spacing("xs");
+
+  &__btn {
+    min-height: 40px;
+    padding: 6px 10px;
+    border: 1px solid color("warning-700");
+    border-radius: radius("pill");
+    background: color("warning-600");
+    font: inherit;
+    font-family: var(--font-family-display);
+    font-size: font-size("xs");
+    font-weight: font-weight("bold");
+    letter-spacing: 0.04em;
+    color: color("neutral-0");
+    cursor: pointer;
+
+    &:hover {
+      background: color("warning-700");
+    }
+
+    &:focus-visible {
+      outline: 2px solid color("accent");
+      outline-offset: 2px;
+    }
+
+    &--stay {
+      border-color: color("line-strong");
+      background: color("panel-bg-solid");
+      color: color("text-main");
+
+      &:hover {
+        background: color("btn-hover");
+      }
+    }
+  }
+}
+
+.olympics {
+  &__reward,
+  &__other {
+    margin: 0 0 spacing("xs");
+    font-size: font-size("sm");
+    color: color("text-main");
+  }
+
+  &__triumph {
+    margin: 0 0 spacing("xs");
+    padding: 6px 10px;
+    border: 1px solid color("success-600");
+    border-radius: radius("sm");
+    background: color("success-100");
+    font-size: font-size("sm");
+    font-weight: font-weight("semibold");
+    color: color("success-700");
+  }
+
+  &__table {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 8px;
+    border-radius: radius("xs");
+    font-size: font-size("sm");
+
+    &--mine {
+      background: color("accent-glow-soft");
+      outline: 1px solid color("accent");
+    }
+  }
+
+  &__place {
+    width: 18px;
+    font-family: var(--font-family-mono);
+    color: color("text-dim");
+  }
+
+  &__name {
+    flex: 1;
+    font-weight: font-weight("semibold");
+    color: color("text-bright");
+  }
+
+  &__wreaths {
+    font-family: var(--font-family-mono);
+    color: color("success-700");
+  }
+
+  &__events {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 2px 12px;
+    margin: 0;
+  }
+
+  &__event {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 2px 0;
+    border-bottom: 1px dotted color("line");
+    font-size: font-size("xs");
+
+    dt {
+      color: color("text-main");
+    }
+
+    dd {
+      margin: 0;
+      font-weight: font-weight("semibold");
+      color: color("text-bright");
+      text-align: right;
+    }
+
+    &--mine dd {
+      color: color("warning-800");
+    }
   }
 }
 

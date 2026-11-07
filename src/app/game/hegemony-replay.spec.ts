@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { decodePng } from '../../../scripts/png.mjs';
 import { HEGEMONY_RULES, rankHegemony } from './hegemony';
 import { GameHistory, Snapshot } from './history';
-import { seededRandom, Simulation } from './simulation';
+import { RULES, seededRandom, Simulation } from './simulation';
 import { World, decodeMapPixels } from './world';
 
 /**
@@ -15,14 +15,14 @@ describe('hegemony rankings in a real game', () => {
   it('agree with a hand recount from the snapshots in three random years', () => {
     const png = decodePng(readFileSync('src/assets/map/hellas.png'));
     const world = new World(decodeMapPixels(png.data, png.channels, png.width, png.height));
-    const sim = new Simulation(world, { seed: 11 });
+    const sim = new Simulation(world, { seed: 11, autoplay: true });
     sim.choose(1);
     const history = new GameHistory();
     const standings = new Map<number, ReturnType<typeof rankHegemony>>();
     for (let y = 0; y < 80; y++) {
       history.record(sim);
       standings.set(sim.year, rankHegemony(history.recent(HEGEMONY_RULES.armsYears + 1), sim.year));
-      sim.step(4);
+      sim.step(RULES.secondsPerYear);
       sim.takeReports();
       sim.takeWarReports();
       sim.takePlans();
@@ -30,8 +30,10 @@ describe('hegemony rankings in a real game', () => {
     }
 
     const years = history.years;
+    // The game may end early (a city can fall); pick from the years that were played, past the 25-year arms window.
+    expect(years.length).toBeGreaterThan(28);
     const pick = seededRandom(5);
-    const chosen = [0, 1, 2].map(() => years[30 + Math.floor(pick() * (years.length - 30))]);
+    const chosen = [0, 1, 2].map(() => years[26 + Math.floor(pick() * (years.length - 26))]);
     for (const year of chosen) {
       const at = years.indexOf(year);
       const rows: Snapshot[][] = years.slice(0, at + 1).map(y => history.snapshotsAt(y));

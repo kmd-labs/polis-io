@@ -123,6 +123,129 @@ describe('pursuit', () => {
   }, 30_000);
 });
 
+describe('long pursuits', () => {
+  it('give up after three seconds even when the foe is far away', () => {
+    const sim = game();
+    const hunter = { id: 9101, owner: 0, x: 200, y: 340, chaseId: -1, chaseSince: 0, ignoreId: -1, ignoreUntil: 0, siege: -1 } as unknown as Army;
+    const prey = { id: 9102, owner: 2, x: 300, y: 340, siege: -1 } as unknown as Army;
+    let t = 0;
+    while ((sim as any).pursue(hunter, prey, 0.1) && t < 30) {
+      sim.time += 0.1;
+      t += 0.1;
+    }
+    expect(t).toBeLessThan(RULES.chaseTime + 0.5);
+  }, 30_000);
+
+  it('still march to lift a siege, however long it takes', () => {
+    const sim = game();
+    const hunter = { id: 9201, owner: 0, x: 200, y: 340, chaseId: -1, chaseSince: 0, ignoreId: -1, ignoreUntil: 0, siege: -1 } as unknown as Army;
+    const besieger = { id: 9202, owner: 2, x: 300, y: 340, siege: 0 } as unknown as Army;
+    for (let i = 0; i < 100; i++) {
+      expect((sim as any).pursue(hunter, besieger, 0.1)).toBe(true);
+      sim.time += 0.1;
+    }
+  }, 30_000);
+});
+
+describe('colonies', () => {
+  it('found one city at a time, once a generation (sooner with a bigger colonization share)', () => {
+    const sim = game();
+    const p = sim.poleis[0];
+    p.budget = { military: 20, colonization: 20, agriculture: 20, trade: 20, culture: 20 };
+    expect(sim.colonyWait(p)).toBe(RULES.colonyYears * RULES.secondsPerYear);
+    p.budget = { military: 10, colonization: 50, agriculture: 15, trade: 15, culture: 10 };
+    expect(sim.colonyWait(p)).toBe(RULES.colonyYearsMin * RULES.secondsPerYear);
+    // Before the first generation has passed there is no colony to buy.
+    expect(sim.nextPurchase(p, 'colonization')?.kind).not.toBe('colony');
+    p.nextColonyAt = sim.time;
+    const next = sim.nextPurchase(p, 'colonization');
+    expect(next?.kind).toBe('colony');
+    p.funds.colonization = next!.cost * 10;
+    (sim as any).buy(p, 'colonization', next);
+    expect(p.colonies).toBe(1);
+    expect(p.nextColonyAt).toBeGreaterThan(sim.time);
+    expect(sim.nextPurchase(p, 'colonization')?.kind).not.toBe('colony');
+  }, 30_000);
+
+  it('never scatter settlers across the sea: no "colony across the sea" in a century', () => {
+    const sim = new Simulation(world, { seed: 2, autoplay: true });
+    sim.choose(0);
+    const founded = new Map<number, number[]>();
+    for (let y = 0; y < 100; y++) {
+      sim.step(RULES.secondsPerYear);
+      sim.takeReports();
+      sim.takeWarReports();
+      sim.takePlans();
+      for (const c of sim.takeConquests()) sim.resolveConquest(c, 'subjugate');
+    }
+    expect(sim.events.some(e => e.kind === 'colony')).toBe(false);
+    for (const p of sim.poleis) if (p.def.kind === 'site') founded.set(p.overlord, [...(founded.get(p.overlord) ?? []), p.idx]);
+    // At most one colony per polis per sixteen years, whatever its budget.
+    for (const [, list] of founded) expect(list.length).toBeLessThanOrEqual(Math.ceil(100 / RULES.colonyYearsMin));
+  }, 300_000);
+});
+
+describe('enclaves', () => {
+  /** A square block of cells owned by `owner` inside the given polis's land, around a cell away from its capital. */
+  function plant(sim: Simulation, host: number, owner: number, side: number): number[] {
+    const p = sim.poleis[host];
+    for (const c of world.greekCells) {
+      if (sim.owner[c] !== host) continue;
+      const x = c % world.cols;
+      const y = Math.floor(c / world.cols);
+      if (Math.hypot(x - p.cx, y - p.cy) < 6) continue;
+      const block: number[] = [];
+      let ok = true;
+      for (let dy = -1; dy <= side && ok; dy++) {
+        for (let dx = -1; dx <= side && ok; dx++) {
+          const n = (y + dy) * world.cols + (x + dx);
+          if (sim.owner[n] !== host || n === p.capital) ok = false;
+          else if (dx >= 0 && dy >= 0 && dx < side && dy < side) block.push(n);
+        }
+      }
+      if (!ok) continue;
+      for (const n of block) (sim as any).setOwner(n, owner, false);
+      return block;
+    }
+    throw new Error('no room');
+  }
+
+  it('a patch under 20 cells touching an enemy falls to it after two years', () => {
+    const sim = game();
+    const athens = byId(sim, 'athens');
+    const thebes = byId(sim, 'thebes');
+    sim.declareWar(athens.idx, thebes.idx);
+    const block = plant(sim, athens.idx, thebes.idx, 3);
+    (sim as any).tidyBorders();
+    expect(block.every(c => sim.owner[c] === thebes.idx)).toBe(true);
+    sim.time += RULES.enclaveYears * RULES.secondsPerYear - 1;
+    (sim as any).tidyBorders();
+    expect(block.every(c => sim.owner[c] === thebes.idx)).toBe(true);
+    sim.time += 2;
+    (sim as any).tidyBorders();
+    expect(block.every(c => sim.owner[c] === athens.idx)).toBe(true);
+  }, 30_000);
+
+  it('a patch of 20 cells or more stays put, and so does any patch in peacetime', () => {
+    const sim = game();
+    const athens = byId(sim, 'athens');
+    const thebes = byId(sim, 'thebes');
+    const big = plant(sim, athens.idx, thebes.idx, 5);
+    sim.declareWar(athens.idx, thebes.idx);
+    (sim as any).tidyBorders();
+    sim.time += 3 * RULES.secondsPerYear;
+    (sim as any).tidyBorders();
+    expect(big.every(c => sim.owner[c] === thebes.idx)).toBe(true);
+    sim.makePeace(athens.idx, thebes.idx);
+    const small = plant(sim, athens.idx, thebes.idx, 2);
+    (sim as any).tidyBorders();
+    sim.time += 3 * RULES.secondsPerYear;
+    (sim as any).tidyBorders();
+    // Not an enclave in peacetime; four cells or fewer wedged against another city revert to the wild instead.
+    expect(small.every(c => sim.owner[c] !== athens.idx)).toBe(true);
+  }, 30_000);
+});
+
 describe('valleys', () => {
   it('armies march through lower ground than the straight line', () => {
     const sim = game();

@@ -34,8 +34,8 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   their fund commissions them — more often on low ground near the sea, rarely right under the walls.
 - **Armies in the field**: battles draw in nearby armies of both sides (up to four a side); an army facing an
   enemy 2.5× its size falls back, losing stragglers, and may scatter into two; 20% of overrun land — up to
-  half far from home — is simply left as wilderness. In wartime, cut-off pockets of up to 8 pixels pass to the
-  side whose capital is nearer. A polis at war keeps at least 100 hoplites at home; armies under 200 do not lay
+  half far from home — is simply left as wilderness. In wartime, a patch of fewer than 20 pixels (not the capital)
+  that touches the enemy and does not grow to 20 within two years passes to that enemy. A polis at war keeps at least 100 hoplites at home; armies under 200 do not lay
   siege; armies near a besieged friendly capital march to its relief, and an army with a 50% edge in power or
   numbers hunts down nearby enemy armies.
 - **Polis buildings**: the Buildings button shows three trees — agriculture, trade and military —
@@ -73,8 +73,20 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   drawn with a larger shield) seeks out the enemy's main army; smaller raiding parties of varied size plunder the
   countryside and run from any force near their size. A main army weaker than its rival halts and digs in — its
   power climbs to 150% over a few years and it engages any enemy army within 30 cells.
-- **Levies and settlers** go out in small, frequent portions. Armies give up a chase after three seconds and keep to
-  the valleys (they steer around heights and aim for lowland first).
+- **Time**: a year of the calendar lasts 16 game seconds; population grows at half the earlier rate.
+- **Olympic Games** every fourth year (counted from 776 BC) with the historical programme of the time — twelve contests
+  in 600 BC, more later (races, wrestling, boxing, pankration, pentathlon, chariots, race in armour, heralds…). The
+  sacred truce runs from two months before to a month after: no war is waged, armies march home and fleets to harbour.
+  You choose how much of a year's income to spend on the delegation (none, 10%, 25%, 50%); a report shows the wreaths
+  by city and every contest's winner. Every city competing gains power projection, each wreath renown and others'
+  regard; a triumph (two-fifths of the wreaths, at least five) adds +1 culture.
+- **Twists of fortune** every two years: a windfall for one budget branch (one to three months of income) or a
+  misfortune (fire, plague, drought, pirates, earthquake, embezzlement) costing up to three months of full income.
+  They wait in the alerts row.
+- **Colonies**: settlers' expeditions only claim wilderness along the city's own borders; a colony is always one new
+  city on a historical site, founded at most once in 40 years (down to 16 with a large colonization share).
+- **Levies and settlers** go out in small, frequent portions. Armies give up any chase after three seconds (and leave
+  that foe alone for a while; marching to lift a siege is not a chase) and keep to the valleys.
 - **Surplus of the military fund** (once the army is full): save it, hire **mercenaries** in wartime (no citizens,
   dear, double pay, gone at peace) or build **war galleys**. A fleet at war rows to the nearest enemy harbour and
   **blockades** it — no trade, no port bonus, no harbour dues — sinks enemy merchantmen and fights enemy fleets.

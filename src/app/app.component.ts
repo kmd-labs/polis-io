@@ -41,7 +41,11 @@ import { HEGEMONY_CATEGORIES } from './game/hegemony';
 import { GameService } from './game/game.service';
 import { MapCanvasComponent } from './game/map-canvas.component';
 import { MapView } from './game/map-renderer';
-import { BUDGET_KEYS, ConquestChoice, FallOutcome } from './game/simulation';
+import { BUDGET_KEYS, ConquestChoice, FallOutcome, OlympicReport } from './game/simulation';
+import { PolisFlagComponent } from './hud/polis-flag.component';
+import { Fortune } from './game/fortune';
+import { ImprovementId } from './game/data/improvements';
+import { APP_VERSION } from './version';
 import { SiteId } from './game/data/poleis';
 import { StartScreenComponent } from './hud/start-screen.component';
 import { HudComponent } from './hud/hud.component';
@@ -59,6 +63,7 @@ import { HudStateService } from './hud/hud-state.service';
     SplashComponent,
     TooltipComponent,
     MapCanvasComponent,
+    PolisFlagComponent,
     StartScreenComponent,
     HudComponent
   ],
@@ -73,6 +78,7 @@ export class AppComponent {
   readonly splash = inject(SplashService);
   readonly seo = inject(SeoService);
   readonly game = inject(GameService);
+  readonly version = APP_VERSION;
   readonly hud = inject(HudStateService);
 
   @ViewChild(MapCanvasComponent) private map?: MapCanvasComponent;
@@ -81,6 +87,40 @@ export class AppComponent {
   @ViewChild('reportTpl', { static: true }) private reportTpl!: TemplateRef<unknown>;
   @ViewChild('conquestTpl', { static: true }) private conquestTpl!: TemplateRef<unknown>;
   @ViewChild('decadeTpl', { static: true }) private decadeTpl!: TemplateRef<unknown>;
+  @ViewChild('olympicsTpl', { static: true }) private olympicsTpl!: TemplateRef<unknown>;
+  @ViewChild('inviteTpl', { static: true }) private inviteTpl!: TemplateRef<unknown>;
+
+  /** The open Olympic report, localized. */
+  readonly olympicsView = computed(() => {
+    const n = this.game.notice();
+    if (n?.kind !== 'olympics') return null;
+    const r = n.report;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const me = this.game.player();
+    const def = (idx: number) => this.game.sim.poleis[idx].def;
+    const mine = r.table.findIndex(row => row.idx === me);
+    const myRow = mine >= 0 ? r.table[mine] : null;
+    const reward = r.rewards.find(x => x.idx === me);
+    const top = r.table.slice(0, 6).map((row, i) => ({ ...row, place: i + 1, def: def(row.idx), name: this.game.name(row.idx), mine: row.idx === me }));
+    if (myRow && mine >= 6) top.push({ ...myRow, place: mine + 1, def: def(me), name: this.game.name(me), mine: true });
+    return {
+      verdict: myRow
+        ? interpolate(myRow.wreaths ? t.olyYouWon : t.olyYouNone, {
+            n: myRow.wreaths,
+            place: formatOrdinal(mine + 1, lang),
+            of: r.table.length
+          })
+        : t.olyYouStayed,
+      reward: reward
+        ? interpolate(t.olyReward, { p: fmt1(reward.prestige, lang), r: reward.relation })
+        : '',
+      triumph: r.triumphs.includes(me) ? t.olyTriumph : '',
+      others: r.triumphs.filter(i => i !== me).map(i => interpolate(t.olyTriumphOther, { name: this.game.name(i) })),
+      top,
+      events: r.winners.map(w => ({ event: t.olympicEvents[w.event] ?? w.event, winner: this.game.name(w.idx), mine: w.idx === me }))
+    };
+  });
 
   /** The open decade report, localized. */
   readonly decadeView = computed(() => {
@@ -235,6 +275,10 @@ export class AppComponent {
         else if (n.kind === 'develop') this.openDevelopment(n.work, n.months, n.site);
         else if (n.kind === 'hegemon') this.openHegemon(n.hegemon);
         else if (n.kind === 'decade') this.openDecade(n.report);
+        else if (n.kind === 'olympicsInvite') this.openOlympicsInvite(n.olympiad, n.year, n.annualIncome, n.treasury);
+        else if (n.kind === 'olympics') this.openOlympicsReport(n.report);
+        else if (n.kind === 'fortune') this.openFortune(n.fortune);
+        else if (n.kind === 'built') this.openBuilt(n.what, n.id);
         else this.openReport(n.near);
       });
     });
@@ -403,6 +447,97 @@ export class AppComponent {
         { label: computed(() => t().decOff), variant: 'default', onClick: () => this.game.setDecadeReports(false) },
         { label: computed(() => t().decAction), variant: 'play', hot: true }
       ]
+    });
+  }
+
+  /** The heralds of Elis proclaim the truce: the player decides how much to spend on the delegation. */
+  /** The four purses on offer in the Olympic invitation (rendered in the popup body). */
+  readonly inviteOptions = signal<{ key: 'olyStay' | 'olyModest' | 'olyGenerous' | 'olyLavish'; share: number; label: string }[]>([]);
+  private inviteDecided = false;
+
+  /** The player picks a purse for the delegation; the invitation closes. */
+  chooseDelegation(share: number) {
+    this.inviteDecided = true;
+    this.game.sendDelegation(share);
+    this.popup.close();
+  }
+
+  private openOlympicsInvite(olympiad: number, year: number, annualIncome: number, treasury: number) {
+    const t = () => this.i18n.t();
+    const lang = () => this.i18n.lang();
+    this.inviteDecided = false;
+    const label = (key: 'olyStay' | 'olyModest' | 'olyGenerous' | 'olyLavish', share: number) =>
+      interpolate(t()[key], { p: Math.round(share * 100), d: formatNumber(Math.min(treasury, share * annualIncome), lang()) });
+    this.inviteOptions.set(
+      ([['olyStay', 0], ['olyModest', 0.1], ['olyGenerous', 0.25], ['olyLavish', 0.5]] as const).map(([key, share]) => ({
+        key,
+        share,
+        label: label(key, share)
+      }))
+    );
+    this.popup.open({
+      id: 'olympics-invite',
+      title: computed(() => interpolate(t().olyInviteTitle, { n: formatOrdinal(olympiad, lang()), year: formatYear(year, t()) })),
+      description: computed(() => interpolate(t().olyInviteText, { name: this.game.name(this.game.player()) })),
+      template: this.inviteTpl,
+      size: 'sm',
+      onClose: () => {
+        // Closing without a word sends a modest team.
+        if (!this.inviteDecided) this.game.sendDelegation(0.1);
+        this.game.closeNotice();
+      },
+      actions: []
+    });
+  }
+
+  /** A building of the player's is finished. */
+  private openBuilt(what: 'improvement' | 'farm' | 'port', id: ImprovementId | null) {
+    const t = () => this.i18n.t();
+    const name = () => (what === 'improvement' && id ? t().improvements[id].name : t().builtNames[what === 'farm' ? 'farm' : 'port']);
+    this.popup.open({
+      id: 'built',
+      title: computed(() => interpolate(t().builtTitle, { name: name() })),
+      subtitle: computed(() => this.game.name(this.game.player())),
+      description: computed(() =>
+        what === 'improvement' && id ? t().improvements[id].desc : t().builtTexts[what === 'farm' ? 'farm' : 'port']
+      ),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => t().builtAction), variant: 'play', hot: true }]
+    });
+  }
+
+  /** A twist of fortune, read from the alerts row. */
+  private openFortune(f: Fortune) {
+    const t = () => this.i18n.t();
+    const story = () => (f.boon ? t().boons[f.branch] : t().banes[f.bane]);
+    this.popup.open({
+      id: 'fortune',
+      title: computed(() => story().title),
+      subtitle: computed(() => formatYear(f.year, t())),
+      description: computed(() => {
+        const amount = formatNumber(f.amount, this.i18n.lang());
+        const effect = f.boon
+          ? interpolate(t().fortuneGain, { d: amount, fund: t().budgetKeys[f.branch].name })
+          : interpolate(t().fortuneLoss, { d: amount, m: fmt1(f.months, this.i18n.lang()) });
+        return `${story().text} ${effect}`;
+      }),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => t().fortuneAction), variant: 'play', hot: true }]
+    });
+  }
+
+  private openOlympicsReport(report: OlympicReport) {
+    const t = () => this.i18n.t();
+    this.popup.open({
+      id: 'olympics',
+      title: computed(() => interpolate(t().olyReportTitle, { n: formatOrdinal(report.olympiad, this.i18n.lang()), year: formatYear(report.year, t()) })),
+      subtitle: computed(() => t().olyReportSubtitle),
+      template: this.olympicsTpl,
+      size: 'md',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => t().olyAction), variant: 'play', hot: true }]
     });
   }
 

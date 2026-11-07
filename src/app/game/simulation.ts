@@ -1,3 +1,5 @@
+import { Delegation, OlympicResults, holdGames, isOlympicYear, isTriumph, olympiadOf } from './olympics';
+import { Fortune, rollFortune } from './fortune';
 import { POLEIS, PolisDef, SITES, SiteId } from './data/poleis';
 import {
   IMPROVEMENT_BY_ID,
@@ -82,10 +84,13 @@ export const SEA = -3;
 export const FOREIGN = -2;
 export const WILD = -1;
 
+/** Game seconds in a year of the calendar (1 game second = 1 real second at 1× speed). */
+const YEAR = 16;
+
 /** Tunable game balance. Times are in game seconds (1 game second = 1 real second at 1× speed). */
 export const RULES = {
   startYear: 600,
-  secondsPerYear: 4,
+  secondsPerYear: YEAR,
   /** Travel budget (cells) of the founding territory; climbing 1000 m doubles the cost of a step. */
   startReach: 15,
   /**
@@ -100,7 +105,7 @@ export const RULES = {
   startGarrisonPerMilitarism: 0.008,
   /** Share of civilians fit for physical labour. */
   laborShare: 0.55,
-  growthRate: 0.02,
+  growthRate: 0.01,
   incomePerWorker: 0.0025,
   upkeepPerWarrior: 0.003,
   /** "Settle the wilderness" sends this share of workers away for good (small parties, often)… */
@@ -148,7 +153,7 @@ export const RULES = {
   raidPlunder: 2,
   /** Seconds an army keeps chasing one enemy army before giving up on it for chaseCooldown seconds. */
   chaseTime: 3,
-  chaseCooldown: 6,
+  chaseCooldown: 20,
   /** Armies look this many cells ahead to keep to the valleys; every this many metres of height weighs like a full detour. */
   valleyLook: 3,
   valleyElevation: 400,
@@ -180,9 +185,9 @@ export const RULES = {
   /** Per AI decision and per point of the player's power projection: chance to offer an alliance. */
   allianceOfferChance: 0.004,
   /** At most one embassy reaches the player in this many seconds (5 years). */
-  embassyCooldown: 20,
+  embassyCooldown: 5 * YEAR,
   /** Recent victories (within this many seconds) are what impresses envoys. */
-  victoryMemory: 40,
+  victoryMemory: 10 * YEAR,
   /** Voyages between two cities that make their envoys speak of trade. */
   tradeTies: 3,
   /** Satisfaction (0–100): starting value and what moves it. */
@@ -233,6 +238,16 @@ export const RULES = {
   /** Fate chosen by the player for a conquered city: odds of the intended outcome. */
   razeSuccess: 0.8,
   subjugateSuccess: 0.6,
+  /** A polis founds a colony city at most once in this many years; spending more on colonization
+   * (above colonyShareFull % of the budget) shortens the wait, down to colonyYearsMin. */
+  colonyYears: 40,
+  colonyYearsMin: 16,
+  colonyShareFull: 20,
+  /** Every this many years a twist of fortune befalls each city: a windfall for one budget branch (in
+   * months of its income) or a misfortune costing up to fortuneMaxMonths of its full income. */
+  fortuneYears: 2,
+  fortuneBoonChance: 0.55,
+  fortuneMaxMonths: 3,
   /** Diplomatic reputation (−100…+100 per pair of poleis): decay toward 0 per second… */
   relationDecay: 0.01,
   /** …and pressures per second. */
@@ -291,7 +306,18 @@ export const RULES = {
   developMonthsMax: 12,
   /** A stray pocket of land this small, cut off from its capital, goes back to the wild after this many seconds (4 years). */
   strayPocket: 4,
-  strayDecay: 16,
+  strayDecay: 4 * YEAR,
+  /** The Games are held in this month (0 = the first) of every Olympic year; the sacred truce runs from
+   * truceBefore months earlier to truceAfter months later. */
+  gamesMonth: 7,
+  truceBefore: 2,
+  truceAfter: 1,
+  /** Rewards: power projection for taking part and per olive wreath; every other city's regard per wreath;
+   * the citizens' satisfaction per wreath. A triumph also raises culture by one (up to 5). */
+  olympicParticipation: 0.1,
+  olympicWreathPrestige: 0.4,
+  olympicWreathRelation: 3,
+  olympicWreathMood: 2,
   /** Power projection gained each year per hegemony point. */
   hegemonyPrestige: 0.1,
   /** The Hegemon of Hellas earns this much more from sea trade, and ships favour its harbours as much. */
@@ -326,8 +352,10 @@ export const RULES = {
   holdPowerRate: 0.05,
   /** …and it engages any enemy army that comes within this many cells. */
   holdRadius: 30,
-  /** In wartime, cut-off pockets of land this small pass to whichever side's capital is nearer… */
-  enclaveSize: 8,
+  /** In wartime, a patch of land smaller than this (not the capital) that touches an enemy and has not
+   * grown to this size for enclaveYears passes to that enemy (the one along most of its edge). */
+  enclaveSize: 20,
+  enclaveYears: 2,
   /** …checked this often (seconds). */
   borderTidyInterval: 2,
   /** Hoplites a polis at war always keeps behind its walls. */
@@ -366,6 +394,7 @@ export interface Expedition {
   initial: number;
   timer: number;
   /** Already reported a colony across the sea during this expedition. */
+  /** The frontier ran out before the settlers did; the rest go home. */
   colony: boolean;
   /** Wild cells bordering the settled land, lowest ground first. */
   frontier: MinHeap;
@@ -451,6 +480,8 @@ export interface PolisState {
   /** What the military fund buys once the army is full; the polis whose fleet blockades our harbour (-1 if none). */
   surplus: SurplusUse;
   blockadedBy: number;
+  /** No colony city may be founded before this time. */
+  nextColonyAt: number;
   /** Hegemony points (0–9) this year, and years in a row at or above the coalition threshold. */
   hegemonyScore: number;
   dominantYears: number;
@@ -593,6 +624,13 @@ export interface Army {
 
 export type ArmyRole = 'main' | 'raider';
 
+/** The Games as they went: results plus what every city took home. */
+export interface OlympicReport extends OlympicResults {
+  /** Power projection and regard gained per city, and cities whose triumph raised their culture. */
+  rewards: { idx: number; prestige: number; relation: number }[];
+  triumphs: number[];
+}
+
 /** What the military fund does with money once the army is at full strength. */
 export type SurplusUse = 'none' | 'mercenaries' | 'fleet';
 
@@ -691,7 +729,10 @@ export type GameEventKind =
   | 'mercenaries'
   | 'warship'
   | 'navalBattle'
-  | 'blockade';
+  | 'blockade'
+  | 'truce'
+  | 'truceEnd'
+  | 'olympics';
 
 export interface GameEvent {
   id: number;
@@ -738,8 +779,12 @@ export class Simulation {
   /** No embassy reaches the player before this time. */
   private nextEmbassy = 0;
   private nextTidy = 0;
+  /** Poleis with wilderness along their borders (refreshed every borderTidyInterval). */
+  private frontierOwners = new Set<number>();
   /** Game time each cell was first found stranded in a stray pocket (0 = it is not). */
   private strayAt = new Float64Array(0);
+  /** Game time each cell was first found in a small patch against an enemy (0 = it is not). */
+  private enclaveAt = new Float64Array(0);
   claims: Claim[] = [];
   events: GameEvent[] = [];
   time = 0;
@@ -760,6 +805,15 @@ export class Simulation {
   /** The Hegemon of Hellas (-1 if none) and the polis the rest of Hellas has united against (-1 if none). */
   hegemon = -1;
   coalitionTarget = -1;
+  /** The sacred truce of the Olympic Games is on: no war is waged, armies stand down. */
+  truce = false;
+  /** The Games of the current Olympic year: delegations' purses (drachmae and share of a year's income). */
+  private olympics: { year: number; spend: Map<number, { spent: number; share: number }>; held: boolean } | null = null;
+  private olympicInvites: number[] = [];
+  /** Next twist of fortune, and the player's not yet shown to the UI. */
+  private nextFortune = 0;
+  private fortunes: Fortune[] = [];
+  private olympicResults: OlympicReport[] = [];
   /** Alliances made against the dominant polis, as "a-b" pairs; they lapse with the coalition. */
   private coalitionPacts = new Set<string>();
   /** Greek land cell of every vassal site, resolved once. */
@@ -855,6 +909,7 @@ export class Simulation {
       dominantYears: 0,
       surplus: 'none',
       blockadedBy: -1,
+      nextColonyAt: this.time + RULES.colonyYears * RULES.secondsPerYear,
       gross: 0,
       upkeep: 0,
       inflow: 0,
@@ -962,7 +1017,15 @@ export class Simulation {
     this.coalitionPacts = new Set();
     this.fleets = [];
     this.seaFights = [];
+    this.truce = false;
+    this.olympics = null;
+    this.olympicInvites = [];
+    this.olympicResults = [];
+    this.nextFortune = RULES.fortuneYears * RULES.secondsPerYear;
+    this.fortunes = [];
+    this.frontierOwners = new Set();
     this.strayAt = new Float64Array(this.world.size);
+    this.enclaveAt = new Float64Array(this.world.size);
     this.usedSites = new Set();
     this.poleis = POLEIS.map((def, idx) => this.createPolis(def, idx, this.landCellAt(def.lon, def.lat), -1));
     this.floodClaim(
@@ -1067,7 +1130,8 @@ export class Simulation {
       !p.expedition &&
       this.wildCells > 0 &&
       this.settlers(p) >= this.settlersPerCell(p) &&
-      this.totalPopulation(p) >= this.capacity(p) * RULES.settleCrowding
+      this.totalPopulation(p) >= this.capacity(p) * RULES.settleCrowding &&
+      this.frontierOwners.has(p.idx)
     );
   }
 
@@ -1260,7 +1324,7 @@ export class Simulation {
   declareWar(a: number, b: number) {
     const pa = this.poleis[a];
     const pb = this.poleis[b];
-    if (a === b || !pa?.alive || !pb?.alive || pa.wars.has(b)) return;
+    if (a === b || !pa?.alive || !pb?.alive || pa.wars.has(b) || this.truce) return;
     const mine = this.bloc(a);
     if (mine.includes(b)) return;
     // Attacking an ally tears up the treaty.
@@ -1706,6 +1770,13 @@ export class Simulation {
       .sort((a, b) => a.score - b.score)[0];
   }
 
+  /** Seconds until the next colony may be founded: a generation, less with a bigger colonization share. */
+  colonyWait(p: PolisState): number {
+    const share = Math.max(1, p.budget.colonization);
+    const years = Math.max(RULES.colonyYearsMin, Math.min(RULES.colonyYears, (RULES.colonyYears * RULES.colonyShareFull) / share));
+    return years * RULES.secondsPerYear;
+  }
+
   /** Founds a vassal town on a surveyed historical site. */
   private foundVassal(p: PolisState, site: { id: SiteId; lon: number; lat: number; cell: number }): boolean {
     this.usedSites.add(site.id);
@@ -1750,6 +1821,11 @@ export class Simulation {
 
   private tick(dt: number) {
     this.time += dt;
+    this.olympicCalendar();
+    if (this.time >= this.nextFortune) {
+      this.nextFortune += RULES.fortuneYears * RULES.secondsPerYear;
+      for (const p of this.poleis) if (p.alive && !p.captured) this.befall(p);
+    }
 
     this.finishDevelopments();
     for (const p of this.poleis) p.farms = p.ports = p.besieged = 0;
@@ -1783,6 +1859,7 @@ export class Simulation {
 
     if (this.time >= this.nextTidy) {
       this.tidyBorders();
+      this.updateFrontiers();
       this.nextTidy = this.time + RULES.borderTidyInterval;
     }
     if (this.time >= this.nextDiplomacy) {
@@ -1945,16 +2022,18 @@ export class Simulation {
         return this.surplusPurchase(p);
       case 'colonization':
         if (p.expedition) return null;
-        // While wilderness remains, save for the next expedition (it leaves once the city fills up)…
-        if (this.wildCells > 0) {
+        // Once a generation (sooner with a bigger share) the city founds a colony: one new city on a historical site…
+        if (this.time >= p.nextColonyAt && this.vassalSite(p)) {
+          return {
+            kind: 'colony',
+            cost: Math.round((RULES.colonyBase + pop * RULES.colonyPerCapita) * (1 + 0.5 * p.colonies) * (1 - p.effects.develop))
+          };
+        }
+        // …in between, settlers push out into the wilderness along its own borders.
+        if (this.wildCells > 0 && this.frontierOwners.has(p.idx)) {
           return { kind: 'expedition', cost: Math.round(RULES.expeditionBase + this.settlers(p) * RULES.expeditionPerSettler) };
         }
-        // …and once Hellas is settled, found colonies on historical sites.
-        if (!this.vassalSite(p)) return null;
-        return {
-          kind: 'colony',
-          cost: Math.round((RULES.colonyBase + pop * RULES.colonyPerCapita) * (1 + 0.5 * p.colonies) * (1 - p.effects.develop))
-        };
+        return null;
       case 'agriculture':
         return { kind: 'farm', cost: works('farm') };
       case 'trade':
@@ -1988,7 +2067,10 @@ export class Simulation {
         break;
       case 'colony':
         done = !!this.commission(p, 'vassal');
-        if (done) p.colonies++;
+        if (done) {
+          p.colonies++;
+          p.nextColonyAt = this.time + this.colonyWait(p);
+        }
         break;
       case 'farm':
       case 'port':
@@ -2018,13 +2100,9 @@ export class Simulation {
       let cell = e.frontier.pop();
       while (cell >= 0 && this.owner[cell] !== WILD) cell = e.frontier.pop();
       if (cell < 0) {
-        // The home coast is full: sail away and found a colony.
-        cell = this.nearestWild(p);
-        if (cell < 0) break;
-        if (!e.colony) {
-          e.colony = true;
-          this.emit('colony', p.idx);
-        }
+        // No free land left along our borders: the settlers go home (colonies are founded as cities).
+        e.colony = true;
+        break;
       }
       this.setOwner(cell, p.idx, true);
       e.settlers -= perCell;
@@ -2036,7 +2114,7 @@ export class Simulation {
         e.frontier.push(n, this.settleCost(p, n));
       }
     }
-    if (e.settlers < perCell || this.wildCells === 0) {
+    if (e.colony || e.settlers < perCell || this.wildCells === 0) {
       // Whoever could not be given land returns home.
       p.civilians += Math.max(0, e.settlers);
       p.expedition = null;
@@ -2050,23 +2128,6 @@ export class Simulation {
     const y = (cell - x) / w.cols;
     const d = Math.hypot(x + 0.5 - p.cx, y + 0.5 - p.cy);
     return w.elevation[cell] / 600 + d * 0.0035 - w.fertility[cell] * 0.4 + hash01(x, y, p.idx) * 0.25;
-  }
-
-  /** Closest wild cell to the capital, anywhere in Hellas. */
-  private nearestWild(p: PolisState): number {
-    const w = this.world;
-    let best = -1;
-    let bestD = Infinity;
-    for (const c of w.greekCells) {
-      if (this.owner[c] !== WILD) continue;
-      const x = c % w.cols;
-      const d = Math.hypot(x + 0.5 - p.cx, (c - x) / w.cols + 0.5 - p.cy) + this.rand() * 12;
-      if (d < bestD) {
-        bestD = d;
-        best = c;
-      }
-    }
-    return best;
   }
 
   private think(p: PolisState) {
@@ -2329,7 +2390,7 @@ export class Simulation {
       }
       // Merchantmen of the enemy go to the bottom; their cargo to the victors.
       for (const s of this.ships) {
-        if (s.done || !owner.wars.has(s.owner) || Math.hypot(s.x - f.x, s.y - f.y) > RULES.raidRange) continue;
+        if (this.truce || s.done || !owner.wars.has(s.owner) || Math.hypot(s.x - f.x, s.y - f.y) > RULES.raidRange) continue;
         s.done = true;
         const plunder = this.tradeValue(this.poleis[s.owner]) * RULES.raidPlunder;
         owner.drachmae += plunder;
@@ -2343,6 +2404,7 @@ export class Simulation {
 
   /** The nearest enemy harbour while at war (the fleet's current one if it still serves), else home. */
   private fleetDestination(owner: PolisState, f: Fleet): number {
+    if (this.truce) return this.harbourOf(owner);
     const w = this.world;
     let best = -1;
     let bestD = Infinity;
@@ -2362,6 +2424,7 @@ export class Simulation {
 
   /** Hostile fleets within reach of each other fight it out; the loser is sunk, the victor bloodied. */
   private navalBattles() {
+    if (this.truce) return;
     const fleets = this.fleets;
     for (let i = 0; i < fleets.length; i++) {
       const a = fleets[i];
@@ -2397,7 +2460,7 @@ export class Simulation {
         const hx = (h % w.cols) + 0.5;
         const hy = Math.floor(h / w.cols) + 0.5;
         for (const f of this.fleets) {
-          if (f.dead || !this.poleis[f.owner].wars.has(q.idx)) continue;
+          if (this.truce || f.dead || !this.poleis[f.owner].wars.has(q.idx)) continue;
           if (Math.hypot(f.x - hx, f.y - hy) <= RULES.blockadeRange) {
             by = f.owner;
             break;
@@ -2407,6 +2470,142 @@ export class Simulation {
       if (by >= 0 && q.blockadedBy !== by) this.emit('blockade', by, q.idx);
       q.blockadedBy = by;
     }
+  }
+
+  // ─── The Olympic Games ────────────────────────────────────────────────────
+
+  /** Month of the current year (0–11). */
+  get month(): number {
+    const years = this.time / RULES.secondsPerYear;
+    return Math.min(11, Math.floor((years - Math.floor(years)) * 12));
+  }
+
+  /** Drachmae a city takes in over a year at its present rate. */
+  annualIncome(p: PolisState): number {
+    return Math.max(0, p.inflow) * RULES.secondsPerYear;
+  }
+
+  /**
+   * Every fourth year (counted from the first Olympiad of 776 BC) the heralds of Elis proclaim the
+   * sacred truce two months before the Games; the Games are held, and a month later the truce ends.
+   * The year the game begins is skipped: there is no time to prepare.
+   */
+  private olympicCalendar() {
+    const year = this.year;
+    const olympic = this.time >= RULES.secondsPerYear && isOlympicYear(year);
+    const month = this.month;
+    const inTruce = olympic && month >= RULES.gamesMonth - RULES.truceBefore && month <= RULES.gamesMonth + RULES.truceAfter;
+    if (inTruce && !this.truce) this.proclaimTruce(year);
+    if (olympic && month >= RULES.gamesMonth && this.olympics?.year === year && !this.olympics.held) this.holdOlympics();
+    if (!inTruce && this.truce) {
+      this.truce = false;
+      this.emit('truceEnd', -1);
+    }
+  }
+
+  private proclaimTruce(year: number) {
+    this.truce = true;
+    this.olympics = { year, spend: new Map(), held: false };
+    this.emit('truce', -1, -1, olympiadOf(year));
+    for (const p of this.poleis) {
+      if (!p.alive) continue;
+      if (p.idx === this.player && !this.autoplay) continue;
+      // Cultured cities send larger delegations.
+      this.sendDelegation(p.idx, Math.min(0.3, 0.03 + 0.03 * p.culture + this.rand() * 0.05));
+    }
+    if (this.poleis[this.player]?.alive && !this.autoplay) this.olympicInvites.push(year);
+  }
+
+  /**
+   * A city pays for its delegation: a share of a year's income, taken from its funds (as much as
+   * they hold). A share of 0 means it stays at home.
+   */
+  sendDelegation(idx: number, share: number) {
+    const p = this.poleis[idx];
+    const games = this.olympics;
+    if (!p?.alive || !games || games.held || share <= 0) return;
+    const wanted = share * this.annualIncome(p);
+    const total = this.treasury(p);
+    const taken = total > 0 ? this.plunder(p, Math.min(1, wanted / total)) : 0;
+    games.spend.set(idx, { spent: taken, share: this.annualIncome(p) > 0 ? taken / this.annualIncome(p) : 0 });
+  }
+
+  private holdOlympics() {
+    const games = this.olympics!;
+    games.held = true;
+    const delegations: Delegation[] = [];
+    for (const [idx, purse] of games.spend) {
+      const p = this.poleis[idx];
+      if (!p.alive) continue;
+      delegations.push({
+        idx,
+        population: this.totalPopulation(p),
+        annualIncome: this.annualIncome(p),
+        militarism: p.militarism,
+        culture: p.culture,
+        spent: purse.spent,
+        share: purse.share
+      });
+    }
+    if (!delegations.length) return;
+    const results = holdGames(games.year, delegations, this.rand);
+    const events = results.winners.length;
+    const rewards: OlympicReport['rewards'] = [];
+    const triumphs: number[] = [];
+    for (const row of results.table) {
+      const p = this.poleis[row.idx];
+      const prestige = RULES.olympicParticipation + row.wreaths * RULES.olympicWreathPrestige;
+      const relation = row.wreaths * RULES.olympicWreathRelation;
+      p.prestige += prestige;
+      if (relation) for (const q of this.poleis) if (q.alive && q.idx !== p.idx) this.shiftRelation(p.idx, q.idx, relation);
+      if (row.wreaths) this.mood(p, row.wreaths * RULES.olympicWreathMood);
+      if (isTriumph(row.wreaths, events) && p.culture < 5) {
+        p.culture = Math.min(5, p.culture + 1);
+        triumphs.push(p.idx);
+      }
+      rewards.push({ idx: p.idx, prestige, relation });
+    }
+    this.olympicResults.push({ ...results, rewards, triumphs });
+    const champion = results.table[0];
+    this.emit('olympics', champion.idx, -1, champion.wreaths);
+  }
+
+  /**
+   * A twist of fortune: a windfall for one budget branch (one to three months of the city's income
+   * into that fund) or a misfortune costing up to three months of its full income.
+   */
+  private befall(p: PolisState) {
+    const month = (Math.max(0, p.gross) * RULES.secondsPerYear) / 12;
+    const roll = rollFortune(this.rand);
+    let amount: number;
+    if (roll.boon) {
+      amount = Math.round(month * roll.months);
+      p.funds[roll.branch] += amount;
+    } else {
+      const total = this.treasury(p);
+      const due = month * roll.months;
+      amount = Math.round(total > 0 ? this.plunder(p, Math.min(1, due / total)) : 0);
+    }
+    if (p.idx === this.player && !this.autoplay) this.fortunes.push({ ...roll, amount, year: this.year });
+  }
+
+  takeFortunes(): Fortune[] {
+    const out = this.fortunes;
+    this.fortunes = [];
+    return out;
+  }
+
+  /** Olympic years whose truce has just been proclaimed: the player chooses a delegation. */
+  takeOlympicInvites(): number[] {
+    const out = this.olympicInvites;
+    this.olympicInvites = [];
+    return out;
+  }
+
+  takeOlympics(): OlympicReport[] {
+    const out = this.olympicResults;
+    this.olympicResults = [];
+    return out;
   }
 
   /** A completed voyage pays its owner, unless the destination has turned hostile meanwhile. */
@@ -2519,6 +2718,7 @@ export class Simulation {
   // ─── Armies & battles ─────────────────────────────────────────────────────
 
   private spawnArmy(p: PolisState) {
+    if (this.truce) return;
     let count = 0;
     let main = false;
     for (const a of this.armies) {
@@ -2614,6 +2814,10 @@ export class Simulation {
         a.dead = true;
         continue;
       }
+      if (this.truce) {
+        this.standDown(a, p, dt);
+        continue;
+      }
       if (a.role === 'main' && p.wars.size && this.holdGround(a, dt)) continue;
       const threat = p.wars.size && a.role === 'raider' ? this.threatTo(a) : null;
       if (threat) {
@@ -2676,14 +2880,13 @@ export class Simulation {
   }
 
   /**
-   * Marches on an enemy army. Lifting a siege or seeking out a distant foe has no time limit, but
-   * a close chase lasts RULES.chaseTime seconds: then the army gives up on that foe for a while.
+   * Marches on an enemy army. Lifting a siege has no time limit, but chasing an army on the move
+   * lasts RULES.chaseTime seconds at most: then the army gives up on that foe for a while.
    * Returns false when it will not (or no longer) chase.
    */
   private pursue(a: Army, quarry: Army, dt: number): boolean {
     if (this.ignoring(a, quarry)) return false;
-    const close = Math.hypot(quarry.x - a.x, quarry.y - a.y) <= RULES.chaseRadius * 2;
-    if (close && quarry.siege < 0) {
+    if (quarry.siege < 0) {
       if (a.chaseId !== quarry.id) {
         a.chaseId = quarry.id;
         a.chaseSince = this.time;
@@ -2703,6 +2906,22 @@ export class Simulation {
   /** An enemy army this one has recently given up chasing. */
   private ignoring(a: Army, o: Army): boolean {
     return a.ignoreId === o.id && this.time < a.ignoreUntil;
+  }
+
+  /**
+   * The sacred truce: armies lift their sieges and march home. Citizens rejoin the garrison;
+   * mercenaries wait by the walls for the fighting to resume.
+   */
+  private standDown(a: Army, p: PolisState, dt: number) {
+    a.siege = -1;
+    a.target = -1;
+    a.dwell = 0;
+    a.stance = 'march';
+    a.fortify = 1;
+    a.fleeing = false;
+    if (!this.walk(a, p.cx, p.cy, dt) || a.mercenary) return;
+    p.garrison += a.strength;
+    a.dead = true;
   }
 
   /** A polis whose main army has fallen hands the command to its largest raiding party. */
@@ -2973,6 +3192,7 @@ export class Simulation {
   }
 
   private detectBattles() {
+    if (this.truce) return;
     const list = this.armies;
     for (let i = 0; i < list.length; i++) {
       const a = list[i];
@@ -3161,6 +3381,7 @@ export class Simulation {
     const prev = this.owner[cell];
     if (prev === idx) return;
     this.strayAt[cell] = 0;
+    this.enclaveAt[cell] = 0;
     const f = this.world.fertility[cell];
     if (prev >= 0) {
       this.poleis[prev].cells--;
@@ -3193,6 +3414,8 @@ export class Simulation {
       // Flood the whole pocket so every cell is visited once.
       const pocket: number[] = [];
       const rivals = new Set<number>();
+      /** Length of shared edge with each neighbouring polis. */
+      const contact = new Map<number, number>();
       let wildNext = false;
       seen[start] = 1;
       stack.push(start);
@@ -3209,28 +3432,29 @@ export class Simulation {
             }
           } else if (q >= 0) {
             rivals.add(q);
+            contact.set(q, (contact.get(q) ?? 0) + 1);
           } else if (q === WILD) {
             wildNext = true;
           }
         }
       }
       const p = this.poleis[o];
-      // A seed in open wilderness (a fresh colony) may still grow; anything else this small is stranded.
-      if (this.strayPocket(pocket, p, rivals.size > 0 || !wildNext)) continue;
-      if (pocket.length > RULES.enclaveSize || !p.wars.size || pocket.includes(p.capital)) continue;
+      // A small patch against an enemy, for long enough, falls to that enemy.
       const enemies = [...rivals].filter(q => p.wars.has(q));
-      if (!enemies.length) continue;
-      let cx = 0;
-      let cy = 0;
-      for (const c of pocket) {
-        cx += (c % w.cols) + 0.5;
-        cy += Math.floor(c / w.cols) + 0.5;
+      const enclave = enemies.length > 0 && pocket.length < RULES.enclaveSize && !pocket.includes(p.capital);
+      if (!enclave) {
+        for (const c of pocket) this.enclaveAt[c] = 0;
+        // A seed in open wilderness (a fresh colony) may still grow; anything else this small is stranded.
+        this.strayPocket(pocket, p, rivals.size > 0 || !wildNext);
+        continue;
       }
-      cx /= pocket.length;
-      cy /= pocket.length;
-      const dist = (q: number) => Math.hypot(this.poleis[q].cx - cx, this.poleis[q].cy - cy);
-      const heir = enemies.reduce((best, q) => (dist(q) < dist(best) ? q : best), o);
-      if (heir === o) continue;
+      let since = this.time;
+      for (const c of pocket) {
+        if (!this.enclaveAt[c]) this.enclaveAt[c] = this.time;
+        since = Math.min(since, this.enclaveAt[c]);
+      }
+      if (this.time - since < RULES.enclaveYears * RULES.secondsPerYear) continue;
+      const heir = enemies.reduce((best, q) => ((contact.get(q) ?? 0) > (contact.get(best) ?? 0) ? q : best));
       for (const c of pocket) {
         if (o === this.player) {
           const war = this.playerWars.get(heir);
@@ -3266,6 +3490,18 @@ export class Simulation {
       this.release(c);
     }
     return true;
+  }
+
+  /** Which poleis still have wilderness along their borders. */
+  private updateFrontiers() {
+    const w = this.world;
+    const out = new Set<number>();
+    for (const c of w.greekCells) {
+      if (this.owner[c] !== WILD) continue;
+      const x = c % w.cols;
+      for (const n of w.neighbours4(x, (c - x) / w.cols)) if (this.owner[n] >= 0) out.add(this.owner[n]);
+    }
+    this.frontierOwners = out;
   }
 
   /** Returns a cell to the wilderness. */

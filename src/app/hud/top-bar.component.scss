@@ -242,6 +242,22 @@
   }
 }
 
+.truce {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid color("success-600");
+  border-radius: radius("pill");
+  background: color("success-100");
+  font-size: font-size("xxs");
+  font-weight: font-weight("semibold");
+  color: color("success-700");
+  white-space: nowrap;
+  cursor: help;
+}
+
 .laurel {
   display: inline-flex;
   align-items: center;
