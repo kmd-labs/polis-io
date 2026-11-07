@@ -14,8 +14,7 @@ import {
   Sprout,
   Tent,
   Trophy,
-  UserMinus
-} from 'lucide-angular';
+  UserMinus, Swords } from 'lucide-angular';
 import { BreakpointService, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { formatEta, formatOrdinal, formatYear, interpolate } from '../core/i18n/format';
@@ -153,11 +152,29 @@ export class AlertsComponent {
               ? n.fortune.boon
                 ? t.boons[n.fortune.branch].title
                 : t.banes[n.fortune.bane].title
-              : t.alertDevelop;
+              : n.kind === 'campaign'
+                ? interpolate(t.alertCampaign, { title: t.campaignKinds[n.report.kind].title, place: name(n.report.near) })
+                : t.alertDevelop;
       out.push({
         key: `report-${r.id}`,
-        icon: n.kind === 'victory' ? Trophy : n.kind === 'warEnd' ? ScrollText : n.kind === 'fortune' ? (n.fortune.boon ? Sparkles : Flame) : Hammer,
-        tone: n.kind === 'develop' ? 'info' : n.kind === 'fortune' && !n.fortune.boon ? 'danger' : 'good',
+        icon:
+          n.kind === 'victory'
+            ? Trophy
+            : n.kind === 'warEnd'
+              ? ScrollText
+              : n.kind === 'fortune'
+                ? n.fortune.boon
+                  ? Sparkles
+                  : Flame
+                : n.kind === 'campaign'
+                  ? Swords
+                  : Hammer,
+        tone:
+          n.kind === 'develop'
+            ? 'info'
+            : (n.kind === 'fortune' && !n.fortune.boon) || (n.kind === 'campaign' && !n.report.won)
+              ? 'danger'
+              : 'good',
         text: `${when} · ${text} — ${t.alertOpen}`,
         act: () => this.game.openReport(r.id)
       });

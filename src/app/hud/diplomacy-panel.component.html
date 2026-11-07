@@ -55,13 +55,28 @@
       </dl>
 
       @if (game.status() === 'playing') {
-        @if (atWar()) {
+        @if (war(); as w) {
+          <div class="war">
+            <div class="war__balance" [appTooltip]="t.warScoreHint">
+              <span class="war__label">{{ t.warScoreLabel }}</span>
+              <span class="war__track"><span class="war__fill" [style.width.%]="w.fill"></span></span>
+              <span class="war__value">{{ w.score }}</span>
+            </div>
+            <div class="war__row">
+              <span class="war__label">{{ t.postureLabel }}</span>
+              <app-war-posture [enemy]="target.idx" [compact]="true"></app-war-posture>
+            </div>
+            <div class="war__row">
+              <span class="war__label">{{ t.strategosLabel }}</span>
+              <span class="war__stars">{{ w.stars }}</span>
+            </div>
+          </div>
           <app-button
-            [disabled]="!peaceReady()"
+            [disabled]="!peaceReady() || game.truce()"
             [titleText]="peaceReady() ? t.offerPeaceHint : t.peaceCooldown"
             (btnClick)="game.offerPeace(target.idx)">
             <lucide-icon [img]="icons.Handshake" [size]="14"></lucide-icon>
-            <span>{{ t.offerPeace }}</span>
+            <span>{{ t.negotiate }}</span>
           </app-button>
         } @else if (target.trader) {
           <p class="panel__hint">{{ t.traderNeutral }}</p>
@@ -70,8 +85,8 @@
             variant="toggle"
             [hot]="true"
             [active]="true"
-            [disabled]="game.truce()"
-            [titleText]="game.truce() ? t.truceHint : t.declareWarHint"
+            [disabled]="!!declareBlock()"
+            [titleText]="declareBlock() || t.declareWarHint"
             (btnClick)="game.declareWar(target.idx)">
             <lucide-icon [img]="icons.Swords" [size]="14"></lucide-icon>
             <span>{{ t.declareWar }}</span>

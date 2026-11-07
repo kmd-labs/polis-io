@@ -8,6 +8,7 @@ import { ImprovementId } from '../game/data/improvements';
 import { HegemonyCategory } from '../game/hegemony';
 import { GreatWorkId } from '../game/data/frontier';
 import { DilemmaId, WorldNoteId } from '../game/data/dilemmas';
+import { CampaignKind, PeaceItemKind } from '../game/war';
 
 const TEMPLATE_KEY = {
   war: 'evWar',
@@ -49,7 +50,10 @@ const TEMPLATE_KEY = {
   raidStand: 'evRaidStand',
   greatWork: 'evGreatWork',
   dilemma: 'evDilemma',
-  world: 'evWorld'
+  world: 'evWorld',
+  campaign: 'evCampaign',
+  treaty: 'evTreaty',
+  peaceBought: 'evPeaceBought'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Feed of the latest wars, treaties, colonies and conquests: a few lines in the outliner, the full record in the drawer. */
@@ -82,6 +86,8 @@ export class ChronicleComponent {
       .filter(e => {
         // Sieges and the war at sea are news when they touch the player; their own hiring and building likewise.
         if (['siege', 'navalBattle', 'blockade', 'raid', 'raidRepelled', 'raidBribed', 'raidStand'].includes(e.kind)) return e.a === player || e.b === player;
+        // From the fronts: the player's own fighting, and the great battles and fallen walls of Hellas.
+        if (e.kind === 'campaign') return e.a === player || e.b === player || e.tag === 'battle' || e.tag === 'assault';
         if (['settle', 'colony', 'farm', 'port', 'festival', 'farmPlanned', 'portPlanned', 'built', 'mercenaries', 'warship', 'greatWork', 'dilemma'].includes(e.kind)) return e.a === player;
         return e.kind !== 'allianceOffer';
       })
@@ -106,11 +112,17 @@ export class ChronicleComponent {
                     ? (t.worldNotes[e.tag as WorldNoteId] ?? '')
                     : e.kind === 'dilemma' && e.tag
                       ? this.dilemmaLine(e.tag)
-                      : ''
+                      : e.kind === 'campaign' && e.tag
+                        ? interpolate(t.campaignKinds[e.tag as CampaignKind]?.line ?? '', { a: name(e.a), b: name(e.b), w: name(e.n ?? -1) })
+                        : e.kind === 'treaty'
+                          ? this.treatyTerms(e.tag ?? '')
+                          : ''
         }),
         mine: e.a === player || e.b === player,
         world: e.kind === 'world',
-        hostile: ['war', 'fall', 'siege', 'client', 'annexed', 'revolt', 'blockade', 'navalBattle', 'raid'].includes(e.kind) && e.a !== player
+        hostile:
+          (['war', 'fall', 'siege', 'client', 'annexed', 'revolt', 'blockade', 'navalBattle', 'raid'].includes(e.kind) && e.a !== player) ||
+          (e.kind === 'campaign' && e.b === player)
       }));
   });
 
@@ -119,5 +131,16 @@ export class ChronicleComponent {
     const [id, option] = tag.split('.') as [DilemmaId, string];
     const text = this.i18n.t().dilemmas[id];
     return text ? `${text.title} — ${text.options[option] ?? ''}` : '';
+  }
+
+  /** " — Sparta: gold, land" for a treaty's terms, or " — white peace". */
+  private treatyTerms(tag: string): string {
+    const t = this.i18n.t();
+    if (!tag) return ` — ${t.peaceWhite.toLowerCase()}`;
+    const terms = tag.split(',').map(part => {
+      const [kind, , from] = part.split(':');
+      return `${this.game.name(Number(from))}: ${t.peaceItems[kind as PeaceItemKind]?.name.toLowerCase() ?? ''}`;
+    });
+    return ` — ${terms.join(', ')}`;
   }
 }

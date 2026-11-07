@@ -110,6 +110,9 @@ export class MapRenderer {
   private readonly sprites = new SpriteAtlas();
   private outline: Path2D | null = null;
   private outlineKey = '';
+  /** The fronts of every war (the borders between warring cities), rebuilt when the map changes. */
+  private fronts: Path2D | null = null;
+  private frontsKey = '';
 
   private readonly css: Record<string, string> = {};
   private readonly rgb: Record<string, Rgb> = {};
@@ -151,7 +154,7 @@ export class MapRenderer {
       'neutral-600', 'success-100', 'success-200', 'success-600', 'warning-100', 'warning-200', 'warning-300',
       'info-50', 'info-100', 'info-200', 'info-300', 'info-400', 'info-700', 'primary-200', 'primary-300', 'primary-400',
       'primary-800', 'neutral-700', 'neutral-900', 'warning-50', 'warning-700', 'warning-800', 'success-500', 'accent', 'text-bright', 'text-main',
-      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong', 'danger-400', 'danger-700', 'success-400', 'success-700', 'warning-400', 'warning-500'
+      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong', 'danger-400', 'danger-500', 'danger-600', 'danger-700', 'success-400', 'success-700', 'warning-400', 'warning-500', 'warning-600'
     ];
     for (const t of tokens) {
       this.css[t] = this.theme.getTokenColor(t, '#888888');
@@ -201,6 +204,7 @@ export class MapRenderer {
     ctx.drawImage(this.raster, cam.ox, cam.oy, mw, mh);
     this.drawSea(ctx, cam, now / 1000);
     this.drawGrid(ctx, cam, width, height);
+    this.drawFronts(ctx, cam);
     this.drawPlayerOutline(ctx, cam);
     this.drawClaims(ctx, cam);
     this.drawBuildings(ctx, cam, width, height);
@@ -217,6 +221,84 @@ export class MapRenderer {
     this.drawArmies(ctx, cam, now, opt);
     this.drawTradeFx(ctx, cam, opt);
     this.drawBattles(ctx, cam);
+    this.drawWarFx(ctx, cam);
+  }
+
+  /**
+   * Every war's front: the border between two warring cities, drawn as a dark red line that pulses a
+   * little (frozen and pale during the Olympic truce). There are no armies on the map — only the
+   * borders, which move when a battle is won, a fort taken or fields ravaged.
+   */
+  private drawFronts(ctx: CanvasRenderingContext2D, cam: Camera) {
+    const sim = this.sim;
+    if (!sim.fronts.size) return;
+    const key = `${sim.resets}|${sim.version}|${[...sim.fronts.keys()].join(',')}`;
+    if (key !== this.frontsKey) {
+      this.frontsKey = key;
+      const { cols, rows } = sim.world;
+      const own = sim.owner;
+      const path = new Path2D();
+      const warring = (a: number, b: number) => a >= 0 && b >= 0 && a !== b && sim.fronts.has(sim.frontKey(a, b));
+      for (const i of sim.world.greekCells) {
+        const o = own[i];
+        if (o < 0) continue;
+        const x = i % cols;
+        const y = (i - x) / cols;
+        if (x < cols - 1 && warring(o, own[i + 1])) {
+          path.moveTo(x + 1, y);
+          path.lineTo(x + 1, y + 1);
+        }
+        if (y < rows - 1 && warring(o, own[i + cols])) {
+          path.moveTo(x, y + 1);
+          path.lineTo(x + 1, y + 1);
+        }
+      }
+      this.fronts = path;
+    }
+    if (!this.fronts) return;
+    const px = 1 / cam.scale;
+    const pulse = sim.truce ? 0.35 : 0.75 + 0.25 * Math.sin(performance.now() / 420);
+    ctx.save();
+    ctx.translate(cam.ox, cam.oy);
+    ctx.scale(cam.scale, cam.scale);
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.35 * pulse;
+    ctx.strokeStyle = this.css['danger-500'];
+    ctx.lineWidth = 6 * px;
+    ctx.stroke(this.fronts);
+    ctx.globalAlpha = pulse;
+    ctx.strokeStyle = this.css['danger-700'];
+    ctx.lineWidth = 2 * px;
+    ctx.setLineDash([5 * px, 3 * px]);
+    ctx.stroke(this.fronts);
+    ctx.restore();
+  }
+
+  /** Where something just happened on a front: a ring spreading from the place, fading over three seconds. */
+  private drawWarFx(ctx: CanvasRenderingContext2D, cam: Camera) {
+    const sim = this.sim;
+    if (!sim.warFx.length) return;
+    ctx.save();
+    for (const fx of sim.warFx) {
+      const age = Math.min(1, Math.max(0, (sim.time - fx.t) / 3));
+      const x = cam.ox + fx.x * cam.scale;
+      const y = cam.oy + fx.y * cam.scale;
+      const big = fx.kind === 'battle' || fx.kind === 'assault';
+      const r = (big ? 14 : 9) + age * (big ? 34 : 22);
+      ctx.globalAlpha = (1 - age) * 0.9;
+      ctx.strokeStyle = this.css[fx.kind === 'ravage' ? 'warning-600' : fx.kind === 'plague' ? 'success-700' : 'danger-600'];
+      ctx.lineWidth = big ? 3 : 2;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1 - age;
+      ctx.fillStyle = this.css['neutral-900'];
+      ctx.font = `700 ${big ? 18 : 14}px ${this.font}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fx.kind === 'ravage' ? '♨' : fx.kind === 'plague' ? '☠' : '⚔', x, y);
+    }
+    ctx.restore();
   }
 
   // ─── Territory raster ─────────────────────────────────────────────────────
@@ -1085,7 +1167,8 @@ export class MapRenderer {
     const base = Math.max(5, Math.min(16, cam.scale * GRID_SCALE * 2.6));
     ctx.save();
     for (const a of sim.armies) {
-      if (a.battle || a.dead) continue;
+      // Wars have no armies on the map any more: only the warbands from beyond the frontier are drawn.
+      if (a.battle || a.dead || a.raid < 0) continue;
       // The main host carries a larger shield than the raiding parties.
       const r = a.role === 'main' ? base * 1.2 : base * 0.85;
       let sx = cam.ox + a.x * cam.scale;

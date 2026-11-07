@@ -41,8 +41,9 @@ export class OutlinerComponent {
         idx,
         name: this.game.name(idx),
         def: this.game.sim.poleis[idx].def,
-        advantage: ours + theirs > 0 ? ours / (ours + theirs) : 0.5,
-        hint: interpolate(t.outAdvantageHint, { a: formatNumber(ours, lang), b: formatNumber(theirs, lang) })
+        // The balance of the war (−100…+100) as a share of the bar.
+        advantage: (this.game.warScore(idx) + 100) / 200,
+        hint: `${t.warScoreLabel}: ${Math.round(this.game.warScore(idx))} · ${interpolate(t.outAdvantageHint, { a: formatNumber(ours, lang), b: formatNumber(theirs, lang) })}`
       };
     });
   });
