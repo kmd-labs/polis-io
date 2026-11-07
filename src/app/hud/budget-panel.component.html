@@ -56,6 +56,11 @@
           @if (row.extra) {
             <span class="row__extra">{{ row.extra }}</span>
           }
+          @if (buys()?.[row.key]; as b) {
+            <button type="button" class="buy" [disabled]="b.disabled" [appTooltip]="b.hint" (click)="b.run()">
+              <lucide-icon [img]="icons.Coins" [size]="12"></lucide-icon>{{ b.label }}
+            </button>
+          }
           @if (row.key === 'military' && surplus(); as sp) {
             <div class="surplus" role="radiogroup" [attr.aria-label]="sp.label">
               <span class="surplus__label">{{ sp.label }}</span>

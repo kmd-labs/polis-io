@@ -33,6 +33,14 @@ export const EN: Dict = {
       desc: 'Every fourth year (counted from the first Olympiad of 776 BC) the Games are held at Olympia, with the contests of their time: twelve in 600 BC, up to eighteen and more later (races, wrestling, boxing, pankration, pentathlon, chariots, the race in armour, heralds and trumpeters). The sacred truce runs from two months before to a month after: no war is waged, armies march home. You choose how much of a year’s income to spend on your delegation; big, wealthy, well-funded cities do best (warlike ones in combat sports, cultured ones in races and music, rich ones in chariots). Every city that competes gains power projection, and every wreath raises its renown and others’ regard; a triumph (two-fifths of all wreaths, at least five) adds +1 culture.'
     },
     {
+      term: 'Peoples beyond the frontier',
+      desc: 'Illyrians in the north-west, Paeonians on the Axios and Thracians between the Axios and the Strymon live beyond the Greek border and cannot be conquered. Every few years one of them sends a warband against a rich, poorly guarded city within reach: warbands of 400 to 2,000 men carry off people and silver and sour the citizens’ mood, then go home. A city they enter chooses: pay them six months of its income to plunder someone else, or fight them in the name of Hellas — power projection and every Greek city’s regard at once, more renown if they are driven off — and send out defenders. A warband that loses half its men turns back. The Olympic truce means nothing to them. Walls halve what they carry off.'
+    },
+    {
+      term: 'Great works and neutral harbours',
+      desc: 'Silver no fund can spend can raise a great work (Polis tab): a treasury at Delphi, a great temple, city walls or a water tunnel. Small islands with neutral harbours (Delos, Syros, Thera, Aegina…) belong to no one and cannot be taken; merchantmen sell there at a premium. No land above 1500 metres can be taken, settled or laid waste.'
+    },
+    {
       term: 'Twists of fortune',
       desc: 'Every two years fortune turns for every city: a windfall for one budget branch (one to three months of income straight into that fund) or a misfortune — fire, plague, drought, pirates, earthquake or embezzlement — costing up to three months of full income. They wait in the alerts row.'
     },
@@ -98,15 +106,15 @@ export const EN: Dict = {
     },
     {
       term: 'Main army and raiders',
-      desc: 'At war a polis fields two to five armies. The main army (the larger shield) takes about half the spare hoplites and seeks out the enemy’s main army; the smaller raiding parties plunder the countryside and run from any force near their size. A main army weaker than the enemy’s halts and digs in (a ring of stakes): within a few months its fighting power grows to 150%, and it falls on any enemy army that comes within 30 cells. A few hoplites always stay behind the walls. An army gives up a chase after three seconds, and armies keep to the valleys, skirting hills and mountains.'
+      desc: 'At war a polis fields two to five armies. The main army (the larger shield) takes about half the spare hoplites and seeks out the enemy’s main army; the smaller raiding parties plunder the countryside and run from any force near their size. A main army weaker than the enemy’s halts and digs in (a ring of stakes): within a couple of months its fighting power grows to 150%, and it falls on any enemy army that comes within 30 cells. A few hoplites always stay behind the walls. Every army has a general of one to three stars (60% / 35% / 5%) — click an army to see them: each star above one adds 5% fighting power, better generals seek battle and besiege cities more readily, and armies under lesser generals march to join a better one of their city nearby. Cities only pick wars with their three nearest neighbours (by border or by capital). An army gives up a chase after three seconds, and armies keep to the valleys, skirting hills and mountains.'
     },
     {
       term: 'Mercenaries and the war fleet',
-      desc: 'Levies are small and frequent. Once the army reaches the size the Military slider aims for, choose what the military fund does with the rest: save it (it flows to the other funds), hire mercenaries in wartime (no citizens lost, but dear to hire, double pay, and they leave at peace), or build war galleys. At war the fleet rows to the nearest enemy harbour and blockades it — no trade, no port bonus, no harbour dues — sinking enemy merchantmen and fighting enemy fleets.'
+      desc: 'Levies are small and frequent. Once the army reaches the size the Military slider aims for, choose what the military fund does with the rest: save it (it flows to the other funds), hire mercenaries in wartime (no citizens lost, but dear to hire, double pay, and they leave at peace), or build war galleys. With savings in hand you can also hire a double band of mercenaries at once in wartime, or send an extra settlers’ expedition before the city is crowded — the buttons under the Military and Colonization rows — dearly: twice and four times the usual price, never less than three months of income. At war the fleet rows to the nearest enemy harbour and blockades it — no trade, no port bonus, no harbour dues — sinking enemy merchantmen and fighting enemy fleets.'
     },
     {
       term: 'Sieges and the fall of a polis',
-      desc: 'An army reaching an enemy capital camps before its walls for over half a year before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
+      desc: 'An army reaching an enemy capital camps before its walls for a couple of months before storming them. Meanwhile the besieged city loses satisfaction, barely grows and its garrison starves — while the besiegers waste away too. A fallen polis is rarely wiped out: it may live on as a city within the victor’s borders, or become a client state paying tribute in drachmae and workers. Founding cities are hard to raze; young colonies are easy. Sometimes a new polis breaks away in the chaos.'
     },
     {
       term: 'Conquest',
@@ -324,6 +332,66 @@ export const EN: Dict = {
   evCoalition: 'Hellas fears the power of {a}: the cities draw together against it',
   evMercenaries: '{a} hires {n} mercenaries',
   versionLabel: 'Version',
+  armyInfo: '{kind} of {name} · {n} men · general {stars} (+{bonus}% in battle)',
+  armyKinds: { main: 'Main army', raider: 'Raiding party', mercenary: 'Mercenaries', raid: 'Warband', defend: 'Defenders' },
+  tribeNames: { illyrians: 'Illyrians', paeonians: 'Paeonians', thracians: 'Thracians' },
+  neutralPortNames: {
+    delos: 'Delos',
+    syros: 'Syros',
+    seriphos: 'Seriphos',
+    siphnos: 'Siphnos',
+    thera: 'Thera',
+    ios: 'Ios',
+    aegina: 'Aegina',
+    skiathos: 'Skiathos',
+    peparethos: 'Peparethos',
+    psara: 'Psara',
+    astypalaia: 'Astypalaia',
+    leros: 'Leros',
+    telos: 'Telos',
+    ithaca: 'Ithaca',
+    kythnos: 'Kythnos'
+  },
+  evRaid: 'A warband of {a} ({n} men) crosses the border to plunder {b}',
+  evRaidRepelled: '{a} drives off the {b}',
+  evRaidBribed: '{a} pays the {b} to plunder someone else',
+  evRaidStand: '{a} stands against the {b} in the name of Hellas',
+  raidTitle: '{name} on our land!',
+  raidText: 'A warband of {n} {name} has crossed into our fields to carry off our people and our silver. Their chief will take {d} drachmae — six months of our income — to go and plunder another city. Or we can fight them in the name of Hellas: all Greeks will honour us for it.',
+  raidTextPoor: 'A warband of {n} {name} has crossed into our fields to carry off our people and our silver. Their chief asks {d} drachmae — more than we have. We must fight them in the name of Hellas: all Greeks will honour us for it.',
+  raidBribe: 'Pay {d} dr',
+  raidFight: 'Fight for Hellas',
+  buyMercenaries: 'Hire {n} mercenaries now · {d} dr',
+  buyMercenariesIdle: 'Hire mercenaries now',
+  buyMercenariesHint: 'Paid at once out of all our savings, at twice the price the military fund pays (and never less than three months of income). They march out today and serve until the peace.',
+  buyMercenariesPeace: 'Only at war: in peace mercenaries take their pay and leave.',
+  buyExpedition: 'Send {n} settlers now · {d} dr',
+  buyExpeditionIdle: 'Send an extra expedition',
+  buyExpeditionHint: 'An extra expedition paid at once out of all our savings, at four times the usual price (and never less than three months of income) — it sets out even before the city has filled its land.',
+  buyExpeditionNone: 'No expedition can set out: one is already under way, no free land borders ours, or too few people could go.',
+  buyShort: 'Our savings do not cover it yet.',
+  evGreatWork: '{a} completes a great work: {w}',
+  alertRaid: '{name} are plundering our land! Our defenders march out to meet them.',
+  greatWorks: {
+    delphi: {
+      name: 'Treasury at Delphi',
+      desc: 'A marble treasury beside Apollo’s temple to hold the city’s offerings: +1.5 power projection, every city’s regard +5, culture +0.2. Can be built again (dearer each time).'
+    },
+    temple: { name: 'Great temple', desc: 'A Doric temple with a peristyle of stone columns: culture +1, power projection +1, satisfaction +15.' },
+    walls: { name: 'City walls', desc: 'A ring of ashlar walls and towers: the garrison holds a siege far longer, and raiders find little left to carry off.' },
+    aqueduct: { name: 'Water tunnel', desc: 'A tunnel cut through the hill to bring spring water, like Eupalinos’s at Samos: population grows 15% faster, satisfaction +5.' }
+  },
+  greatTitle: 'Great works',
+  greatIntro: 'Spare silver — what no fund has anything to buy with — can raise a great work instead of flowing to the other funds.',
+  greatChoose: 'Fund with spare silver',
+  greatChosen: 'Receiving spare silver',
+  greatStop: 'Share spare silver among the funds',
+  greatBuilt: 'Built ×{n}',
+  greatProgress: '{f} / {c} dr',
+  greatDone: 'Completed',
+  fcGreat: 'nothing to buy — its share goes to the great work ({w})',
+  hoverTribe: '{name} — beyond the frontier',
+  hoverNeutralPort: '{name} — neutral harbour',
   builtTitle: '{name} is finished',
   builtNames: { farm: 'A new farm', port: 'A new port' },
   builtTexts: {

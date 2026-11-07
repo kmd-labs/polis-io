@@ -21,8 +21,8 @@ function runUntil(sim: Simulation, done: () => boolean, limit: number) {
 }
 
 describe('the Olympic Games in play', () => {
-  it('years last four times as long as they first did', () => {
-    expect(RULES.secondsPerYear).toBe(16);
+  it('years last sixteen times as long as they first did', () => {
+    expect(RULES.secondsPerYear).toBe(64);
   });
 
   it('proclaims the truce two months before the Games, stands the armies down, and holds the Games', () => {
@@ -34,30 +34,32 @@ describe('the Olympic Games in play', () => {
     athens.garrison += 2000;
 
     // The first Games after the start are those of 596 BC (the 46th Olympiad).
-    runUntil(sim, () => sim.truce, 120);
+    runUntil(sim, () => sim.truce, 6 * RULES.secondsPerYear);
     expect(sim.year).toBe(596);
     expect(sim.month).toBe(RULES.gamesMonth - RULES.truceBefore);
     expect(sim.takeOlympicInvites()).toEqual([596]);
 
-    // No new wars while the truce lasts; the old ones stand still.
+    // No new wars while the truce lasts; those already being fought stand still.
+    const warsAtTruce = [...athens.wars];
     const corinth = sim.poleis.find(p => p.def.id === 'corinth')!;
     sim.declareWar(corinth.idx, athens.idx);
     expect(corinth.wars.has(athens.idx)).toBe(false);
-    expect(athens.wars.has(thebes.idx)).toBe(true);
+    expect([...athens.wars]).toEqual(warsAtTruce);
 
     // The player sends a lavish delegation, paid from the funds.
     const before = sim.treasury(athens);
     sim.sendDelegation(athens.idx, 0.5);
     expect(sim.treasury(athens)).toBeLessThan(before);
 
-    // Every army lifts its sieges and heads home; no battle starts while the truce lasts.
+    // Every city army lifts its sieges and heads home (warbands from beyond the frontier, and the
+    // defenders sent against them, keep fighting: the truce is a Greek custom).
     const home = (a: (typeof sim.armies)[number]) => Math.hypot(a.x - sim.poleis[a.owner].cx, a.y - sim.poleis[a.owner].cy);
-    const field = sim.armies.filter(a => !a.dead).map(a => ({ a, d: home(a) }));
-    const battles = sim.battles.length;
-    runUntil(sim, () => sim.month >= RULES.gamesMonth, 20);
+    const greek = (a: (typeof sim.armies)[number]) => !sim.poleis[a.owner].tribe && a.defend < 0;
+    const field = sim.armies.filter(a => !a.dead && greek(a)).map(a => ({ a, d: home(a) }));
+    runUntil(sim, () => sim.month >= RULES.gamesMonth, RULES.secondsPerYear);
     for (const { a, d } of field) if (!a.dead) expect(home(a)).toBeLessThan(d + 0.01);
     expect(sim.armies.every(a => a.dead || a.siege < 0)).toBe(true);
-    expect(sim.battles.length).toBeLessThanOrEqual(battles);
+    for (const b of sim.battles) expect([...b.attackers, ...b.defenders].some(a => !greek(a))).toBe(true);
 
     const [report] = sim.takeOlympics();
     expect(report.year).toBe(596);
@@ -67,20 +69,20 @@ describe('the Olympic Games in play', () => {
     expect(mine.prestige).toBeGreaterThanOrEqual(RULES.olympicParticipation);
 
     // A month after the Games the truce ends and the war goes on.
-    runUntil(sim, () => !sim.truce, 20);
+    runUntil(sim, () => !sim.truce, RULES.secondsPerYear);
     expect(sim.truce).toBe(false);
     expect(sim.month).toBe(RULES.gamesMonth + RULES.truceAfter + 1);
-    expect(athens.wars.has(thebes.idx)).toBe(true);
-  }, 60_000);
+    for (const e of warsAtTruce) if (sim.poleis[e].alive) expect(athens.wars.has(e)).toBe(true);
+  }, 300_000);
 
   it('leaves a city that stays at home out of the Games', () => {
     const sim = new Simulation(world, { seed: 3 });
     sim.choose(0);
-    runUntil(sim, () => sim.truce, 120);
+    runUntil(sim, () => sim.truce, 6 * RULES.secondsPerYear);
     sim.sendDelegation(0, 0);
-    runUntil(sim, () => sim.month >= RULES.gamesMonth, 20);
+    runUntil(sim, () => sim.month >= RULES.gamesMonth, RULES.secondsPerYear);
     const [report] = sim.takeOlympics();
     expect(report.table.some(r => r.idx === 0)).toBe(false);
     expect(report.table.length).toBeGreaterThan(10);
-  }, 60_000);
+  }, 300_000);
 });

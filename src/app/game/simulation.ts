@@ -1,5 +1,6 @@
 import { Delegation, OlympicResults, holdGames, isOlympicYear, isTriumph, olympiadOf } from './olympics';
 import { Fortune, rollFortune } from './fortune';
+import { GREAT_WORKS, GreatWorkId, NEUTRAL_PORTS, NeutralPortId, TRIBES } from './data/frontier';
 import { POLEIS, PolisDef, SITES, SiteId } from './data/poleis';
 import {
   IMPROVEMENT_BY_ID,
@@ -80,12 +81,14 @@ export type Purchase =
 const SECESSION_COLORS = ['success-700', 'info-600', 'danger-700', 'purple-400', 'primary-500', 'info-800', 'neutral-800'];
 
 /** Cell owner codes; values >= 0 are polis indices. */
+/** Land of a neutral harbour island: no polis may settle or take it. */
+export const NEUTRAL = -4;
 export const SEA = -3;
 export const FOREIGN = -2;
 export const WILD = -1;
 
 /** Game seconds in a year of the calendar (1 game second = 1 real second at 1× speed). */
-const YEAR = 16;
+const YEAR = 64;
 
 /** Tunable game balance. Times are in game seconds (1 game second = 1 real second at 1× speed). */
 export const RULES = {
@@ -137,6 +140,13 @@ export const RULES = {
   /** Mercenaries: drachmae per man to hire (a citizen levy costs trainCostPerHoplite), and their pay multiplier. */
   mercenaryCost: 3.5,
   mercenaryPay: 2,
+  /** Bought at once out of savings (the player's choice), dearly: mercenaries per man and the size of the
+   * band in levies; an extra settlers' expedition at this many times the fund's price; and never less than
+   * this many months of income. */
+  buyMercenaryCost: 7,
+  buyMercenaryLevies: 2,
+  buyExpeditionFactor: 4,
+  buyMinMonths: 3,
   /** A war galley: base price, plus per head of population, dearer by this much for each galley already afloat. */
   warshipBase: 120,
   warshipPerCapita: 0.004,
@@ -243,6 +253,52 @@ export const RULES = {
   colonyYears: 40,
   colonyYearsMin: 16,
   colonyShareFull: 20,
+  /** Generals: the odds of one, two and three stars; each star above one adds this much fighting power. */
+  generalOdds: [0.6, 0.35, 0.05],
+  generalPower: 0.05,
+  /** An army with a lesser general within generalJoinRadius cells of a better one of the same city marches to it,
+   * and merges once within generalMergeRadius. */
+  generalJoinRadius: 20,
+  generalMergeRadius: 3,
+  /** A city only picks a war with one of its nearest neighbours: this many nearest by border and by capital. */
+  warNeighbours: 3,
+  /** Seconds over which a city's cash inflow is smoothed (spoils and trade arrive in lumps). */
+  inflowSmoothing: 4,
+  /** No land above this height (metres) can be taken, settled, laid waste or handed over. */
+  maxElevation: 1500,
+  /** Peoples beyond the frontier: warriors at the start, yearly growth, ceiling; a raid every
+   * raidEveryMin–raidEveryMax years with raidShareMin–raidShareMax of the warband, against a polis
+   * whose capital lies within raidReach cells of the people's seat. */
+  tribeStart: 3000,
+  tribeGrowth: 0.03,
+  tribeMax: 8000,
+  /** A warband sets out with this many men, at random (if the people can field them). */
+  raidMin: 400,
+  raidMax: 2000,
+  raidEveryMin: 3,
+  raidEveryMax: 7,
+  raidReach: 200,
+  /** A raid ends after this many cells plundered or this many years, whichever comes first. */
+  raidLoot: 8,
+  raidYears: 1.5,
+  /** Per cell plundered: share of the victim's treasury taken, share of its people carried off and
+   * satisfaction lost. Walls halve the loot. */
+  raidPlunderShare: 0.03,
+  raidCaptives: 0.004,
+  raidMood: -1.5,
+  /** A city a warband enters may pay it off with this many months of its income to plunder someone
+   * else, or stand and fight in the name of Hellas: renown at once and every Greek city's regard,
+   * and more renown if the warband is driven off. */
+  raidBribeMonths: 6,
+  raidStandPrestige: 0.5,
+  raidStandRegard: 3,
+  raidRepelPrestige: 0.5,
+  /** A raided city sends defenders up to this multiple of the warband. */
+  defenceRatio: 1.3,
+  /** Merchantmen value a neutral harbour this much more than a city's (exotic goods, no tolls)… */
+  neutralPortBonus: 1.3,
+  /** …and are drawn to one as much as to a city with no renown. */
+  neutralPortPull: 1,
   /** Every this many years a twist of fortune befalls each city: a windfall for one budget branch (in
    * months of its income) or a misfortune costing up to fortuneMaxMonths of its full income. */
   fortuneYears: 2,
@@ -477,6 +533,18 @@ export interface PolisState {
   upkeep: number;
   /** Smoothed drachmae per second reaching the funds from every source (taxes, trade, tribute, spoils). */
   inflow: number;
+  /** A people beyond the frontier rather than a Greek city: it raids, it cannot be taken. */
+  tribe: boolean;
+  /** Raiders: when the next warband sets out. */
+  nextRaid: number;
+  /** Where spare silver goes (a great work, or null to share it among the other funds), the silver
+   * saved for it so far, and what has been completed. */
+  greatWork: GreatWorkId | null;
+  greatFund: number;
+  greatBuilt: Partial<Record<GreatWorkId, number>>;
+  /** Lasting bonuses from great works: walls (against sieges and raids) and growth. */
+  bonusWalls: number;
+  bonusGrowth: number;
   /** What the military fund buys once the army is full; the polis whose fleet blockades our harbour (-1 if none). */
   surplus: SurplusUse;
   blockadedBy: number;
@@ -568,6 +636,8 @@ export interface Ship {
   id: number;
   owner: number;
   dest: number;
+  /** A neutral harbour (index into neutralPorts) instead of a city, or -1. */
+  port: number;
   /** Polyline in map coordinates: x0, y0, x1, y1, … */
   path: number[];
   seg: number;
@@ -615,6 +685,24 @@ export interface Army {
   fortify: number;
   /** Hired with money rather than levied: they cost double pay and go home (disband) at peace. */
   mercenary: boolean;
+  /** A warband of raiders: the polis it plunders (-1 for an ordinary army), cells looted, when it
+   * must turn back, whether it is heading home, and the frontier point it came from. */
+  raid: number;
+  loot: number;
+  raidUntil: number;
+  /** Men the warband set out with: it turns back once it has lost half of them. */
+  raidStrength: number;
+  homeward: boolean;
+  homeX: number;
+  homeY: number;
+  /** Defenders sent against a warband: the raid army's id (-1 for an ordinary army). */
+  defend: number;
+  /** Warbands: the city last asked to pay or fight (-1 none), whether it has answered, and whether it fights. */
+  asked: number;
+  answered: boolean;
+  fought: boolean;
+  /** Quality of the general in command (1–3 stars). */
+  stars: number;
   /** The enemy army being chased and since when; an army given up on is ignored until ignoreUntil. */
   chaseId: number;
   chaseSince: number;
@@ -623,6 +711,29 @@ export interface Army {
 }
 
 export type ArmyRole = 'main' | 'raider';
+
+/** The raid fields of an ordinary army. */
+const NO_RAID = {
+  raid: -1,
+  loot: 0,
+  raidUntil: 0,
+  raidStrength: 0,
+  homeward: false,
+  homeX: 0,
+  homeY: 0,
+  defend: -1,
+  asked: -1,
+  answered: false,
+  fought: false
+};
+
+/** A trading harbour on a small island that belongs to no polis. */
+export interface NeutralPort {
+  id: NeutralPortId;
+  /** A land cell of the island (for the marker) and the sea cell ships sail to. */
+  cell: number;
+  harbour: number;
+}
 
 /** The Games as they went: results plus what every city took home. */
 export interface OlympicReport extends OlympicResults {
@@ -732,7 +843,12 @@ export type GameEventKind =
   | 'blockade'
   | 'truce'
   | 'truceEnd'
-  | 'olympics';
+  | 'olympics'
+  | 'raid'
+  | 'raidRepelled'
+  | 'raidBribed'
+  | 'raidStand'
+  | 'greatWork';
 
 export interface GameEvent {
   id: number;
@@ -757,6 +873,11 @@ export class Simulation {
   poleis: PolisState[] = [];
   armies: Army[] = [];
   fleets: Fleet[] = [];
+  neutralPorts: NeutralPort[] = [];
+  /** Warbands awaiting the player's answer (pay or fight). */
+  private raidChoices: { band: number; tribe: number; cost: number }[] = [];
+  /** Per people beyond the frontier: its non-Greek cells touching Greek land (where warbands cross). */
+  private tribeBorders = new Map<number, number[]>();
   seaFights: SeaFight[] = [];
   battles: Battle[] = [];
   buildings: Building[] = [];
@@ -907,6 +1028,13 @@ export class Simulation {
       unpaid: false,
       hegemonyScore: 0,
       dominantYears: 0,
+      tribe: def.kind === 'tribe',
+      nextRaid: 0,
+      greatWork: null,
+      greatFund: 0,
+      greatBuilt: {},
+      bonusWalls: 0,
+      bonusGrowth: 0,
       surplus: 'none',
       blockadedBy: -1,
       nextColonyAt: this.time + RULES.colonyYears * RULES.secondsPerYear,
@@ -1021,6 +1149,7 @@ export class Simulation {
     this.olympics = null;
     this.olympicInvites = [];
     this.olympicResults = [];
+    this.raidChoices = [];
     this.nextFortune = RULES.fortuneYears * RULES.secondsPerYear;
     this.fortunes = [];
     this.frontierOwners = new Set();
@@ -1034,7 +1163,99 @@ export class Simulation {
       c => this.owner[c] === WILD
     );
     for (const p of this.poleis) this.populate(p);
+    this.settleFrontier();
     this.version++;
+  }
+
+  /**
+   * The world beyond the city-states: the peoples of the northern frontier (seated on non-Greek
+   * land, never conquered) and the neutral harbours on small unclaimed islands.
+   */
+  private settleFrontier() {
+    const w = this.world;
+    this.tribeBorders = new Map();
+    for (const def of TRIBES) {
+      const idx = this.poleis.length;
+      const seat = this.nearestForeignCell(def.lon, def.lat);
+      if (seat < 0) continue;
+      const tribe = this.createPolis(def, idx, seat, -1);
+      tribe.garrison = RULES.tribeStart;
+      tribe.nextRaid = this.raidDelay();
+      this.poleis.push(tribe);
+      const border: number[] = [];
+      for (let c = 0; c < w.size; c++) {
+        if (w.terrain[c] !== Terrain.Foreign) continue;
+        const x = c % w.cols;
+        if (Math.hypot(x + 0.5 - tribe.cx, Math.floor(c / w.cols) + 0.5 - tribe.cy) > RULES.raidReach) continue;
+        if (w.neighbours4(x, (c - x) / w.cols).some(n => w.terrain[n] === Terrain.Greek)) border.push(c);
+      }
+      this.tribeBorders.set(idx, border);
+    }
+    this.neutralPorts = [];
+    for (const spec of NEUTRAL_PORTS) {
+      const p = w.project(spec.lon, spec.lat);
+      let land = -1;
+      let best = Infinity;
+      for (let dy = -4; dy <= 4; dy++) {
+        for (let dx = -4; dx <= 4; dx++) {
+          const c = w.cellAt(p.x + dx, p.y + dy);
+          if (c < 0 || w.terrain[c] !== Terrain.Greek || Math.hypot(dx, dy) >= best) continue;
+          best = Math.hypot(dx, dy);
+          land = c;
+        }
+      }
+      if (land < 0) continue;
+      // The whole island, if it is small and nobody's.
+      const island = [land];
+      const seen = new Set(island);
+      for (let i = 0; i < island.length && island.length <= 70; i++) {
+        const x = island[i] % w.cols;
+        for (const n of w.neighbours4(x, (island[i] - x) / w.cols)) {
+          if (seen.has(n) || w.terrain[n] === Terrain.Sea) continue;
+          seen.add(n);
+          island.push(n);
+        }
+      }
+      if (island.length > 70 || island.some(c => this.owner[c] !== WILD || w.terrain[c] !== Terrain.Greek)) continue;
+      let harbour = -1;
+      best = Infinity;
+      for (const c of island) {
+        const x = c % w.cols;
+        for (const n of w.neighbours4(x, (c - x) / w.cols)) {
+          if (w.terrain[n] !== Terrain.Sea) continue;
+          const d = Math.hypot((n % w.cols) - p.x, Math.floor(n / w.cols) - p.y);
+          if (d < best) {
+            best = d;
+            harbour = n;
+          }
+        }
+      }
+      if (harbour < 0) continue;
+      for (const c of island) this.owner[c] = NEUTRAL;
+      this.wildCells -= island.length;
+      this.neutralPorts.push({ id: spec.id, cell: land, harbour });
+    }
+  }
+
+  /** The non-Greek land cell nearest a point (the seat of a people beyond the frontier). */
+  private nearestForeignCell(lon: number, lat: number): number {
+    const w = this.world;
+    const p = w.project(lon, lat);
+    let best = -1;
+    let bestD = Infinity;
+    for (let c = 0; c < w.size; c++) {
+      if (w.terrain[c] !== Terrain.Foreign) continue;
+      const d = Math.hypot((c % w.cols) + 0.5 - p.x, Math.floor(c / w.cols) + 0.5 - p.y);
+      if (d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    return best;
+  }
+
+  private raidDelay(): number {
+    return (RULES.raidEveryMin + this.rand() * (RULES.raidEveryMax - RULES.raidEveryMin)) * RULES.secondsPerYear;
   }
 
   choose(idx: number) {
@@ -1124,15 +1345,63 @@ export class Simulation {
   }
 
   /** Colonists only leave a city that is filling up its land. */
-  canSettle(p: PolisState): boolean {
+  canSettle(p: PolisState, crowded = true): boolean {
     return (
       p.alive &&
       !p.expedition &&
       this.wildCells > 0 &&
       this.settlers(p) >= this.settlersPerCell(p) &&
-      this.totalPopulation(p) >= this.capacity(p) * RULES.settleCrowding &&
+      (!crowded || this.totalPopulation(p) >= this.capacity(p) * RULES.settleCrowding) &&
       this.frontierOwners.has(p.idx)
     );
+  }
+
+  /** The dearest a thing bought out of savings ever comes: a few months of income. */
+  private buyFloor(p: PolisState): number {
+    return (this.annualIncome(p) * RULES.buyMinMonths) / 12;
+  }
+
+  /** Mercenaries hired at once out of savings (only at war — in peace they would take their pay and leave). */
+  mercenaryOffer(p: PolisState): { men: number; cost: number } | null {
+    if (!p.alive || !p.wars.size) return null;
+    const men = this.mercenaryBand(p) * RULES.buyMercenaryLevies;
+    return { men, cost: Math.round(Math.max(men * RULES.buyMercenaryCost, this.buyFloor(p))) };
+  }
+
+  /** An extra settlers' expedition sent at once out of savings, before the city has filled its land. */
+  expeditionOffer(p: PolisState): { settlers: number; cost: number } | null {
+    if (!this.canSettle(p, false)) return null;
+    const settlers = this.settlers(p);
+    const base = RULES.expeditionBase + settlers * RULES.expeditionPerSettler;
+    return { settlers, cost: Math.round(Math.max(base * RULES.buyExpeditionFactor, this.buyFloor(p))) };
+  }
+
+  /** The player hires a band of mercenaries out of savings. False if not at war or short of silver. */
+  buyMercenaries(idx: number): boolean {
+    const p = this.poleis[idx];
+    const offer = p && this.mercenaryOffer(p);
+    if (!offer || !this.spend(p, offer.cost)) return false;
+    this.hireMercenaries(p, offer.men);
+    return true;
+  }
+
+  /** The player sends an extra settlers' expedition out of savings. False if none can go or short of silver. */
+  buyExpedition(idx: number): boolean {
+    const p = this.poleis[idx];
+    const offer = p && this.expeditionOffer(p);
+    if (!offer || !this.spend(p, offer.cost)) return false;
+    this.settle(idx, false);
+    return true;
+  }
+
+  /** Pays out of a city's savings: loose silver first, then evenly from the funds. False if it cannot. */
+  private spend(p: PolisState, amount: number): boolean {
+    if (amount <= 0 || this.treasury(p) < amount) return false;
+    const loose = Math.min(p.drachmae, amount);
+    p.drachmae -= loose;
+    const funds = this.treasury(p) - p.drachmae;
+    if (amount > loose && funds > 0) this.plunder(p, Math.min(1, (amount - loose) / funds));
+    return true;
   }
 
   trainBatch(p: PolisState): number {
@@ -1235,9 +1504,9 @@ export class Simulation {
 
   // ─── Player & AI actions ──────────────────────────────────────────────────
 
-  settle(idx: number) {
+  settle(idx: number, crowded = true) {
     const p = this.poleis[idx];
-    if (!this.canSettle(p)) return;
+    if (!this.canSettle(p, crowded)) return;
     const settlers = this.settlers(p);
     p.civilians -= settlers;
     const frontier = new MinHeap();
@@ -1248,7 +1517,7 @@ export class Simulation {
       const x = c % w.cols;
       if (w.neighbours4(x, (c - x) / w.cols).some(n => this.owner[n] === idx)) {
         queued.add(c);
-        frontier.push(c, this.settleCost(p, c));
+        if (w.elevation[c] <= RULES.maxElevation) frontier.push(c, this.settleCost(p, c));
       }
     }
     p.expedition = { settlers, initial: settlers, timer: 0, colony: false, frontier, queued };
@@ -1409,7 +1678,7 @@ export class Simulation {
     let best: PolisState | null = null;
     let bestD = Infinity;
     for (const q of this.poleis) {
-      if (!q.alive || q.idx === p.idx || q.overlord >= 0 || pacted(q) || p.allies.has(q.idx) || p.wars.has(q.idx)) continue;
+      if (!q.alive || q.tribe || q.idx === p.idx || q.overlord >= 0 || pacted(q) || p.allies.has(q.idx) || p.wars.has(q.idx)) continue;
       if (q.idx === this.player && !this.autoplay) continue;
       if (!this.inCoalition(q, target) || this.relation(p.idx, q.idx) < -20) continue;
       const d = Math.hypot(q.cx - p.cx, q.cy - p.cy) * (q.wars.has(target) ? 0.5 : 1);
@@ -1462,7 +1731,7 @@ export class Simulation {
    * armies sour it, and culture, renown and contented citizens sweeten it — very slowly.
    */
   private driftRelations(dt: number) {
-    const alive = this.poleis.filter(p => p.alive);
+    const alive = this.poleis.filter(p => p.alive && !p.tribe);
     const avgArmy = alive.reduce((s, p) => s + this.warriors(p), 0) / Math.max(1, alive.length);
     const army = new Map(alive.map(p => [p.idx, Math.min(3, this.warriors(p) / Math.max(1, avgArmy))]));
     const warmth = (p: PolisState) =>
@@ -1824,7 +2093,7 @@ export class Simulation {
     this.olympicCalendar();
     if (this.time >= this.nextFortune) {
       this.nextFortune += RULES.fortuneYears * RULES.secondsPerYear;
-      for (const p of this.poleis) if (p.alive && !p.captured) this.befall(p);
+      for (const p of this.poleis) if (p.alive && !p.captured && !p.tribe) this.befall(p);
     }
 
     this.finishDevelopments();
@@ -1839,6 +2108,10 @@ export class Simulation {
 
     for (const p of this.poleis) {
       if (!p.alive) continue;
+      if (p.tribe) {
+        this.tribeTurn(p, dt);
+        continue;
+      }
       this.finishWorks(p);
       this.contentment(p, dt);
       this.economy(p, dt);
@@ -1870,6 +2143,7 @@ export class Simulation {
 
     this.sailShips(dt);
     this.moveFleets(dt);
+    this.defendAgainstRaids();
     this.tradeFx = this.tradeFx.filter(f => this.time - f.t < 2);
 
     this.moveArmies(dt);
@@ -1897,7 +2171,7 @@ export class Simulation {
     const total = this.totalPopulation(p);
     const mood = this.moodFactor(p);
     const siege = p.besieged ? RULES.siegeGrowth : 1;
-    const rate = RULES.growthRate * p.prosperity * (1 + p.effects.growth) * mood * siege;
+    const rate = RULES.growthRate * p.prosperity * (1 + p.effects.growth + p.bonusGrowth) * mood * siege;
     let growth = rate * p.civilians * (1 - total / capacity);
     growth = Math.max(growth, -0.03 * p.civilians);
     p.civilians = Math.max(0, p.civilians + growth * dt);
@@ -1939,7 +2213,7 @@ export class Simulation {
     const cash = Math.max(0, p.drachmae);
     p.drachmae = 0;
     // About a year of smoothing: spoils and trade arrive in lumps.
-    if (dt > 0) p.inflow += (cash / dt - p.inflow) * Math.min(1, dt / RULES.secondsPerYear);
+    if (dt > 0) p.inflow += (cash / dt - p.inflow) * Math.min(1, dt / RULES.inflowSmoothing);
     for (const k of BUDGET_KEYS) p.funds[k] += (cash * p.budget[k]) / 100;
     p.funds.military -= upkeep * dt;
     this.demobilize(p, dt);
@@ -1954,10 +2228,18 @@ export class Simulation {
     const busy = BUDGET_KEYS.filter(k => next[k] || (k === 'colonization' && p.expedition));
     const busyShare = busy.reduce((sum, k) => sum + p.budget[k], 0);
     for (const k of BUDGET_KEYS) {
-      if (busy.includes(k) || p.funds[k] <= 0 || busyShare <= 0) continue;
-      for (const o of busy) p.funds[o] += (p.funds[k] * p.budget[o]) / busyShare;
+      if (busy.includes(k) || p.funds[k] <= 0) continue;
+      if (p.greatWork) {
+        // Spare silver goes to the great work the city has chosen.
+        p.greatFund += p.funds[k];
+      } else if (busyShare > 0) {
+        for (const o of busy) p.funds[o] += (p.funds[k] * p.budget[o]) / busyShare;
+      } else {
+        continue;
+      }
       p.funds[k] = 0;
     }
+    this.advanceGreatWork(p);
     for (const k of BUDGET_KEYS) {
       const n = next[k];
       if (n && p.funds[k] >= n.cost && this.time >= p.retryAt[k]) this.buy(p, k, n);
@@ -2109,7 +2391,7 @@ export class Simulation {
       p.prosperity = Math.min(RULES.maxProsperity, p.prosperity + RULES.prosperityPerCell);
       const x = cell % w.cols;
       for (const n of w.neighbours4(x, (cell - x) / w.cols)) {
-        if (this.owner[n] !== WILD || e.queued.has(n)) continue;
+        if (this.owner[n] !== WILD || e.queued.has(n) || w.elevation[n] > RULES.maxElevation) continue;
         e.queued.add(n);
         e.frontier.push(n, this.settleCost(p, n));
       }
@@ -2140,6 +2422,15 @@ export class Simulation {
       trade: 15,
       culture: 6 + 4 * p.culture
     });
+    // Spare silver: walls for warlike cities, a temple for cultured ones, otherwise a treasury at Delphi.
+    if (!p.greatWork) {
+      p.greatWork =
+        p.militarism >= 3 && this.greatWorkOpen(p, 'walls')
+          ? 'walls'
+          : p.culture >= 4 && this.greatWorkOpen(p, 'temple')
+            ? 'temple'
+            : 'delphi';
+    }
     // A full military chest: warlike harbour cities build galleys, others hire swords in wartime.
     p.surplus =
       this.harbourOf(p) >= 0 && (p.militarism >= 3 || p.wars.size > 0)
@@ -2166,8 +2457,11 @@ export class Simulation {
       const mine = this.warriors(p);
       const friends = this.bloc(p.idx);
       const island = (x: PolisState) => RULES.islandPoleis.includes(x.def.id);
+      const near = this.nearestNeighbours(p);
       for (const q of this.poleis) {
-        if (!q.alive || q.captured || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0 || p.allies.has(q.idx)) continue;
+        if (!q.alive || q.tribe || q.captured || friends.includes(q.idx) || p.wars.has(q.idx) || q.overlord >= 0 || p.allies.has(q.idx)) continue;
+        // Only the nearest neighbours — except that the leagued cities of Hellas may march on the dominant one.
+        if (!near.has(q.idx) && !(leagued && q.idx === rival)) continue;
         if (q.idx === this.player && this.time < RULES.aiPlayerGrace) continue;
         if (Math.hypot(q.cx - p.cx, q.cy - p.cy) > RULES.aiWarRange) continue;
         // A fearsome reputation makes a city look stronger than it is.
@@ -2264,9 +2558,9 @@ export class Simulation {
     const from = this.harbourOf(p);
     if (from < 0) return;
     const w = this.world;
-    const options: { q: PolisState; harbour: number; weight: number }[] = [];
+    const options: { q: PolisState | null; port?: number; harbour: number; weight: number }[] = [];
     for (const q of this.poleis) {
-      if (!q.alive || q === p || p.wars.has(q.idx) || q.blockadedBy >= 0) continue;
+      if (!q.alive || q.tribe || q === p || p.wars.has(q.idx) || q.blockadedBy >= 0) continue;
       const harbour = this.harbourOf(q);
       if (harbour < 0) continue;
       const d = Math.hypot((harbour % w.cols) - (from % w.cols), Math.floor(harbour / w.cols) - Math.floor(from / w.cols));
@@ -2277,6 +2571,12 @@ export class Simulation {
         (q.idx === this.hegemon ? 1 + RULES.hegemonTradeBonus : 1);
       options.push({ q, harbour, weight: pull / (d + 60) });
     }
+    // Neutral island harbours trade with anyone.
+    for (let i = 0; i < this.neutralPorts.length; i++) {
+      const port = this.neutralPorts[i];
+      const d = Math.hypot((port.harbour % w.cols) - (from % w.cols), Math.floor(port.harbour / w.cols) - Math.floor(from / w.cols));
+      options.push({ q: null, port: i, harbour: port.harbour, weight: RULES.neutralPortPull / (d + 60) });
+    }
     if (!options.length) return;
     let pick = this.rand() * options.reduce((sum, o) => sum + o.weight, 0);
     const choice = options.find(o => (pick -= o.weight) <= 0) ?? options[options.length - 1];
@@ -2285,7 +2585,8 @@ export class Simulation {
     this.ships.push({
       id: this.nextId++,
       owner: p.idx,
-      dest: choice.q.idx,
+      dest: choice.q ? choice.q.idx : -1,
+      port: choice.port ?? -1,
       path,
       seg: 0,
       along: 0,
@@ -2450,7 +2751,7 @@ export class Simulation {
   private updateBlockades() {
     const w = this.world;
     for (const q of this.poleis) {
-      if (!q.alive) {
+      if (!q.alive || q.tribe) {
         q.blockadedBy = -1;
         continue;
       }
@@ -2470,6 +2771,337 @@ export class Simulation {
       if (by >= 0 && q.blockadedBy !== by) this.emit('blockade', by, q.idx);
       q.blockadedBy = by;
     }
+  }
+
+  // ─── The frontier: raids ──────────────────────────────────────────────────
+
+  /**
+   * The cities a polis might pick a war with: the warNeighbours nearest by border (sharing one
+   * counts as nearest; otherwise the gap between the two territories, each taken as a disc) and the
+   * warNeighbours nearest by capital.
+   */
+  nearestNeighbours(p: PolisState): Set<number> {
+    const others = this.poleis.filter(q => q.alive && !q.tribe && q.idx !== p.idx);
+    const radius = (x: PolisState) => Math.sqrt(Math.max(1, x.cells) / Math.PI);
+    const capital = (q: PolisState) => Math.hypot(q.cx - p.cx, q.cy - p.cy);
+    const border = (q: PolisState) => (this.bordering(p.idx, q.idx) ? 0 : Math.max(0, capital(q) - radius(p) - radius(q)));
+    const nearest = (by: (q: PolisState) => number) =>
+      [...others].sort((a, b) => by(a) - by(b) || a.idx - b.idx).slice(0, RULES.warNeighbours).map(q => q.idx);
+    return new Set([...nearest(border), ...nearest(capital)]);
+  }
+
+  /** A people beyond the frontier grows its warband and, every few years, sends it raiding. */
+  private tribeTurn(t: PolisState, dt: number) {
+    t.garrison = Math.min(RULES.tribeMax, t.garrison * (1 + (RULES.tribeGrowth * dt) / RULES.secondsPerYear));
+    if (this.time < t.nextRaid) return;
+    t.nextRaid = this.time + this.raidDelay();
+    if (this.armies.some(a => !a.dead && a.owner === t.idx)) return;
+    this.launchRaid(t);
+  }
+
+  /** Picks a rich, poorly guarded Greek city within reach and sends a warband across the border at it. */
+  private launchRaid(t: PolisState) {
+    const border = this.tribeBorders.get(t.idx) ?? [];
+    if (!border.length) return;
+    const w = this.world;
+    const targets = this.poleis
+      .filter(q => q.alive && !q.tribe && !q.captured && q.cells > 0)
+      .map(q => ({ q, d: Math.hypot(q.cx - t.cx, q.cy - t.cy) }))
+      .filter(x => x.d <= RULES.raidReach)
+      .map(x => ({ ...x, weight: (1 + this.treasury(x.q) / 500) / ((1 + x.q.garrison / 800) * (1 + x.d / 60)) }));
+    if (!targets.length) return;
+    let pick = this.rand() * targets.reduce((s, x) => s + x.weight, 0);
+    const victim = (targets.find(x => (pick -= x.weight) <= 0) ?? targets[targets.length - 1]).q;
+    const band = Math.round(Math.min(t.garrison, RULES.raidMin + this.rand() * (RULES.raidMax - RULES.raidMin)));
+    if (band < RULES.raidMin) return;
+    // Cross where the border comes nearest the victim.
+    let start = border[0];
+    let bestD = Infinity;
+    for (const c of border) {
+      const d = Math.hypot((c % w.cols) + 0.5 - victim.cx, Math.floor(c / w.cols) + 0.5 - victim.cy);
+      if (d < bestD) {
+        bestD = d;
+        start = c;
+      }
+    }
+    t.garrison -= band;
+    const x = (start % w.cols) + 0.5;
+    const y = Math.floor(start / w.cols) + 0.5;
+    this.armies.push({
+      id: this.nextId++,
+      owner: t.idx,
+      x,
+      y,
+      strength: band,
+      target: -1,
+      dwell: 0,
+      battle: 0,
+      dead: false,
+      fleeing: false,
+      split: true,
+      fleeAngle: 0,
+      siege: -1,
+      siegeStart: 0,
+      siegeEnd: 0,
+      role: 'raider',
+      stance: 'march',
+      fortify: 1,
+      mercenary: false,
+      chaseId: -1,
+      chaseSince: 0,
+      ignoreId: -1,
+      ignoreUntil: 0,
+      stars: this.rollGeneral(),
+      ...NO_RAID,
+      raid: victim.idx,
+      raidUntil: this.time + RULES.raidYears * RULES.secondsPerYear,
+      raidStrength: band,
+      homeX: x,
+      homeY: y
+    });
+    this.emit('raid', t.idx, victim.idx, band);
+  }
+
+  /**
+   * A warband plunders its victim's land cell by cell — silver, captives, sometimes the land itself
+   * laid waste — then turns for home; back over the border it rejoins its people.
+   */
+  private raidMove(a: Army, t: PolisState, dt: number) {
+    const victim = this.poleis[a.raid];
+    if (!a.homeward && a.strength < a.raidStrength / 2) {
+      // Bloodied by the defenders: the warband gives up and runs for home.
+      a.homeward = true;
+      if (victim?.alive) victim.prestige += RULES.raidRepelPrestige;
+      this.emit('raidRepelled', victim.idx, t.idx);
+    }
+    if (!a.homeward && (!victim?.alive || a.loot >= RULES.raidLoot || this.time >= a.raidUntil)) a.homeward = true;
+    if (a.homeward) {
+      if (this.walk(a, a.homeX, a.homeY, dt)) {
+        t.garrison += a.strength;
+        a.dead = true;
+      }
+      return;
+    }
+    // Crossing into a city's land, the warband gives it a choice: pay us off, or fight.
+    if (this.owner[this.world.cellAt(a.x, a.y)] === victim.idx && a.asked !== victim.idx) {
+      a.asked = victim.idx;
+      a.answered = false;
+      a.fought = false;
+      if (victim.idx === this.player && !this.autoplay) this.raidChoices.push({ band: a.id, tribe: t.idx, cost: this.bribeCost(victim) });
+      else this.answerRaid(a.id, this.aiAnswersRaid(victim, a) ? 'bribe' : 'fight');
+    }
+    // Waiting for the answer before laying hands on anything.
+    if (a.asked === victim.idx && !a.answered) return;
+    if (a.target < 0 || this.owner[a.target] !== victim.idx) {
+      a.target = this.raidTarget(a, victim);
+      a.dwell = 0;
+      if (a.target < 0) {
+        a.homeward = true;
+        return;
+      }
+    }
+    const w = this.world;
+    if (!this.walk(a, (a.target % w.cols) + 0.5, Math.floor(a.target / w.cols) + 0.5, dt)) return;
+    a.dwell += dt;
+    if (a.dwell < RULES.captureDwell) return;
+    a.dwell = 0;
+    this.plunderCell(a, victim, a.target);
+    a.loot++;
+    a.target = -1;
+  }
+
+  /** The nearest of the victim's cells the warband can reach: low ground, never the walled capital. */
+  private raidTarget(a: Army, victim: PolisState): number {
+    const w = this.world;
+    let best = -1;
+    let bestD = Infinity;
+    for (const c of w.greekCells) {
+      if (this.owner[c] !== victim.idx || c === victim.capital || w.elevation[c] > RULES.maxElevation) continue;
+      const x = c % w.cols;
+      const d = Math.hypot(x + 0.5 - a.x, (c - x) / w.cols + 0.5 - a.y) + w.elevation[c] / 200 + this.rand() * 3;
+      if (d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    return best;
+  }
+
+  private plunderCell(a: Army, victim: PolisState, _cell: number) {
+    // Walls send the country folk and their goods to safety.
+    const shelter = 1 / (1 + 2 * victim.bonusWalls);
+    this.plunder(victim, RULES.raidPlunderShare * shelter);
+    const captives = Math.min(victim.civilians * RULES.raidCaptives * shelter, a.strength * 0.5);
+    victim.civilians -= captives;
+    this.mood(victim, RULES.raidMood);
+  }
+
+  /** Six months of a city's income: what a warband asks to go and plunder someone else. */
+  bribeCost(p: PolisState): number {
+    return Math.round((this.annualIncome(p) * RULES.raidBribeMonths) / 12);
+  }
+
+  /** The AI pays off a warband it cannot match if it has the silver; otherwise it fights. */
+  private aiAnswersRaid(p: PolisState, band: Army): boolean {
+    const affordable = this.treasury(p) >= this.bribeCost(p);
+    const outmatched = p.garrison < band.strength * 1.2;
+    return affordable && outmatched && this.rand() < 0.7;
+  }
+
+  /**
+   * A city answers a warband on its land. Paying it off sends it against another city within
+   * reach (or home); standing to fight in the name of Hellas wins renown and every Greek city's
+   * regard, and the city sends out defenders. A bribe the city cannot afford is a fight.
+   */
+  answerRaid(bandId: number, choice: 'bribe' | 'fight') {
+    const band = this.armies.find(a => a.id === bandId && !a.dead);
+    if (!band || band.raid < 0) return;
+    const victim = this.poleis[band.raid];
+    const cost = this.bribeCost(victim);
+    if (choice === 'bribe' && this.spend(victim, cost)) {
+      this.emit('raidBribed', victim.idx, band.owner, cost);
+      const next = this.poleis
+        .filter(q => q.alive && !q.tribe && !q.captured && q.cells > 0 && q.idx !== victim.idx)
+        .map(q => ({ q, d: Math.hypot(q.cx - band.x, q.cy - band.y) }))
+        .filter(x => x.d <= RULES.raidReach)
+        .sort((x, y) => x.d - y.d)[0];
+      if (next) {
+        band.raid = next.q.idx;
+        band.target = -1;
+        band.asked = -1;
+        band.answered = false;
+        band.fought = false;
+      } else {
+        band.homeward = true;
+      }
+      return;
+    }
+    band.answered = true;
+    band.fought = true;
+    victim.prestige += RULES.raidStandPrestige;
+    for (const q of this.poleis) if (q.alive && !q.tribe && q.idx !== victim.idx) this.shiftRelation(victim.idx, q.idx, RULES.raidStandRegard);
+    this.emit('raidStand', victim.idx, band.owner);
+  }
+
+  /** Warbands on the player's land awaiting the answer: pay them off or fight. */
+  takeRaidChoices(): { band: number; tribe: number; cost: number }[] {
+    const out = this.raidChoices;
+    this.raidChoices = [];
+    return out;
+  }
+
+  /**
+   * A city sends defenders against a warband on its land, and calls them home when it has gone.
+   * Defenders chase without the usual time limit: they are guarding their own fields.
+   */
+  private defendAgainstRaids() {
+    for (const band of this.armies) {
+      if (band.dead || band.raid < 0 || band.homeward) continue;
+      const v = this.poleis[band.raid];
+      // Only a city that chose to fight sends out defenders.
+      if (!v?.alive || !band.fought || band.asked !== v.idx || this.armies.some(a => !a.dead && a.defend === band.id)) continue;
+      const near = Math.hypot(band.x - v.cx, band.y - v.cy) < 40 || this.owner[this.world.cellAt(band.x, band.y)] === v.idx;
+      if (!near) continue;
+      const floor = v.wars.size ? RULES.garrisonFloor : 30;
+      const spare = v.garrison - floor;
+      if (spare < 50) continue;
+      const strength = Math.round(Math.min(spare, Math.max(80, band.strength * RULES.defenceRatio)));
+      v.garrison -= strength;
+      this.armies.push({
+        id: this.nextId++,
+        owner: v.idx,
+        x: v.cx,
+        y: v.cy,
+        strength,
+        target: -1,
+        dwell: 0,
+        battle: 0,
+        dead: false,
+        fleeing: false,
+        split: true,
+        fleeAngle: 0,
+        siege: -1,
+        siegeStart: 0,
+        siegeEnd: 0,
+        role: 'main',
+        stance: 'march',
+        fortify: 1,
+        mercenary: false,
+        chaseId: -1,
+        chaseSince: 0,
+        ignoreId: -1,
+        ignoreUntil: 0,
+        stars: this.rollGeneral(),
+      ...NO_RAID,
+        defend: band.id
+      });
+    }
+  }
+
+  private defendMove(a: Army, p: PolisState, dt: number) {
+    const band = this.armies.find(o => o.id === a.defend && !o.dead);
+    if (band && !band.homeward && Math.hypot(band.x - p.cx, band.y - p.cy) < 70) {
+      this.walk(a, band.x, band.y, dt);
+      return;
+    }
+    // The raiders have gone: home to the garrison.
+    if (this.walk(a, p.cx, p.cy, dt)) {
+      p.garrison += a.strength;
+      a.dead = true;
+    }
+  }
+
+  // ─── Great works ──────────────────────────────────────────────────────────
+
+  /** Drachmae the next great work of this kind costs the city (dearer for big cities; a treasury dearer each time). */
+  greatWorkCost(p: PolisState, id: GreatWorkId): number {
+    const def = GREAT_WORKS.find(g => g.id === id)!;
+    const repeats = def.repeatable ? (p.greatBuilt[id] ?? 0) : 0;
+    return Math.round(def.cost * (1 + this.totalPopulation(p) / RULES.improvementPopScale) * (1 + 0.5 * repeats));
+  }
+
+  /** Whether a great work can still be raised by this city (one-off works only once). */
+  greatWorkOpen(p: PolisState, id: GreatWorkId): boolean {
+    const def = GREAT_WORKS.find(g => g.id === id)!;
+    return def.repeatable || !p.greatBuilt[id];
+  }
+
+  /** The player (or the AI) chooses where spare silver goes; null shares it among the other funds again. */
+  setGreatWork(idx: number, id: GreatWorkId | null) {
+    const p = this.poleis[idx];
+    if (!p || (id && !this.greatWorkOpen(p, id))) return;
+    p.greatWork = id;
+  }
+
+  private advanceGreatWork(p: PolisState) {
+    const id = p.greatWork;
+    if (!id) return;
+    const cost = this.greatWorkCost(p, id);
+    if (p.greatFund < cost) return;
+    p.greatFund -= cost;
+    p.greatBuilt[id] = (p.greatBuilt[id] ?? 0) + 1;
+    switch (id) {
+      case 'delphi':
+        // A treasury at Delphi: renown, goodwill across Hellas and a little refinement.
+        p.prestige += 1.5;
+        for (const q of this.poleis) if (q.alive && !q.tribe && q.idx !== p.idx) this.shiftRelation(p.idx, q.idx, 5);
+        p.culture = Math.min(5, p.culture + 0.2);
+        break;
+      case 'temple':
+        p.culture = Math.min(5, p.culture + 1);
+        p.prestige += 1;
+        this.mood(p, 15);
+        break;
+      case 'walls':
+        p.bonusWalls += 0.5;
+        break;
+      case 'aqueduct':
+        p.bonusGrowth += 0.15;
+        this.mood(p, 5);
+        break;
+    }
+    this.emit('greatWork', p.idx, -1, undefined, id);
+    if (!this.greatWorkOpen(p, id)) p.greatWork = null;
   }
 
   // ─── The Olympic Games ────────────────────────────────────────────────────
@@ -2508,7 +3140,7 @@ export class Simulation {
     this.olympics = { year, spend: new Map(), held: false };
     this.emit('truce', -1, -1, olympiadOf(year));
     for (const p of this.poleis) {
-      if (!p.alive) continue;
+      if (!p.alive || p.tribe) continue;
       if (p.idx === this.player && !this.autoplay) continue;
       // Cultured cities send larger delegations.
       this.sendDelegation(p.idx, Math.min(0.3, 0.03 + 0.03 * p.culture + this.rand() * 0.05));
@@ -2612,6 +3244,15 @@ export class Simulation {
   private arrive(s: Ship) {
     s.done = true;
     const owner = this.poleis[s.owner];
+    if (s.port >= 0) {
+      // A neutral island market pays well and takes no share.
+      const amount = this.tradeValue(owner) * RULES.neutralPortBonus;
+      owner.drachmae += amount;
+      owner.tradeEarned += amount;
+      this.mood(owner, amount * RULES.satisfactionPerTrade);
+      this.tradeFx.push({ x: s.x, y: s.y, t: this.time, amount, owner: owner.idx });
+      return;
+    }
     const dest = this.poleis[s.dest];
     if (!dest.alive || owner.wars.has(dest.idx)) return;
     const amount = this.tradeValue(owner);
@@ -2758,13 +3399,14 @@ export class Simulation {
       chaseId: -1,
       chaseSince: 0,
       ignoreId: -1,
-      ignoreUntil: 0
+      ignoreUntil: 0,
+      stars: this.rollGeneral(),
+      ...NO_RAID
     });
   }
 
   /** A band of mercenaries marches out of the city at once; it costs no citizens. */
-  private hireMercenaries(p: PolisState) {
-    const band = this.mercenaryBand(p);
+  private hireMercenaries(p: PolisState, band = this.mercenaryBand(p)) {
     const own = this.armies.filter(a => a.owner === p.idx && !a.dead);
     if (own.length >= RULES.armiesMax) {
       // No room for another banner: they reinforce the largest army.
@@ -2794,7 +3436,9 @@ export class Simulation {
       chaseId: -1,
       chaseSince: 0,
       ignoreId: -1,
-      ignoreUntil: 0
+      ignoreUntil: 0,
+      stars: this.rollGeneral(),
+      ...NO_RAID
     });
     this.emit('mercenaries', p.idx, -1, band);
   }
@@ -2807,11 +3451,20 @@ export class Simulation {
   private moveArmies(dt: number) {
     const w = this.world;
     this.promoteMainArmies();
+    this.gatherUnderGenerals();
     for (const a of this.armies) {
       if (a.dead || a.battle) continue;
       const p = this.poleis[a.owner];
       if (a.strength < 3) {
         a.dead = true;
+        continue;
+      }
+      if (p.tribe) {
+        this.raidMove(a, p, dt);
+        continue;
+      }
+      if (a.defend >= 0) {
+        this.defendMove(a, p, dt);
         continue;
       }
       if (this.truce) {
@@ -2826,6 +3479,13 @@ export class Simulation {
       }
       a.fleeing = false;
       if (a.siege >= 0 && this.besiege(a, dt)) continue;
+      if (p.wars.size) {
+        const leader = this.betterGeneral(a);
+        if (leader) {
+          this.walk(a, leader.x, leader.y, dt);
+          continue;
+        }
+      }
       if (!p.wars.size) {
         // Peace: mercenaries take their pay and leave; citizens march home and rejoin the garrison.
         if (a.mercenary) {
@@ -2953,8 +3613,59 @@ export class Simulation {
   }
 
   /** Fighting power of an army before luck: men × militarism and buildings × entrenchment. */
+  /** A general of 1–3 stars, most of them ordinary. */
+  private rollGeneral(): number {
+    const r = this.rand();
+    const [one, two] = RULES.generalOdds;
+    return r < one ? 1 : r < one + two ? 2 : 3;
+  }
+
+  /** Fighting power from the general: +5% a star above one (+10% at most). */
+  generalBonus(a: Army): number {
+    return 1 + RULES.generalPower * (a.stars - 1);
+  }
+
+  /** Armies of the same kind (levies, mercenaries, the same warband or defence) that may serve under one general. */
+  private sameCommand(a: Army, b: Army): boolean {
+    return a.owner === b.owner && a.mercenary === b.mercenary && a.raid === b.raid && a.defend === b.defend;
+  }
+
+  /**
+   * Armies under a lesser general join a better one of the same city nearby: they march to it and
+   * merge (the better general keeps command, and the main army's role if either had it).
+   */
+  private gatherUnderGenerals() {
+    const live = this.armies.filter(a => !a.dead && !a.battle && a.siege < 0);
+    for (const a of live) {
+      if (a.dead) continue;
+      for (const b of live) {
+        if (b === a || b.dead || b.stars <= a.stars || !this.sameCommand(a, b)) continue;
+        if (Math.hypot(a.x - b.x, a.y - b.y) > RULES.generalMergeRadius) continue;
+        b.strength += a.strength;
+        if (a.role === 'main') b.role = 'main';
+        a.dead = true;
+        break;
+      }
+    }
+  }
+
+  /** The better general of the same city within reach that this army should join, if any. */
+  private betterGeneral(a: Army): Army | null {
+    let best: Army | null = null;
+    let bestD: number = RULES.generalJoinRadius;
+    for (const b of this.armies) {
+      if (b === a || b.dead || b.stars <= a.stars || !this.sameCommand(a, b)) continue;
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d < bestD) {
+        bestD = d;
+        best = b;
+      }
+    }
+    return best;
+  }
+
   private armyPower(a: Army): number {
-    return a.strength * this.battleMultiplier(a.owner) * a.fortify;
+    return a.strength * this.battleMultiplier(a.owner) * a.fortify * this.generalBonus(a);
   }
 
   /**
@@ -2964,7 +3675,10 @@ export class Simulation {
    */
   private holdGround(a: Army, dt: number): boolean {
     const rival = this.rivalMain(a);
-    const outmatched = !!rival && a.strength * this.battleMultiplier(a.owner) < rival.strength * this.battleMultiplier(rival.owner);
+    // A bolder general digs in only when the rival is clearly stronger.
+    const nerve = 1 + 0.25 * (a.stars - 1);
+    const outmatched =
+      !!rival && a.strength * this.battleMultiplier(a.owner) * nerve < rival.strength * this.battleMultiplier(rival.owner);
     if (!outmatched) {
       if (a.stance === 'hold') {
         a.stance = 'march';
@@ -3024,7 +3738,9 @@ export class Simulation {
       if (o.dead || o.battle || !p.wars.has(o.owner) || this.ignoring(a, o)) continue;
       const d = Math.hypot(o.x - a.x, o.y - a.y);
       if (d > RULES.chaseRadius || d >= bestD) continue;
-      const stronger = power >= RULES.chaseRatio * this.armyPower(o) || a.strength >= RULES.chaseRatio * o.strength;
+      // A better general seeks a decision with a smaller edge.
+      const ratio = RULES.chaseRatio / (1 + 0.15 * (a.stars - 1));
+      const stronger = power >= ratio * this.armyPower(o) || a.strength >= ratio * o.strength;
       if (!stronger) continue;
       bestD = d;
       best = o;
@@ -3037,7 +3753,7 @@ export class Simulation {
     const p = this.poleis[a.owner];
     let worst: Army | null = null;
     for (const o of this.armies) {
-      if (o.dead || !p.wars.has(o.owner) || o.strength < a.strength * RULES.raiderFearRatio) continue;
+      if (o.dead || !p.wars.has(o.owner) || o.strength < a.strength * RULES.raiderFearRatio * (1 + 0.3 * (a.stars - 1))) continue;
       if (Math.hypot(o.x - a.x, o.y - a.y) > RULES.retreatRadius) continue;
       if (!worst || o.strength > worst.strength) worst = o;
     }
@@ -3090,7 +3806,7 @@ export class Simulation {
       for (let x = Math.floor(tx - r); x <= Math.floor(tx + r); x++) {
         if (!w.inBounds(x, y) || Math.hypot(x + 0.5 - tx, y + 0.5 - ty) > r) continue;
         const c = w.index(x, y);
-        if (!this.isEnemyCell(a, c)) continue;
+        if (!this.isEnemyCell(a, c) || w.elevation[c] > RULES.maxElevation) continue;
         const victim = this.poleis[this.owner[c]];
         if (c === victim.capital && victim.garrison >= 1) continue;
         this.capture(c, a.owner, victim.idx);
@@ -3145,7 +3861,8 @@ export class Simulation {
   private pickArmyTarget(a: Army): number {
     const w = this.world;
     const p = this.poleis[a.owner];
-    if (a.role === 'main' && a.strength >= RULES.siegeMinimum && this.rand() < 0.12) {
+    // Better generals go for the enemy's city more often.
+    if (a.role === 'main' && a.strength >= RULES.siegeMinimum && this.rand() < 0.12 * a.stars) {
       let best = -1;
       let bestD = Infinity;
       for (const e of p.wars) {
@@ -3191,15 +3908,23 @@ export class Simulation {
     return options.length ? options[Math.floor(this.rand() * options.length)] : -1;
   }
 
+  /** Two powers whose armies fight on sight: cities at war, or a people beyond the frontier and any Greek city. */
+  private hostile(a: number, b: number): boolean {
+    if (a === b) return false;
+    const pa = this.poleis[a];
+    const pb = this.poleis[b];
+    if (pa.tribe || pb.tribe) return pa.tribe !== pb.tribe;
+    return !this.truce && pa.wars.has(b);
+  }
+
   private detectBattles() {
-    if (this.truce) return;
     const list = this.armies;
     for (let i = 0; i < list.length; i++) {
       const a = list[i];
       if (a.dead || a.battle) continue;
       for (let j = i + 1; j < list.length; j++) {
         const b = list[j];
-        if (b.dead || b.battle || !this.poleis[a.owner].wars.has(b.owner)) continue;
+        if (b.dead || b.battle || !this.hostile(a.owner, b.owner)) continue;
         if (Math.hypot(a.x - b.x, a.y - b.y) < RULES.battleRange) {
           this.startBattle(a, b, b.owner);
           break;
@@ -3214,8 +3939,8 @@ export class Simulation {
         if (Math.hypot(a.x - b.x, a.y - b.y) > RULES.joinRange) continue;
         const sideA = [b.sideA, ...b.attackers.map(x => x.owner)];
         const sideB = [b.sideB, ...b.defenders.map(x => x.owner)];
-        const hatesA = sideA.some(o => p.wars.has(o));
-        const hatesB = sideB.some(o => p.wars.has(o));
+        const hatesA = sideA.some(o => this.hostile(a.owner, o));
+        const hatesB = sideB.some(o => this.hostile(a.owner, o));
         const side = hatesB && !hatesA ? b.attackers : hatesA && !hatesB ? b.defenders : null;
         if (!side || side.length >= RULES.maxArmiesPerSide) continue;
         side.push(a);
@@ -3274,7 +3999,7 @@ export class Simulation {
       // Militarism tips the scales slightly; walls favour a defending garrison.
       const power = (list: Army[]) => list.reduce((sum, x) => sum + this.armyPower(x), 0);
       const garrisonPower = walls
-        ? walls.garrison * this.battleMultiplier(walls.idx) * RULES.wallsBonus * (1 + walls.effects.walls)
+        ? walls.garrison * this.battleMultiplier(walls.idx) * RULES.wallsBonus * (1 + walls.effects.walls + walls.bonusWalls)
         : 0;
       const sa = power(atts);
       const sd = power(defs) + garrisonPower;
@@ -3463,6 +4188,7 @@ export class Simulation {
           const war = this.playerWars.get(o);
           if (war) war.cellsGained++;
         }
+        if (this.world.elevation[c] > RULES.maxElevation) continue;
         this.setOwner(c, heir, true);
       }
       if (p.cells === 0) this.conquer(o, heir);
@@ -3792,7 +4518,7 @@ export class Simulation {
     }
     const mine = this.bloc(this.player);
     const cells = mine.reduce((sum, i) => sum + this.poleis[i].cells, 0);
-    const rivals = this.poleis.some(p => p.alive && !mine.includes(p.idx));
+    const rivals = this.poleis.some(p => p.alive && !p.tribe && !mine.includes(p.idx));
     if (!rivals || cells >= this.world.greekCells.length * RULES.victoryShare) this.status = 'won';
   }
 

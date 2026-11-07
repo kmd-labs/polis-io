@@ -26,8 +26,12 @@ export interface RenderOptions {
   view: MapView;
   /** Hegemony view: the top three poleis by hegemony points, best first. */
   podium?: number[];
+  /** Localized names of the neutral harbours, in the simulation's order. */
+  portNames?: string[];
   hover: number;
   selected: number;
+  /** Army clicked on the map (id), or -1. */
+  selectedArmy?: number;
   /** Localized polis names, indexed like `sim.poleis`. */
   names: string[];
   labels: MapLabel[];
@@ -208,8 +212,9 @@ export class MapRenderer {
     this.drawGrade(ctx, width, height);
     this.drawLabels(ctx, cam, opt, width, height);
     this.drawSieges(ctx, cam, width, height);
+    this.drawFrontier(ctx, cam, opt, width, height);
     this.drawCapitals(ctx, cam, opt, width, height);
-    this.drawArmies(ctx, cam, now);
+    this.drawArmies(ctx, cam, now, opt);
     this.drawTradeFx(ctx, cam, opt);
     this.drawBattles(ctx, cam);
   }
@@ -552,6 +557,78 @@ export class MapRenderer {
       ctx.stroke();
       ctx.restore();
     }
+    ctx.restore();
+  }
+
+  /**
+   * The world beyond the city-states: a camp of hide tents and the name of each people across the
+   * border, and an anchor on every neutral island harbour.
+   */
+  private drawFrontier(ctx: CanvasRenderingContext2D, cam: Camera, opt: RenderOptions, width: number, height: number) {
+    const sim = this.sim;
+    const w = sim.world;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const p of sim.poleis) {
+      if (!p.tribe) continue;
+      const x = cam.ox + p.cx * cam.scale;
+      const y = cam.oy + p.cy * cam.scale;
+      if (x < -80 || y < -40 || x > width + 80 || y > height + 40) continue;
+      const s = Math.max(6, Math.min(12, cam.scale * 2.2));
+      ctx.fillStyle = this.colorOf(p.idx);
+      ctx.strokeStyle = this.css['neutral-0'];
+      ctx.lineWidth = 1;
+      for (const dx of [-s * 0.9, 0, s * 0.9]) {
+        ctx.beginPath();
+        ctx.moveTo(x + dx - s * 0.6, y + s * 0.4);
+        ctx.lineTo(x + dx, y - s * (dx === 0 ? 0.8 : 0.5));
+        ctx.lineTo(x + dx + s * 0.6, y + s * 0.4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.font = `italic 600 11px ${this.display}`;
+      const label = opt.names[p.idx];
+      const lw = ctx.measureText(label).width + 14;
+      ctx.fillStyle = this.css['panel-bg'];
+      ctx.strokeStyle = this.colorOf(p.idx);
+      ctx.beginPath();
+      ctx.roundRect(x - lw / 2, y + s * 0.7, lw, 16, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = this.css['text-bright'];
+      ctx.fillText(label, x, y + s * 0.7 + 8.5);
+    }
+    // Neutral harbours: an anchor in a ring, named once the map is zoomed in a little.
+    const r = Math.max(4, Math.min(8, cam.scale * 1.6));
+    sim.neutralPorts.forEach((port, i) => {
+      const x = cam.ox + ((port.cell % w.cols) + 0.5) * cam.scale;
+      const y = cam.oy + (Math.floor(port.cell / w.cols) + 0.5) * cam.scale;
+      if (x < -30 || y < -30 || x > width + 30 || y > height + 30) return;
+      ctx.fillStyle = this.css['panel-bg-heavy'];
+      ctx.strokeStyle = this.css['warning-700'];
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = this.css['text-bright'];
+      ctx.lineWidth = Math.max(1, r * 0.18);
+      ctx.beginPath();
+      ctx.moveTo(x, y - r * 0.55);
+      ctx.lineTo(x, y + r * 0.5);
+      ctx.moveTo(x - r * 0.45, y - r * 0.2);
+      ctx.lineTo(x + r * 0.45, y - r * 0.2);
+      ctx.moveTo(x - r * 0.5, y + r * 0.15);
+      ctx.quadraticCurveTo(x, y + r * 0.85, x + r * 0.5, y + r * 0.15);
+      ctx.stroke();
+      if (cam.scale >= 2.2 && opt.portNames?.[i]) {
+        ctx.font = `600 10px ${this.display}`;
+        ctx.fillStyle = this.css['text-main'];
+        ctx.fillText(opt.portNames[i], x, y + r + 8);
+      }
+    });
     ctx.restore();
   }
 
@@ -921,7 +998,7 @@ export class MapRenderer {
       return sx > -margin && sy > -margin && sx < width + margin && sy < height + margin;
     };
     const order = sim.poleis
-      .filter(p => p.alive && onScreen(p))
+      .filter(p => p.alive && !p.tribe && onScreen(p))
       .sort((a, b) => Number(b.idx === sim.player) - Number(a.idx === sim.player) || b.cells - a.cells);
     // Fallen poleis that live on as cities inside the victor's borders.
     const remnants = sim.poleis.filter(p => !p.alive && p.remnant === 'city' && onScreen(p));
@@ -1002,7 +1079,7 @@ export class MapRenderer {
   /** City labels placed this frame; army counters steer clear of them. */
   private labelRects: Rect[] = [];
 
-  private drawArmies(ctx: CanvasRenderingContext2D, cam: Camera, now: number) {
+  private drawArmies(ctx: CanvasRenderingContext2D, cam: Camera, now: number, opt?: RenderOptions) {
     const sim = this.sim;
     const me = sim.poleis[sim.player];
     const base = Math.max(5, Math.min(16, cam.scale * 2.6));
@@ -1074,6 +1151,29 @@ export class MapRenderer {
         ctx.beginPath();
         ctx.arc(sx, sy, r + 3, -Math.PI / 2, -Math.PI / 2 + (a.dwell / RULES.captureDwell) * Math.PI * 2);
         ctx.stroke();
+      }
+
+      if (a.id === opt?.selectedArmy) {
+        // The clicked army: a ring and its general's stars above it.
+        ctx.strokeStyle = this.css['accent'];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        const stars = '★'.repeat(a.stars) + '☆'.repeat(3 - a.stars);
+        ctx.font = `700 14px ${this.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const sw = ctx.measureText(stars).width + 12;
+        ctx.fillStyle = this.css['panel-bg-heavy'];
+        ctx.strokeStyle = this.css['warning-700'];
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(sx - sw / 2, sy - r - 40, sw, 18, 9);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = this.css['warning-500'];
+        ctx.fillText(stars, sx, sy - r - 30.5);
       }
 
       const involvesMe = isMe || (!!me && me.wars.has(a.owner));

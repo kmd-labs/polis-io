@@ -46,6 +46,7 @@ import { PolisFlagComponent } from './hud/polis-flag.component';
 import { Fortune } from './game/fortune';
 import { ImprovementId } from './game/data/improvements';
 import { APP_VERSION } from './version';
+import { GreatWorkId } from './game/data/frontier';
 import { SiteId } from './game/data/poleis';
 import { StartScreenComponent } from './hud/start-screen.component';
 import { HudComponent } from './hud/hud.component';
@@ -279,6 +280,8 @@ export class AppComponent {
         else if (n.kind === 'olympics') this.openOlympicsReport(n.report);
         else if (n.kind === 'fortune') this.openFortune(n.fortune);
         else if (n.kind === 'built') this.openBuilt(n.what, n.id);
+        else if (n.kind === 'greatWork') this.openGreatWork(n.id);
+        else if (n.kind === 'raidChoice') this.openRaidChoice(n.band, n.tribe, n.men, n.cost, n.treasury);
         else this.openReport(n.near);
       });
     });
@@ -487,6 +490,57 @@ export class AppComponent {
         this.game.closeNotice();
       },
       actions: []
+    });
+  }
+
+  /**
+   * A warband has crossed into our land: pay it six months' income to plunder someone else, or
+   * fight it in the name of Hellas. Closing the letter means fighting.
+   */
+  private openRaidChoice(band: number, tribe: number, men: number, cost: number, treasury: number) {
+    const t = () => this.i18n.t();
+    const lang = () => this.i18n.lang();
+    const affordable = treasury >= cost;
+    let answered = false;
+    const answer = (choice: 'bribe' | 'fight') => () => {
+      answered = true;
+      this.game.answerRaid(band, choice);
+    };
+    this.popup.open({
+      id: 'raid-choice',
+      title: computed(() => interpolate(t().raidTitle, { name: this.game.name(tribe) })),
+      description: computed(() =>
+        interpolate(affordable ? t().raidText : t().raidTextPoor, {
+          name: this.game.name(tribe),
+          n: formatNumber(men, lang()),
+          d: formatNumber(cost, lang())
+        })
+      ),
+      size: 'sm',
+      onClose: () => {
+        if (!answered) this.game.answerRaid(band, 'fight');
+        this.game.closeNotice();
+      },
+      actions: [
+        ...(affordable
+          ? [{ label: computed(() => interpolate(t().raidBribe, { d: formatNumber(cost, lang()) })), variant: 'default' as const, onClick: answer('bribe') }]
+          : []),
+        { label: computed(() => t().raidFight), variant: 'play' as const, hot: true, onClick: answer('fight') }
+      ]
+    });
+  }
+
+  /** A great work of the player's is finished. */
+  private openGreatWork(id: GreatWorkId) {
+    const t = () => this.i18n.t();
+    this.popup.open({
+      id: 'great-work',
+      title: computed(() => interpolate(t().builtTitle, { name: t().greatWorks[id].name })),
+      subtitle: computed(() => this.game.name(this.game.player())),
+      description: computed(() => t().greatWorks[id].desc),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => t().builtAction), variant: 'play', hot: true }]
     });
   }
 

@@ -1,3 +1,4 @@
+import { TribeDef } from './frontier';
 /** Identifier of every playable city-state; names are resolved through I18nService. */
 export type PolisId =
   | 'athens'
@@ -53,7 +54,7 @@ export interface SitePolisDef {
   culture: number;
 }
 
-export type PolisDef = MajorPolisDef | SitePolisDef;
+export type PolisDef = MajorPolisDef | SitePolisDef | TribeDef;
 
 /**
  * Leading Greek poleis around 600 BC — the end of the Dark Ages and the height of

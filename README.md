@@ -73,7 +73,7 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   drawn with a larger shield) seeks out the enemy's main army; smaller raiding parties of varied size plunder the
   countryside and run from any force near their size. A main army weaker than its rival halts and digs in — its
   power climbs to 150% over a few years and it engages any enemy army within 30 cells.
-- **Time**: a year of the calendar lasts 16 game seconds; population grows at half the earlier rate.
+- **Time**: a year of the calendar lasts 64 game seconds; population grows at half the earlier rate.
 - **Olympic Games** every fourth year (counted from 776 BC) with the historical programme of the time — twelve contests
   in 600 BC, more later (races, wrestling, boxing, pankration, pentathlon, chariots, race in armour, heralds…). The
   sacred truce runs from two months before to a month after: no war is waged, armies march home and fleets to harbour.
@@ -83,6 +83,19 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Twists of fortune** every two years: a windfall for one budget branch (one to three months of income) or a
   misfortune (fire, plague, drought, pirates, earthquake, embezzlement) costing up to three months of full income.
   They wait in the alerts row.
+- **Peoples beyond the frontier**: Illyrians (north-west, beyond Epirus), Paeonians (Axios valley) and Thracians
+  (Edoni and Bisaltae, between the Axios and the Strymon) sit on the non-Greek land around Hellas and cannot be
+  conquered. Every 3–7 years each sends a warband of 400–2,000 men against a rich, poorly guarded city within reach;
+  it carries off people and silver and sours the citizens' mood (it lays no land waste). A city it enters chooses: pay
+  six months of its income for the warband to plunder someone else, or fight it in the name of Hellas (power projection
+  and every Greek city's regard, more renown if it is driven off) and send out defenders. A warband that loses half its
+  men turns back. They ignore the Olympic truce; city walls halve their loot.
+- **Great works** for spare silver (Polis tab): money no fund can spend goes to the chosen work instead of the other
+  funds — a treasury at Delphi (repeatable), a great temple, city walls or a water tunnel.
+- **Small islands and neutral harbours**: islets missing from the coastline data are added (Delos, Rheneia, Donousa…);
+  fifteen small unclaimed islands carry neutral harbours (Delos, Syros, Thera, Aegina, Ithaca…) that belong to no one,
+  cannot be settled or taken, and pay merchantmen 30% more.
+- **Mountains**: no land above 1500 m can be taken, settled, laid waste or handed over.
 - **Colonies**: settlers' expeditions only claim wilderness along the city's own borders; a colony is always one new
   city on a historical site, founded at most once in 40 years (down to 16 with a large colonization share).
 - **Levies and settlers** go out in small, frequent portions. Armies give up any chase after three seconds (and leave
@@ -90,6 +103,9 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Surplus of the military fund** (once the army is full): save it, hire **mercenaries** in wartime (no citizens,
   dear, double pay, gone at peace) or build **war galleys**. A fleet at war rows to the nearest enemy harbour and
   **blockades** it — no trade, no port bonus, no harbour dues — sinks enemy merchantmen and fights enemy fleets.
+- **Bought out of savings** (buttons under the Military and Colonization rows): hire a double band of mercenaries
+  at once in wartime (7 dr a man, twice the fund's price) or send an extra settlers' expedition before the city is
+  crowded (four times the usual price); either costs at least three months of income.
 - **Ports** bring in harbour dues of their own, on top of the income bonus and the ships they launch.
 - **Stray land**: scraps of four pixels or fewer cut off from their capital revert to wilderness after about four years
   (a fresh colony seed in open wilderness is spared).

@@ -1,3 +1,4 @@
+import { ISLETS } from './data/frontier';
 import { GREECE_MAP } from './data/greece-map';
 import { hash01, valueNoise } from './rng';
 
@@ -66,6 +67,7 @@ export class World {
     this.fertility = new Float32Array(this.size);
     this.shallow = new Uint8Array(this.size);
 
+    this.addIslets();
     const { cols, rows, terrain, elevation } = this;
     const cellM = this.cellKm * 1000;
     // Light from the north-west, 40° above the horizon.
@@ -116,6 +118,22 @@ export class World {
       }
     }
     this.greekCells = Int32Array.from(greek);
+  }
+
+  /** Small islands the coastline data misses become low Greek land (only where the raster is sea). */
+  private addIslets() {
+    for (const islet of ISLETS) {
+      const p = this.project(islet.lon, islet.lat);
+      for (let dy = -islet.r; dy <= islet.r; dy++) {
+        for (let dx = -islet.r; dx <= islet.r; dx++) {
+          if (Math.hypot(dx, dy) > islet.r + 0.25) continue;
+          const c = this.cellAt(p.x + dx, p.y + dy);
+          if (c < 0 || this.terrain[c] !== Terrain.Sea) continue;
+          this.terrain[c] = Terrain.Greek;
+          this.elevation[c] = 20 + Math.round(hash01(c % this.cols, Math.floor(c / this.cols), 11) * 90);
+        }
+      }
+    }
   }
 
   index(x: number, y: number): number {

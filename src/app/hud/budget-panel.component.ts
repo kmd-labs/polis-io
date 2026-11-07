@@ -143,6 +143,34 @@ export class BudgetPanelComponent {
     this.game.setSurplus(use);
   }
 
+  /**
+   * Things bought at once out of savings, dearly: mercenaries under the military row (only at war),
+   * an extra settlers' expedition under colonization.
+   */
+  readonly buys = computed(() => {
+    const me = this.game.me();
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    if (!me) return null;
+    const merc = me.mercenaryOffer;
+    const exp = me.expeditionOffer;
+    const short = (cost: number) => me.drachmae < cost;
+    return {
+      military: {
+        label: merc ? interpolate(t.buyMercenaries, { n: formatNumber(merc.men, lang), d: formatNumber(merc.cost, lang) }) : t.buyMercenariesIdle,
+        hint: !merc ? t.buyMercenariesPeace : short(merc.cost) ? t.buyShort : t.buyMercenariesHint,
+        disabled: !merc || short(merc.cost),
+        run: () => this.game.buyMercenaries()
+      },
+      colonization: {
+        label: exp ? interpolate(t.buyExpedition, { n: formatNumber(exp.settlers, lang), d: formatNumber(exp.cost, lang) }) : t.buyExpeditionIdle,
+        hint: !exp ? t.buyExpeditionNone : short(exp.cost) ? t.buyShort : t.buyExpeditionHint,
+        disabled: !exp || short(exp.cost),
+        run: () => this.game.buyExpedition()
+      }
+    } as Partial<Record<BudgetKey, { label: string; hint: string; disabled: boolean; run: () => void }>>;
+  });
+
   applyPreset(id: PresetId) {
     this.game.applyPreset(id);
   }
@@ -168,7 +196,9 @@ export class BudgetPanelComponent {
           ? t.fcBlocked
           : key === 'military' && me.surplus === 'mercenaries' && !me.wars.length
             ? t.fcMercenariesPeace
-            : t.fcIdle;
+            : me.greatWork
+              ? interpolate(t.fcGreat, { w: t.greatWorks[me.greatWork].name })
+              : t.fcIdle;
       return { pre: key === 'military' ? `${pay} · ` : '', metric: '', post: idle, warn };
     }
     if (next.kind === 'hoplites') {

@@ -6,6 +6,7 @@ import { GameService } from '../game/game.service';
 import { GameEventKind } from '../game/simulation';
 import { ImprovementId } from '../game/data/improvements';
 import { HegemonyCategory } from '../game/hegemony';
+import { GreatWorkId } from '../game/data/frontier';
 
 const TEMPLATE_KEY = {
   war: 'evWar',
@@ -40,7 +41,12 @@ const TEMPLATE_KEY = {
   blockade: 'evBlockade',
   truce: 'evTruce',
   truceEnd: 'evTruceEnd',
-  olympics: 'evOlympics'
+  olympics: 'evOlympics',
+  raid: 'evRaid',
+  raidRepelled: 'evRaidRepelled',
+  raidBribed: 'evRaidBribed',
+  raidStand: 'evRaidStand',
+  greatWork: 'evGreatWork'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Feed of the latest wars, treaties, colonies and conquests: a few lines in the outliner, the full record in the drawer. */
@@ -72,8 +78,8 @@ export class ChronicleComponent {
       // Other poleis' settling and building are routine; only the player's own projects are news.
       .filter(e => {
         // Sieges and the war at sea are news when they touch the player; their own hiring and building likewise.
-        if (['siege', 'navalBattle', 'blockade'].includes(e.kind)) return e.a === player || e.b === player;
-        if (['settle', 'colony', 'farm', 'port', 'festival', 'farmPlanned', 'portPlanned', 'built', 'mercenaries', 'warship'].includes(e.kind)) return e.a === player;
+        if (['siege', 'navalBattle', 'blockade', 'raid', 'raidRepelled', 'raidBribed', 'raidStand'].includes(e.kind)) return e.a === player || e.b === player;
+        if (['settle', 'colony', 'farm', 'port', 'festival', 'farmPlanned', 'portPlanned', 'built', 'mercenaries', 'warship', 'greatWork'].includes(e.kind)) return e.a === player;
         return e.kind !== 'allianceOffer';
       })
       .slice(-limit)
@@ -91,10 +97,12 @@ export class ChronicleComponent {
               ? (t.improvements[e.tag as ImprovementId]?.name ?? '')
               : e.kind === 'podium' && e.tag
                 ? (t.hegemonyCats[e.tag as HegemonyCategory]?.name ?? '')
-                : ''
+                : e.kind === 'greatWork' && e.tag
+                  ? (t.greatWorks[e.tag as GreatWorkId]?.name ?? '')
+                  : ''
         }),
         mine: e.a === player || e.b === player,
-        hostile: ['war', 'fall', 'siege', 'client', 'annexed', 'revolt', 'blockade', 'navalBattle'].includes(e.kind) && e.a !== player
+        hostile: ['war', 'fall', 'siege', 'client', 'annexed', 'revolt', 'blockade', 'navalBattle', 'raid'].includes(e.kind) && e.a !== player
       }));
   });
 }

@@ -33,6 +33,14 @@ export const PL: Dict = {
       desc: 'Co cztery lata (licząc od pierwszej olimpiady w 776 p.n.e.) w Olimpii odbywają się igrzyska z konkurencjami swojej epoki: dwanaście w 600 p.n.e., później osiemnaście i więcej (biegi, zapasy, pięściarstwo, pankration, pięciobój, wyścigi rydwanów, bieg w zbroi, heroldowie i trębacze). Święty rozejm trwa od dwóch miesięcy przed do miesiąca po igrzyskach: nikt nie prowadzi wojny, armie wracają do miast. Ty decydujesz, jaką część rocznego dochodu przeznaczyć na reprezentację; najlepiej radzą sobie duże, bogate i hojne miasta (wojownicze w sportach walki, kulturalne w biegach i muzyce, bogate w wyścigach rydwanów). Każde startujące miasto zyskuje projekcję siły, a każdy wieniec — sławę i życzliwość innych; triumf (dwie piąte wieńców, co najmniej pięć) daje +1 kultury.'
     },
     {
+      term: 'Ludy zza granicy',
+      desc: 'Ilirowie na północnym zachodzie, Pajonowie nad Aksjosem i Trakowie między Aksjosem a Strymonem żyją poza grecką granicą i nie da się ich podbić. Co kilka lat jeden z nich wysyła bandę przeciw bogatemu, słabo strzeżonemu miastu w zasięgu: bandy od 400 do 2000 wojowników porywają ludzi, rabują srebro i psują nastroje obywateli, po czym wracają do siebie. Miasto, na którego ziemię wkroczą, wybiera: zapłacić im sześć miesięcy dochodu, by łupili kogoś innego, albo walczyć z nimi w imię Hellady — od razu projekcja siły i życzliwość wszystkich greckich miast, więcej sławy, jeśli zostaną odparci — i wysłać obrońców. Banda, która straci połowę ludzi, zawraca. Rozejm olimpijski nic dla nich nie znaczy. Mury o połowę zmniejszają łupy.'
+    },
+    {
+      term: 'Wielkie dzieła i neutralne porty',
+      desc: 'Srebro, którego żaden fundusz nie ma na co wydać, może wznosić wielkie dzieło (zakładka Polis): skarbiec w Delfach, wielką świątynię, mury miejskie albo tunel wodny. Małe wyspy z neutralnymi portami (Delos, Syros, Tera, Egina…) nie należą do nikogo i nie da się ich zająć; statki kupieckie sprzedają tam z zyskiem. Ziemi powyżej 1500 metrów nie da się zdobyć, zasiedlić ani spustoszyć.'
+    },
+    {
       term: 'Zrządzenia losu',
       desc: 'Co dwa lata los odmienia się dla każdego miasta: zastrzyk dla jednej gałęzi budżetu (od jednego do trzech miesięcy dochodu prosto do tego funduszu) albo nieszczęście — pożar, zaraza, susza, piraci, trzęsienie ziemi lub defraudacja — kosztujące do trzech miesięcy pełnych dochodów. Czekają w rzędzie alertów.'
     },
@@ -98,15 +106,15 @@ export const PL: Dict = {
     },
     {
       term: 'Armia główna i oddziały łupieżcze',
-      desc: 'Na wojnie polis wystawia od dwóch do pięciu armii. Armia główna (większa tarcza) bierze mniej więcej połowę wolnych hoplitów i szuka starcia z armią główną wroga; mniejsze oddziały łupią ziemie przeciwnika i uciekają przed każdą siłą zbliżoną do swojej. Armia główna słabsza od wrogiej zatrzymuje się i okopuje (pierścień palisady): w ciągu kilku miesięcy jej siła rośnie do 150%, a każda wroga armia, która podejdzie na 30 pól, zostaje zaatakowana. Kilku hoplitów zawsze zostaje za murami. Armia rezygnuje z pościgu po trzech sekundach, a armie trzymają się dolin, omijając wzgórza i góry.'
+      desc: 'Na wojnie polis wystawia od dwóch do pięciu armii. Armia główna (większa tarcza) bierze mniej więcej połowę wolnych hoplitów i szuka starcia z armią główną wroga; mniejsze oddziały łupią ziemie przeciwnika i uciekają przed każdą siłą zbliżoną do swojej. Armia główna słabsza od wrogiej zatrzymuje się i okopuje (pierścień palisady): w ciągu paru miesięcy jej siła rośnie do 150%, a każda wroga armia, która podejdzie na 30 pól, zostaje zaatakowana. Kilku hoplitów zawsze zostaje za murami. Każda armia ma generała od jednej do trzech gwiazdek (60% / 35% / 5%) — kliknij armię, by je zobaczyć: każda gwiazdka ponad jedną daje 5% siły, lepsi generałowie chętniej szukają bitwy i oblegają miasta, a armie słabszych generałów dołączają do lepszego generała swojego miasta w pobliżu. Miasta wypowiadają wojny tylko trzem najbliższym sąsiadom (według granic lub stolic). Armia rezygnuje z pościgu po trzech sekundach, a armie trzymają się dolin, omijając wzgórza i góry.'
     },
     {
       term: 'Najemnicy i flota wojenna',
-      desc: 'Pobory są małe i częste. Gdy armia osiągnie liczebność, do której dąży suwak Wojsko, wybierz, co fundusz wojskowy robi z resztą: oszczędza (przechodzi do innych funduszy), najmuje najemników w czasie wojny (bez utraty obywateli, ale drodzy w najmie, podwójny żołd, odchodzą po pokoju) albo buduje galery wojenne. Na wojnie flota płynie do najbliższego portu wroga i go blokuje — bez handlu, premii portowej i opłat portowych — zatapiając wrogie statki kupieckie i walcząc z wrogimi flotami.'
+      desc: 'Pobory są małe i częste. Gdy armia osiągnie liczebność, do której dąży suwak Wojsko, wybierz, co fundusz wojskowy robi z resztą: oszczędza (przechodzi do innych funduszy), najmuje najemników w czasie wojny (bez utraty obywateli, ale drodzy w najmie, podwójny żołd, odchodzą po pokoju) albo buduje galery wojenne. Mając oszczędności, możesz też od razu nająć podwójną bandę najemników w czasie wojny albo wysłać dodatkową ekspedycję osadników, zanim miasto się zapełni — przyciski pod wierszami Wojsko i Kolonizacja — drogo: dwa i cztery razy drożej niż zwykle, nigdy mniej niż trzy miesiące dochodu. Na wojnie flota płynie do najbliższego portu wroga i go blokuje — bez handlu, premii portowej i opłat portowych — zatapiając wrogie statki kupieckie i walcząc z wrogimi flotami.'
     },
     {
       term: 'Oblężenia i upadek polis',
-      desc: 'Armia, która dotrze do stolicy wroga, obozuje pod jej murami ponad pół roku, zanim przypuści szturm. W tym czasie oblężonemu miastu spada zadowolenie, ludność prawie nie przybywa, a garnizon głoduje — ale oblegający też topnieją. Upadła polis rzadko znika z mapy: może przetrwać jako miasto w granicach zwycięzcy albo zostać państwem klienckim, które płaci daninę w drachmach i robotnikach. Polis założycielskie trudno zrównać z ziemią, młode kolonie — łatwo. Czasem w chaosie oderwie się zupełnie nowa polis.'
+      desc: 'Armia, która dotrze do stolicy wroga, obozuje pod jej murami kilka miesięcy, zanim przypuści szturm. W tym czasie oblężonemu miastu spada zadowolenie, ludność prawie nie przybywa, a garnizon głoduje — ale oblegający też topnieją. Upadła polis rzadko znika z mapy: może przetrwać jako miasto w granicach zwycięzcy albo zostać państwem klienckim, które płaci daninę w drachmach i robotnikach. Polis założycielskie trudno zrównać z ziemią, młode kolonie — łatwo. Czasem w chaosie oderwie się zupełnie nowa polis.'
     },
     {
       term: 'Podbój',
@@ -324,6 +332,66 @@ export const PL: Dict = {
   evCoalition: 'Hellada lęka się potęgi polis {a}: miasta jednoczą się przeciw niej',
   evMercenaries: '{a} najmuje {n} najemników',
   versionLabel: 'Wersja',
+  armyInfo: '{kind} — {name} · {n} ludzi · generał {stars} (+{bonus}% w bitwie)',
+  armyKinds: { main: 'Armia główna', raider: 'Oddział łupieżczy', mercenary: 'Najemnicy', raid: 'Banda', defend: 'Obrońcy' },
+  tribeNames: { illyrians: 'Ilirowie', paeonians: 'Pajonowie', thracians: 'Trakowie' },
+  neutralPortNames: {
+    delos: 'Delos',
+    syros: 'Syros',
+    seriphos: 'Serifos',
+    siphnos: 'Sifnos',
+    thera: 'Tera',
+    ios: 'Ios',
+    aegina: 'Egina',
+    skiathos: 'Skiatos',
+    peparethos: 'Peparetos',
+    psara: 'Psara',
+    astypalaia: 'Astypalaja',
+    leros: 'Leros',
+    telos: 'Telos',
+    ithaca: 'Itaka',
+    kythnos: 'Kytnos'
+  },
+  evRaid: 'Banda wojowników — {a} ({n} ludzi) — przekracza granicę, by łupić polis {b}',
+  evRaidRepelled: '{a} odpędza najeźdźców: {b}',
+  evRaidBribed: '{a} płaci najeźdźcom ({b}), by łupili kogoś innego',
+  evRaidStand: '{a} staje do walki z najeźdźcami ({b}) w imię Hellady',
+  raidTitle: '{name} na naszej ziemi!',
+  raidText: 'Banda {n} wojowników — {name} — wkroczyła na nasze pola, by porywać ludzi i rabować srebro. Ich wódz weźmie {d} drachm — sześć miesięcy naszych dochodów — i pójdzie łupić inne miasto. Albo staniemy do walki w imię Hellady: wszyscy Grecy nas za to uczczą.',
+  raidTextPoor: 'Banda {n} wojowników — {name} — wkroczyła na nasze pola, by porywać ludzi i rabować srebro. Ich wódz żąda {d} drachm — więcej, niż mamy. Musimy walczyć w imię Hellady: wszyscy Grecy nas za to uczczą.',
+  raidBribe: 'Zapłać {d} dr',
+  raidFight: 'Walcz za Helladę',
+  buyMercenaries: 'Najmij {n} najemników teraz · {d} dr',
+  buyMercenariesIdle: 'Najmij najemników teraz',
+  buyMercenariesHint: 'Płatne od razu ze wszystkich oszczędności, dwa razy drożej niż z funduszu wojskowego (i nigdy mniej niż trzy miesiące dochodu). Wyruszają dziś i służą do zawarcia pokoju.',
+  buyMercenariesPeace: 'Tylko w czasie wojny: w pokoju najemnicy biorą żołd i odchodzą.',
+  buyExpedition: 'Wyślij {n} osadników teraz · {d} dr',
+  buyExpeditionIdle: 'Wyślij dodatkową ekspedycję',
+  buyExpeditionHint: 'Dodatkowa ekspedycja płatna od razu ze wszystkich oszczędności, cztery razy drożej niż zwykle (i nigdy mniej niż trzy miesiące dochodu) — wyrusza, nawet zanim miasto zapełni swoją ziemię.',
+  buyExpeditionNone: 'Żadna ekspedycja nie może wyruszyć: jedna już jest w drodze, brak wolnej ziemi przy naszych granicach albo za mało ludzi.',
+  buyShort: 'Nasze oszczędności jeszcze na to nie starczą.',
+  evGreatWork: '{a} kończy wielkie dzieło: {w}',
+  alertRaid: '{name} łupią naszą ziemię! Nasi obrońcy ruszają im naprzeciw.',
+  greatWorks: {
+    delphi: {
+      name: 'Skarbiec w Delfach',
+      desc: 'Marmurowy skarbiec obok świątyni Apollina na dary miasta: +1,5 projekcji siły, życzliwość wszystkich miast +5, kultura +0,2. Można budować wielokrotnie (za każdym razem drożej).'
+    },
+    temple: { name: 'Wielka świątynia', desc: 'Dorycka świątynia z kamienną kolumnadą: kultura +1, projekcja siły +1, zadowolenie +15.' },
+    walls: { name: 'Mury miejskie', desc: 'Pierścień murów z ciosów i wież: garnizon dłużej wytrzymuje oblężenie, a najeźdźcy znajdują niewiele do zabrania.' },
+    aqueduct: { name: 'Tunel wodny', desc: 'Tunel wykuty przez wzgórze, by doprowadzić wodę ze źródła, jak tunel Eupalinosa na Samos: ludność rośnie o 15% szybciej, zadowolenie +5.' }
+  },
+  greatTitle: 'Wielkie dzieła',
+  greatIntro: 'Wolne srebro — to, na co żaden fundusz nie ma wydatku — może zamiast trafiać do innych funduszy wznosić wielkie dzieło.',
+  greatChoose: 'Finansuj wolnym srebrem',
+  greatChosen: 'Otrzymuje wolne srebro',
+  greatStop: 'Dziel wolne srebro między fundusze',
+  greatBuilt: 'Zbudowano ×{n}',
+  greatProgress: '{f} / {c} dr',
+  greatDone: 'Ukończone',
+  fcGreat: 'nic do kupienia — udział idzie na wielkie dzieło ({w})',
+  hoverTribe: '{name} — poza granicą',
+  hoverNeutralPort: '{name} — neutralny port',
   builtTitle: 'Ukończono: {name}',
   builtNames: { farm: 'nowa farma', port: 'nowy port' },
   builtTexts: {

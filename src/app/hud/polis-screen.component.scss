@@ -2,6 +2,7 @@
 
 :host {
   display: block;
+  container-type: inline-size;
 }
 
 .screen__intro {
@@ -24,12 +25,13 @@
   }
 }
 
+// Three trees side by side when there is room (the full-screen dialog), one column in the narrow drawer.
 .trees {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: spacing("lg");
 
-  @include respond-to("tablet") {
+  @container (max-width: 640px) {
     grid-template-columns: 1fr;
   }
 }
