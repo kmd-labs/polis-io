@@ -1,6 +1,6 @@
 import { PolisId, SiteId } from '../../game/data/poleis';
 import { ImprovementId, ImprovementTree } from '../../game/data/improvements';
-import { AllianceReason, BudgetKey, Purchase } from '../../game/simulation';
+import { AllianceReason, BudgetKey, Purchase, SurplusUse } from '../../game/simulation';
 import { PresetId } from '../../game/economy';
 import { HegemonyCategory } from '../../game/hegemony';
 import { DecadeVerdict } from '../../game/decade';
@@ -204,6 +204,22 @@ export interface Dict {
   evPodium: string;
   evHegemon: string;
   evCoalition: string;
+  evMercenaries: string;
+  evWarship: string;
+  evNavalBattle: string;
+  evBlockade: string;
+  surplusLabel: string;
+  surplusUses: Record<SurplusUse, { name: string; hint: string }>;
+  surplusNoHarbour: string;
+  fcMercenaries: string;
+  fcWarship: string;
+  fcMercenariesPeace: string;
+  incDues: string;
+  incBlockaded: string;
+  alertBlockaded: string;
+  alertBlockading: string;
+  warships: string;
+  mercenariesLabel: string;
   evCoalitionEnd: string;
 
   // Conquest decision

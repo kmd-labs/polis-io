@@ -73,6 +73,12 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   drawn with a larger shield) seeks out the enemy's main army; smaller raiding parties of varied size plunder the
   countryside and run from any force near their size. A main army weaker than its rival halts and digs in — its
   power climbs to 150% over a few years and it engages any enemy army within 30 cells.
+- **Levies and settlers** go out in small, frequent portions. Armies give up a chase after three seconds and keep to
+  the valleys (they steer around heights and aim for lowland first).
+- **Surplus of the military fund** (once the army is full): save it, hire **mercenaries** in wartime (no citizens,
+  dear, double pay, gone at peace) or build **war galleys**. A fleet at war rows to the nearest enemy harbour and
+  **blockades** it — no trade, no port bonus, no harbour dues — sinks enemy merchantmen and fights enemy fleets.
+- **Ports** bring in harbour dues of their own, on top of the income bonus and the ships they launch.
 - **Stray land**: scraps of four pixels or fewer cut off from their capital revert to wilderness after about four years
   (a fresh colony seed in open wilderness is spared).
 - **Win** by holding half of the Greek land or by being the last polis standing. You lose if your capital falls.

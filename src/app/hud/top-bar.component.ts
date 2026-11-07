@@ -132,12 +132,13 @@ export class TopBarComponent {
       { label: interpolate(t.incWorkers, { n: formatNumber(b.workers, lang) }), value: dr(b.base) },
       { label: t.incCulture, value: pct(b.culture) },
       { label: t.incPorts, value: pct(b.ports) },
+      { label: t.incDues, value: dr(b.dues) },
       { label: t.incBuildings, value: pct(b.buildings) },
       { label: t.incMood, value: `×${b.mood.toLocaleString(t.htmlLang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
       { label: t.incOther, value: dr(b.other) },
       { label: t.incUpkeep, value: dr(-b.upkeep) }
     ];
-    return { rows, total: dr(b.gross + b.other - b.upkeep) };
+    return { rows, total: dr(b.gross + b.other - b.upkeep), blockaded: b.blockaded };
   });
 
   /** The laurel: the player's hegemony points and places in the three categories. */

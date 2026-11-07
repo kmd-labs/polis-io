@@ -70,7 +70,7 @@ export const EN: Dict = {
     },
     {
       term: 'Sea trade',
-      desc: 'A polis on the coast sends small merchant ships to the harbours of coastal poleis it is not at war with. Every completed voyage earns the owner 1 drachma, raised by culture (+8% per point), and the receiving city 30% of that. Each port lets one more ship sail at a time.'
+      desc: 'A polis on the coast sends small merchant ships to the harbours of coastal poleis it is not at war with. Every completed voyage earns the owner 1 drachma, raised by culture (+8% per point), and the receiving city 30% of that. Each port lets one more ship sail at a time, and brings in harbour dues of its own — unless an enemy fleet blockades the harbour.'
     },
     {
       term: 'Victories & power projection',
@@ -90,7 +90,11 @@ export const EN: Dict = {
     },
     {
       term: 'Main army and raiders',
-      desc: 'At war a polis fields two to five armies. The main army (the larger shield) takes about half the spare hoplites and seeks out the enemy’s main army; the smaller raiding parties plunder the countryside and run from any force near their size. A main army weaker than the enemy’s halts and digs in (a ring of stakes): over a few years its fighting power grows to 150%, and it falls on any enemy army that comes within 30 cells. A few hoplites always stay behind the walls.'
+      desc: 'At war a polis fields two to five armies. The main army (the larger shield) takes about half the spare hoplites and seeks out the enemy’s main army; the smaller raiding parties plunder the countryside and run from any force near their size. A main army weaker than the enemy’s halts and digs in (a ring of stakes): over a few years its fighting power grows to 150%, and it falls on any enemy army that comes within 30 cells. A few hoplites always stay behind the walls. An army gives up a chase after three seconds, and armies keep to the valleys, skirting hills and mountains.'
+    },
+    {
+      term: 'Mercenaries and the war fleet',
+      desc: 'Levies are small and frequent. Once the army reaches the size the Military slider aims for, choose what the military fund does with the rest: save it (it flows to the other funds), hire mercenaries in wartime (no citizens lost, but dear to hire, double pay, and they leave at peace), or build war galleys. At war the fleet rows to the nearest enemy harbour and blockades it — no trade, no port bonus, no harbour dues — sinking enemy merchantmen and fighting enemy fleets.'
     },
     {
       term: 'Sieges and the fall of a polis',
@@ -176,7 +180,9 @@ export const EN: Dict = {
     colony: 'new colony',
     farm: 'new farm',
     port: 'new port',
-    festival: 'festival'
+    festival: 'festival',
+    mercenaries: 'mercenaries',
+    warship: 'war galley'
   },
   nextPurchase: 'next: {what} ({c})',
   savingOnly: 'saving',
@@ -308,6 +314,32 @@ export const EN: Dict = {
   evPodium: '{a} overtakes {b} — {w}',
   evHegemon: '{a} is the new Hegemon of Hellas',
   evCoalition: 'Hellas fears the power of {a}: the cities draw together against it',
+  evMercenaries: '{a} hires {n} mercenaries',
+  evWarship: '{a} launches a war galley (fleet of {n})',
+  evNavalBattle: 'The fleet of {a} sinks the fleet of {b}',
+  evBlockade: 'The fleet of {a} blockades the harbour of {b}',
+  surplusLabel: 'Once the army is full:',
+  surplusUses: {
+    none: { name: 'Save', hint: 'Nothing extra: what the military fund does not need flows to the other funds.' },
+    mercenaries: {
+      name: 'Mercenaries',
+      hint: 'In wartime, hire bands of mercenaries: they cost no citizens, but are dear to hire and draw double pay. They leave when peace is made.'
+    },
+    fleet: {
+      name: 'War fleet',
+      hint: 'Build war galleys. At war the fleet sails to the nearest enemy harbour and blockades it (no trade, no harbour dues), sinks enemy merchantmen and fights enemy fleets.'
+    }
+  },
+  surplusNoHarbour: 'A war fleet needs a harbour.',
+  fcMercenaries: '+{n} hired swords · double pay',
+  fcWarship: 'fleet {n} → {m} galleys',
+  fcMercenariesPeace: 'mercenaries are only hired in wartime',
+  incDues: 'Harbour dues',
+  incBlockaded: 'Blockaded: no port bonus, no dues, no trade.',
+  alertBlockaded: 'Our harbour is blockaded by the fleet of {name}: no trade, no harbour dues. Build galleys or make peace.',
+  alertBlockading: 'Our fleet blockades the harbour of {name}.',
+  warships: 'Galleys',
+  mercenariesLabel: 'Mercenaries',
   evCoalitionEnd: 'The coalition against {a} falls apart',
 
   // Conquest decision

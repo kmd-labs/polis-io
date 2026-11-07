@@ -56,6 +56,22 @@
           @if (row.extra) {
             <span class="row__extra">{{ row.extra }}</span>
           }
+          @if (row.key === 'military' && surplus(); as sp) {
+            <div class="surplus" role="radiogroup" [attr.aria-label]="sp.label">
+              <span class="surplus__label">{{ sp.label }}</span>
+              @for (o of sp.options; track o.use) {
+                <button
+                  type="button"
+                  role="radio"
+                  class="surplus__btn"
+                  [class.surplus__btn--on]="o.on"
+                  [attr.aria-checked]="o.on"
+                  [disabled]="o.disabled"
+                  [appTooltip]="o.hint"
+                  (click)="setSurplus(o.use)">{{ o.name }}</button>
+              }
+            </div>
+          }
         </div>
       }
     </div>

@@ -15,6 +15,7 @@ import {
   GameStatus,
   PolisState,
   Purchase,
+  SurplusUse,
   RULES,
   Simulation,
   WarReport
@@ -73,6 +74,12 @@ export interface PolisView {
   inflow: number;
   /** Hoplites raised per military purchase. */
   levy: number;
+  /** What the military fund buys once the army is full; galleys afloat; mercenaries in the field; who blockades us. */
+  surplus: SurplusUse;
+  warships: number;
+  mercenaries: number;
+  blockadedBy: number;
+  hasHarbour: boolean;
   /** Player only: hoplites are deserting for want of pay; colonization has nowhere to go. */
   unpaid: boolean;
   colonyBlocked: boolean;
@@ -492,6 +499,12 @@ export class GameService {
     return me ? this.sim.incomeBreakdown(this.sim.poleis[me.idx]) : null;
   });
 
+  /** What the military fund buys once the army is full: nothing extra, mercenaries or war galleys. */
+  setSurplus(use: SurplusUse) {
+    this.sim.setSurplus(this.sim.player, use);
+    this.publish();
+  }
+
   /** Sets all five shares from a preset. */
   applyPreset(id: PresetId) {
     this.sim.setShares(this.sim.player, BUDGET_PRESETS[id]);
@@ -581,6 +594,11 @@ export class GameService {
         upkeep: p.upkeep,
         inflow: p.inflow,
         levy: sim.levySize(p),
+        surplus: p.surplus,
+        warships: sim.fleetStrength(p.idx),
+        mercenaries: sim.mercenaries(p.idx),
+        blockadedBy: p.blockadedBy,
+        hasHarbour: p.idx === sim.player && sim.harbourOf(p) >= 0,
         colonyBlocked: p.idx === sim.player && this.colonyBlocked(p),
         relation: sim.player >= 0 ? sim.relation(sim.player, p.idx) : 0,
         tributeGold: Math.round(p.tributeGold),

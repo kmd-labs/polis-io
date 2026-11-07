@@ -82,12 +82,18 @@
     </div>
     }
 
-    @if (me.farms || me.ports || me.vassals.length || me.ships || me.allies.length) {
+    @if (me.farms || me.ports || me.vassals.length || me.ships || me.allies.length || me.warships || me.mercenaries) {
       <div class="holdings" [appTooltip]="holdingsHint()">
         <span><lucide-icon [img]="icons.Wheat" [size]="12"></lucide-icon>{{ t.farms }} <b>{{ me.farms }}</b></span>
         <span><lucide-icon [img]="icons.Anchor" [size]="12"></lucide-icon>{{ t.ports }} <b>{{ me.ports }}</b></span>
         <span><lucide-icon [img]="icons.Crown" [size]="12"></lucide-icon>{{ t.vassals }} <b>{{ me.vassals.length }}</b></span>
         <span><lucide-icon [img]="icons.Sailboat" [size]="12"></lucide-icon>{{ t.ships }} <b>{{ me.ships }}</b></span>
+        @if (me.warships) {
+          <span><lucide-icon [img]="icons.Anchor" [size]="12"></lucide-icon>{{ t.warships }} <b>{{ me.warships }}</b></span>
+        }
+        @if (me.mercenaries) {
+          <span><lucide-icon [img]="icons.Swords" [size]="12"></lucide-icon>{{ t.mercenariesLabel }} <b>{{ num(me.mercenaries) }}</b></span>
+        }
         @if (me.allies.length) {
           <span><lucide-icon [img]="icons.Handshake" [size]="12"></lucide-icon>{{ t.allies }} <b>{{ me.allies.length }}</b></span>
         }

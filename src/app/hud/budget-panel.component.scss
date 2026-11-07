@@ -119,6 +119,51 @@
   }
 }
 
+.surplus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+
+  &__label {
+    font-size: font-size("xxs");
+    color: color("text-dim");
+  }
+
+  &__btn {
+    padding: 2px 8px;
+    border: 1px solid color("line");
+    border-radius: radius("pill");
+    background: color("panel-bg-solid");
+    font: inherit;
+    font-size: font-size("xxs");
+    font-weight: font-weight("semibold");
+    color: color("text-main");
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: color("btn-hover");
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    &:focus-visible {
+      outline: 2px solid color("accent");
+      outline-offset: 1px;
+    }
+
+    &--on {
+      border-color: var(--row-color);
+      color: var(--row-color);
+      background: color("panel-bg-heavy");
+    }
+  }
+}
+
 .presets {
   display: flex;
   flex-wrap: wrap;

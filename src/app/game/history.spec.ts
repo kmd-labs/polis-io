@@ -19,7 +19,7 @@ describe('GameHistory', () => {
   const world = new World(decodeMapPixels(png.data, png.channels, png.width, png.height));
 
   it('keeps one snapshot a year for every polis, and stays small over three centuries', () => {
-    const sim = new Simulation(world, { seed: 3 });
+    const sim = new Simulation(world, { seed: 3, autoplay: true });
     sim.choose(0);
     const history = new GameHistory();
     for (let year = 0; year < 300; year++) {
@@ -33,7 +33,8 @@ describe('GameHistory', () => {
     }
     // One row per year (the clock stops if the game ends early).
     expect(new Set(history.years).size).toBe(history.length);
-    expect(history.length).toBeGreaterThan(250);
+    // A full three centuries, unless the game itself ended first.
+    expect(history.length).toBeGreaterThan(sim.status === 'playing' ? 250 : 50);
     const now = history.snapshotsAt(history.years.at(-1)!);
     expect(now.length).toBe(sim.poleis.length);
     expect(history.series(0, 'population').length).toBeGreaterThan(0);

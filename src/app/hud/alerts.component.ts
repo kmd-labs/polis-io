@@ -5,6 +5,7 @@ import {
   Crown,
   Hammer,
   Mail,
+  Anchor,
   LucideIconData,
   PiggyBank,
   ScrollText,
@@ -90,6 +91,14 @@ export class AlertsComponent {
       });
     }
 
+    if (me.blockadedBy >= 0) {
+      out.push({ key: 'blockaded', icon: Anchor, tone: 'danger', text: interpolate(t.alertBlockaded, { name: name(me.blockadedBy) }), act: () => this.game.focus(me.blockadedBy) });
+    }
+    for (const q of all) {
+      if (q.blockadedBy === me.idx) {
+        out.push({ key: `blockading-${q.idx}`, icon: Anchor, tone: 'good', text: interpolate(t.alertBlockading, { name: name(q.idx) }), act: () => this.game.focus(q.idx) });
+      }
+    }
     for (const e of this.game.embassies()) {
       const left = formatEta(EMBASSY_TTL - (this.game.sim.time - e.time), RULES.secondsPerYear, t, this.i18n.lang());
       out.push({

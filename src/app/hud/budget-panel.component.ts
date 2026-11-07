@@ -4,7 +4,7 @@ import { BreakpointService, TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { fmt1, formatEta, formatNumber, formatRate, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
-import { BUDGET_KEYS, BUDGET_MIN, BudgetKey, Purchase, RULES } from '../game/simulation';
+import { BUDGET_KEYS, BUDGET_MIN, BudgetKey, Purchase, RULES, SurplusUse } from '../game/simulation';
 import { PRESET_IDS, PresetId, presetOf } from '../game/economy';
 
 /**
@@ -120,6 +120,29 @@ export class BudgetPanelComponent {
     this.releaseTimer = window.setTimeout(() => this.before.set(null), 2500);
   }
 
+  readonly surplusUses: readonly SurplusUse[] = ['none', 'mercenaries', 'fleet'];
+
+  /** The military row's choice of what to buy once the army is full. */
+  readonly surplus = computed(() => {
+    const me = this.game.me();
+    const t = this.i18n.t();
+    if (!me) return null;
+    return {
+      label: t.surplusLabel,
+      options: this.surplusUses.map(use => ({
+        use,
+        name: t.surplusUses[use].name,
+        hint: use === 'fleet' && !me.hasHarbour ? t.surplusNoHarbour : t.surplusUses[use].hint,
+        on: me.surplus === use,
+        disabled: use === 'fleet' && !me.hasHarbour
+      }))
+    };
+  });
+
+  setSurplus(use: SurplusUse) {
+    this.game.setSurplus(use);
+  }
+
   applyPreset(id: PresetId) {
     this.game.applyPreset(id);
   }
@@ -138,7 +161,12 @@ export class BudgetPanelComponent {
     const pay = interpolate(t.fcPay, { u: fmt1(this.game.perMonth(me.upkeep), lang) });
     const warn = fc.desertIn !== null ? interpolate(t.fcDesert, { t: eta(fc.desertIn) }) : '';
     if (!next) {
-      const idle = key === 'colonization' && me.colonyBlocked ? t.fcBlocked : t.fcIdle;
+      const idle =
+        key === 'colonization' && me.colonyBlocked
+          ? t.fcBlocked
+          : key === 'military' && me.surplus === 'mercenaries' && !me.wars.length
+            ? t.fcMercenariesPeace
+            : t.fcIdle;
       return { pre: key === 'military' ? `${pay} · ` : '', metric: '', post: idle, warn };
     }
     if (next.kind === 'hoplites') {
@@ -157,6 +185,10 @@ export class BudgetPanelComponent {
               ? interpolate(t.fcExpedition, { n: formatNumber(me.settlers, lang) })
               : next.kind === 'colony'
                 ? t.fcColonyOnly
+                : next.kind === 'mercenaries'
+                  ? interpolate(t.fcMercenaries, { n: formatNumber(Math.round(next.cost / RULES.mercenaryCost), lang) })
+                  : next.kind === 'warship'
+                    ? interpolate(t.fcWarship, { n: me.warships, m: me.warships + 1 })
                 : key === 'military'
                   ? pay
                   : '';

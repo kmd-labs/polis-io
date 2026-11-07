@@ -162,6 +162,11 @@
     display: block;
   }
 
+  &__hint--danger {
+    font-weight: font-weight("semibold");
+    color: color("danger") !important;
+  }
+
   &__hint--note {
     margin: 8px 0 0 !important;
   }
