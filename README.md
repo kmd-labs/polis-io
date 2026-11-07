@@ -84,6 +84,23 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   regard; a triumph (two-fifths of the wreaths, at least five) adds +1 culture.
 - **Twists of fortune** every two years: a windfall for one budget branch (one to three months of income) or a
   misfortune (fire, plague, drought, pirates, earthquake, embezzlement) costing up to three months of full income.
+- **Choices** in the manner of a grand-strategy event: a scene painted like a black-figure vase, the story and two or
+  three answers listing their consequences (silver in months of income, prestige, contentment, culture, militarism,
+  every city's regard, people, hoplites, prosperity). Fourteen come in their historical year — Solon's cancelling of
+  debts (594 BC), the Sacred War on Kirrha, Thales' eclipse (585), the Pythian Games, Peisistratos' bodyguard, the gold
+  of Croesus, the fall of Sardis (546), Pythagoras, Polycrates, Cleisthenes, the Ionian revolt, Darius' heralds and
+  Xerxes (481) — and fifteen others at any time (the Pythia's riddles, drought, fever, blood feuds, poets, silver veins,
+  coinage, suppliants, omens, ransom, Olympic victors, stone temples, pirates, the phalanx, restless serfs). They come
+  about once a year at first and ever more rarely later.
+- **Letters that stop the game** are kept to at most ten a year (threats and choices always come through). After a
+  century the player meets at most one chance event a year (a choice or a twist of fortune), and finished buildings no
+  longer stop the game.
+- **The wider world** reaches the chronicle in its year: Massalia, Solon, the Pythian, Isthmian and Nemean Games,
+  Naucratis, Peisistratos, Croesus and Cyrus, Alalia, Polycrates, Pythagoras at Croton, Cleisthenes, the Ionian revolt,
+  Marathon, Thermopylae and Salamis, Plataea.
+- **Grand-strategy HUD**: vellum panels in carved bronze frames with gilt rules and corners, the city's arms in a gilt
+  medallion, the treasury and figures in a ledger of bronze roundels, the date in a bronze cartouche, carved tiles for
+  the tabs and map modes, and events on bronze banners.
   They wait in the alerts row.
 - **Peoples beyond the frontier**: Illyrians (north-west, beyond Epirus), Paeonians (Axios valley) and Thracians
   (Edoni and Bisaltae, between the Axios and the Strymon) sit on the non-Greek land around Hellas and cannot be

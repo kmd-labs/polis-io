@@ -38,6 +38,10 @@ export const PL: Dict = {
       desc: 'Ilirowie na północnym zachodzie, Pajonowie nad Aksjosem i Trakowie między Aksjosem a Strymonem żyją poza grecką granicą i nie da się ich podbić. Co kilka lat jeden z nich wysyła bandę przeciw bogatemu, słabo strzeżonemu miastu w zasięgu: bandy od 400 do 2000 wojowników porywają ludzi, rabują srebro i psują nastroje obywateli, po czym wracają do siebie. Miasto, na którego ziemię wkroczą, wybiera: zapłacić im sześć miesięcy dochodu, by łupili kogoś innego, albo walczyć z nimi w imię Hellady — od razu projekcja siły i życzliwość wszystkich greckich miast, więcej sławy, jeśli zostaną odparci — i wysłać obrońców. Banda, która straci połowę ludzi, zawraca. Rozejm olimpijski nic dla nich nie znaczy. Mury o połowę zmniejszają łupy.'
     },
     {
+      term: 'Wybory i szeroki świat',
+      desc: 'Od czasu do czasu miasto musi wybrać: list z malowaną sceną, opowieścią i dwiema lub trzema odpowiedziami, z których każda mówi, ile kosztuje i co przyniesie. Niektóre przychodzą w swoim historycznym roku — prawa Solona, wojna święta, zaćmienie Talesa, złoto Krezusa, upadek Sardes, wojny perskie — inne w dowolnym czasie. Na początku gry są częste, później coraz rzadsze; odłożenie listu oznacza ostatnią odpowiedź. Najwyżej dziesięć listów rocznie zatrzymuje grę, a po stu latach najwyżej jedno zdarzenie losowe na rok. Kronika odnotowuje w swoim roku, co dzieje się w szerokim świecie.'
+    },
+    {
       term: 'Wielkie dzieła i neutralne porty',
       desc: 'Srebro, którego żaden fundusz nie ma na co wydać, może wznosić wielkie dzieło (zakładka Polis): skarbiec w Delfach, wielką świątynię, mury miejskie albo tunel wodny. Cztery neutralne miasta kupieckie — Egina, Sifnos, Thera i Keos — trzymają swoje wyspy i z nikim nie wojują: ich liczne statki zawijają do każdego portu, a miasto, które przyjmie taki statek, zatrzymuje połowę tego, co przywiózł. Małe wyspy z neutralnymi portami (Delos, Syros, Ios…) nie należą do nikogo i nie da się ich zająć; statki kupieckie sprzedają tam z zyskiem. Ziemi powyżej 1500 metrów nie da się zdobyć, zasiedlić ani spustoszyć.'
     },

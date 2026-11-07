@@ -1,4 +1,5 @@
 @use "variables" as *;
+@use "app/theme/strategy" as strategy;
 @use "app/theme/greek" as greek;
 
 :host {
@@ -25,7 +26,8 @@
 
 .group {
   & + & {
-    border-top: 1px solid color("line");
+    border-top: none;
+    background: linear-gradient(90deg, rgba(strategy.$gold, 0) 0%, strategy.$gold 20%, strategy.$gold 80%, rgba(strategy.$gold, 0) 100%) top / 100% 1px no-repeat;
   }
 
   &__head {
@@ -49,7 +51,7 @@
   }
 
   &__icon {
-    color: color("accent");
+    color: strategy.$bronze-mid;
   }
 
   &__title {
