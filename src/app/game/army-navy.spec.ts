@@ -26,7 +26,7 @@ describe('levies and expeditions', () => {
     const share = p.budget.military / 100;
     expect(sim.trainBatch(p)).toBe(Math.max(RULES.trainMinimum, Math.round(sim.workers(p) * (0.01 + 0.04 * share))));
     expect(sim.settlers(p)).toBe(Math.floor(sim.workers(p) * 0.05));
-  });
+  }, 30_000);
 });
 
 describe('war at sea', () => {

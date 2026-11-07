@@ -10,6 +10,12 @@
   flex-direction: column;
   gap: 10px;
 
+  &__mood {
+    margin: -4px 0 0;
+    font-size: font-size("xxs");
+    color: color("text-dim");
+  }
+
   &__weary {
     margin: 0;
     font-size: font-size("xxs");

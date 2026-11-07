@@ -41,7 +41,7 @@ export const EN: Dict = {
     },
     {
       term: 'Choices and the wider world',
-      desc: 'Now and then the city must choose: a letter with a painted scene, the story and two or three answers, each listing what it will cost and bring. Some come in their historical year — Solon’s laws, the Sacred War, Thales’ eclipse, the gold of Croesus, the fall of Sardis, the Persian Wars — others at any time. They come often while the game is young and ever more rarely later; putting a letter aside takes its last answer. At most ten letters a year stop the game, and after a century at most one chance event a year. The chronicle notes what happens in the wider world in its year.'
+      desc: 'Now and then the city must choose: a letter with a painted scene, the story and two or three answers, each listing what it will cost and bring. Some come in their historical year — Solon’s laws, the Sacred War, Thales’ eclipse, the gold of Croesus, the fall of Sardis, the Persian Wars — others at any time. They come often while the game is young and ever more rarely later. A letter that asks for a decision cannot be put aside: an answer must be given. At most ten letters a year stop the game, and after a century at most one chance event a year. The chronicle notes what happens in the wider world in its year.'
     },
     {
       term: 'Great works and neutral harbours',
@@ -113,7 +113,7 @@ export const EN: Dict = {
     },
     {
       term: 'Peace',
-      desc: 'Peace is made at a table, as in Civilization: put terms on it for either side — gold (3, 6 or 12 months of the giver’s income), a strip of land, a forced alliance, clientship (the giver serves and pays tribute) or a public humiliation (renown passes from one to the other) — and a gauge shows whether the enemy will accept; “What would make this work?” shows their terms. The side ahead in the balance of the war asks more; a long war softens both. Enemies send envoys with terms of their own. When war is declared on you, you may sue for peace at once for a year of your income. A peace treaty holds five years.'
+      desc: 'Peace is made at a table, as in Civilization: put terms on it for either side — gold (3, 6 or 12 months of the giver’s income), a strip of land, a forced alliance, clientship (the giver serves and pays tribute) or a public humiliation (renown passes from one to the other) — and a gauge shows whether the enemy will accept; “What would make this work?” shows their terms. The side ahead in the balance of the war asks more; a long war softens both. Contentment counts too: discontented citizens weaken a city at the table, and a city in unrest presses for peace. Enemies send envoys with terms of their own. When war is declared on you, you may sue for peace at once for a year of your income. A peace treaty holds five years.'
     },
     {
       term: 'Mercenaries and the war fleet',
@@ -366,7 +366,7 @@ export const EN: Dict = {
   raidBribe: 'Pay {d} dr',
   raidFight: 'Fight for Hellas',
   dilemmas: DILEMMAS_EN,
-  dilemmaPutAside: 'Putting the letter aside takes the last answer.',
+  dilemmaPutAside: 'A decision must be made: the letter cannot be put aside.',
   worldNotes: WORLD_NOTES_EN,
   evDilemma: '{a}: {w}',
   evWorld: '{w}',

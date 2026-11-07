@@ -15,6 +15,8 @@ export const WAR_PL: WarTexts = {
   warScoreLabel: 'Bilans wojny',
   warScoreHint: 'Kto ma przewagę: przesuwają ją bitwy, wypady i zdobyte miasteczka; im większa przewaga, tym więcej można żądać przy stole pokojowym.',
   strategosLabel: 'Strateg',
+  peaceBalanceLabel: 'Bilans przy stole',
+  peaceMoodLine: 'Walki {w} · zadowolenie: nasze {a}%, {name} {b}% — niezadowolony lud osłabia miasto przy stole.',
   negotiate: 'Negocjuj pokój',
   maxWarsHint: 'Miasto nie prowadzi więcej niż trzech wojen naraz.',
   treatyHint: 'Traktat pokojowy obowiązuje do {year}.',

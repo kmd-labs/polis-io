@@ -10,6 +10,8 @@ export interface WarTexts {
   postureCooldown: string;
   warScoreLabel: string;
   warScoreHint: string;
+  peaceBalanceLabel: string;
+  peaceMoodLine: string;
   strategosLabel: string;
   negotiate: string;
   maxWarsHint: string;
@@ -64,6 +66,8 @@ export const WAR_EN: WarTexts = {
   warScoreLabel: 'Balance of the war',
   warScoreHint: 'Who has the upper hand: battles, raids and towns taken move it; the further ahead, the more one can ask at the peace table.',
   strategosLabel: 'Strategos',
+  peaceBalanceLabel: 'Balance at the table',
+  peaceMoodLine: 'The fighting {w} · contentment: ours {a}%, {name} {b}% — discontented citizens weaken a city at the table.',
   negotiate: 'Negotiate peace',
   maxWarsHint: 'A city fights no more than three wars at once.',
   treatyHint: 'A peace treaty holds until {year}.',

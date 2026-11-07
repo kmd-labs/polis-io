@@ -48,7 +48,8 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Peace table** in the manner of Civilization: gold (3/6/12 months of income), a strip of land, a forced alliance,
   clientship or a public humiliation, for either side, with a live gauge of whether the enemy will accept and "What
   would make this work?". Enemies send envoys with terms. When war is declared on you, you may sue for peace for a year
-  of your income.
+  of your income. Contentment counts at the table: each point by which one city's citizens are happier than the
+  other's shifts the balance 0.4 in its favour, and a city whose citizens are below 40% presses for peace.
 - **Assaults**: walls seldom fell — only a city far ahead and on the offensive may storm them, and most assaults fail.
 - **Polis buildings**: the Buildings button shows three trees — agriculture, trade and military —
   of six buildings each (granary → sanctuary of Demeter, agora → treasury at Delphi, gymnasium → temple of Ares).
@@ -92,7 +93,9 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   of Croesus, the fall of Sardis (546), Pythagoras, Polycrates, Cleisthenes, the Ionian revolt, Darius' heralds and
   Xerxes (481) — and fifteen others at any time (the Pythia's riddles, drought, fever, blood feuds, poets, silver veins,
   coinage, suppliants, omens, ransom, Olympic victors, stone temples, pirates, the phalanx, restless serfs). They come
-  about once a year at first and ever more rarely later.
+  about once a year at first and ever more rarely later. A letter that asks for a decision — a choice, a declaration
+  of war, a posture, envoys with terms or an alliance, a fallen city's fate, the Olympic delegation, a warband — has no
+  close button and cannot be put aside: an answer must be given.
 - **Letters that stop the game** are kept to at most ten a year (threats and choices always come through). After a
   century the player meets at most one chance event a year (a choice or a twist of fortune), and finished buildings no
   longer stop the game.
@@ -120,6 +123,8 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   mostly on their harbours, keep three extra merchantmen at sea, sail twice as often and draw other cities' ships twice
   as strongly; a city their ship calls at keeps half of what it brings (30% for an ordinary city's ship).
 - **Mountains**: no land above 1500 m can be taken, settled, laid waste or handed over.
+- **Compact land**: settlers fill in around what is already theirs before pushing on, and small pockets of wilderness
+  enclosed by one city's land are taken in by it, so territories have no holes.
 - **Colonies**: settlers' expeditions only claim wilderness along the city's own borders; a colony is always one new
   city on a historical site, founded at most once in 40 years (down to 16 with a large colonization share).
 - **Levies and settlers** go out in small, frequent portions.

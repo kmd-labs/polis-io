@@ -520,6 +520,11 @@ export class GameService {
     this.publish();
   }
 
+  /** The balance of a war at the peace table: the fighting and both cities' contentment. */
+  peaceBalance(enemy: number): number {
+    return this.sim.peaceBalance(this.sim.player, enemy);
+  }
+
   /** The balance of a war from the player's side (−100…+100). */
   warScore(enemy: number): number {
     return this.sim.warScore(this.sim.player, enemy);
