@@ -11,6 +11,8 @@ import {
   Posture
 } from './war';
 import { DILEMMAS, DILEMMA_BY_ID, DilemmaDef, DilemmaEffects, DilemmaId, WORLD_NOTES } from './data/dilemmas';
+import { PERSIANS, SARDIS_FALLS } from './data/frontier';
+import { ORACLE_FUND, ORACLE_RULES, ORACLE_STAKES, OracleAnswer, OracleOutcome, OracleQuestion, drawLot, oracleOdds } from './oracle';
 import { GREAT_WORKS, GreatWorkId, NEUTRAL_PORTS, TRADERS, NeutralPortId, TRIBES } from './data/frontier';
 import { POLEIS, PolisDef, SITES, SiteId } from './data/poleis';
 import {
@@ -323,12 +325,14 @@ export const RULES = {
   neutralPortBonus: 1.3,
   /** Choices put before the player: years between them while the game is young, then ever fewer
    * (until `years` years have passed, a gap of min–max years); one comes up at most this often again. */
-  dilemmaGaps: [
-    { years: 10, min: 0.8, max: 1.4 },
-    { years: 30, min: 1.5, max: 2.5 },
-    { years: 100, min: 2.5, max: 4 },
-    { years: Infinity, min: 4, max: 6 }
-  ] as readonly { years: number; min: number; max: number }[],
+  /** Choices come one every dilemmaGapMin–dilemmaGapMax years, the first not before dilemmaFirst years
+   * (time to look at the map first); none comes within dilemmaSpacing years of the last, and a
+   * historical one may wait up to dilemmaWindow years past its date for its turn. */
+  dilemmaFirst: 2,
+  dilemmaGapMin: 3,
+  dilemmaGapMax: 5,
+  dilemmaSpacing: 3,
+  dilemmaWindow: 5,
   dilemmaRepeatYears: 30,
   /** After this many years the player meets at most one chance event (a choice or a twist of fortune) a year. */
   randomCapYears: 100,
@@ -509,6 +513,23 @@ export const RULES = {
   /** At the peace table each point of contentment one city has over the other counts this much in the
    * balance of the war; a city whose citizens are less content than peaceMoodLow presses for peace. */
   peaceMoodWeight: 0.4,
+  /**
+   * Sway over the neutral cities. Each weighs every Greek city by the fear its arms inspire (hoplites,
+   * mercenaries and galleys, halved at swayRange cells) and the awe its culture and renown inspire
+   * (which travels further: distance counts only swayAweReach as much). Influence follows its target
+   * over a few years (swayRate per year). The city of greatest influence — at least swayThreshold —
+   * holds sway: out of fear the neutral pays it swayTribute of its income; out of awe it sends gifts
+   * (swayGift of its income), renown (swayPrestige a year) and its merchantmen.
+   */
+  swayRange: 110 * L,
+  swayAweReach: 0.4,
+  swayRate: 0.6,
+  swayThreshold: 35,
+  swayTribute: 0.25,
+  swayGift: 0.1,
+  swayPrestige: 0.3,
+  swayShipPull: 3,
+  swayMightFloor: 3000,
   /** A city leagued against the Hegemon fights it this much harder. */
   coalitionStrength: 1.3,
   peaceMoodLow: 40,
@@ -611,6 +632,15 @@ export interface PolisState {
   tribe: boolean;
   /** A neutral merchant city on its island: never at war, lives by the sea trade. */
   trader: boolean;
+  /** Neutral cities: the fear and the awe each Greek city inspires in it (by city index, 0–100), and the
+   * city that holds sway over it (−1 none) — out of fear (it pays tribute) or awe (it sends gifts). */
+  fear: number[];
+  awe: number[];
+  patron: number;
+  patronKind: 'tribute' | 'awe' | null;
+  /** Silver flowing in from the neutral cities under this city's sway, per second (smoothed), and this second's take. */
+  swayIn: number;
+  swayAcc: number;
   /** Raiders: when the next warband sets out. */
   nextRaid: number;
   /** Where spare silver goes (a great work, or null to share it among the other funds), the silver
@@ -618,6 +648,8 @@ export interface PolisState {
   greatWork: GreatWorkId | null;
   greatFund: number;
   greatBuilt: Partial<Record<GreatWorkId, number>>;
+  /** When the city last consulted the oracle at Delphi. */
+  oracleAt: number;
   /** Lasting bonuses from great works: walls (against sieges and raids) and growth. */
   bonusWalls: number;
   bonusGrowth: number;
@@ -933,7 +965,10 @@ export type GameEventKind =
   | 'world'
   | 'campaign'
   | 'treaty'
-  | 'peaceBought';
+  | 'peaceBought'
+  | 'sway'
+  | 'swayLost'
+  | 'oracle';
 
 export interface GameEvent {
   id: number;
@@ -971,6 +1006,7 @@ export class Simulation {
   warFx: { x: number; y: number; t: number; kind: CampaignKind }[] = [];
   /** The player's choices: when the next comes, which came when (year BC), the one awaiting an answer. */
   private nextDilemma = 0;
+  private lastDilemmaAt = -Infinity;
   private dilemmaSeen = new Map<DilemmaId, number>();
   private dilemmaQueue: { id: DilemmaId; year: number }[] = [];
   pendingDilemma: DilemmaId | null = null;
@@ -1131,10 +1167,17 @@ export class Simulation {
       dominantYears: 0,
       tribe: def.kind === 'tribe',
       trader: def.kind === 'trader',
+      fear: [],
+      awe: [],
+      patron: -1,
+      patronKind: null,
+      swayIn: 0,
+      swayAcc: 0,
       nextRaid: 0,
       greatWork: null,
       greatFund: 0,
       greatBuilt: {},
+      oracleAt: -Infinity,
       bonusWalls: 0,
       bonusGrowth: 0,
       surplus: 'none',
@@ -1259,7 +1302,8 @@ export class Simulation {
     this.postureChoices = [];
     this.peaceOffers = [];
     this.warFx = [];
-    this.nextDilemma = 0.5 * RULES.secondsPerYear;
+    this.nextDilemma = (RULES.dilemmaFirst + 0.5) * RULES.secondsPerYear;
+    this.lastDilemmaAt = -Infinity;
     this.dilemmaSeen = new Map();
     this.dilemmaQueue = [];
     this.pendingDilemma = null;
@@ -1440,7 +1484,8 @@ export class Simulation {
       mood: this.moodFactor(p),
       prosperity: p.prosperity,
       gross: p.gross,
-      other: Math.max(0, p.inflow - p.gross),
+      sway: p.swayIn,
+      other: Math.max(0, p.inflow - p.gross - p.swayIn),
       upkeep: p.upkeep
     };
   }
@@ -3015,6 +3060,7 @@ export class Simulation {
     if (this.time >= this.nextDiplomacy) {
       this.updateBorders();
       this.driftRelations(1);
+      this.updateSway(1);
       this.nextDiplomacy = this.time + 1;
     }
 
@@ -3081,6 +3127,7 @@ export class Simulation {
       lord.tributeGold += gold;
       lord.tributeWorkers += workers;
     }
+    if (p.trader) this.paySway(p, gross, dt);
     this.allocate(p, upkeep, dt);
   }
 
@@ -3502,7 +3549,8 @@ export class Simulation {
         (p.allies.has(q.idx) ? 2 : 1) *
         (1 + this.relation(p.idx, q.idx) / 200) *
         (q.idx === this.hegemon ? 1 + RULES.hegemonTradeBonus : 1) *
-        (q.trader ? RULES.traderPull : 1);
+        (q.trader ? RULES.traderPull : 1) *
+        (p.trader && p.patronKind === 'awe' && p.patron === q.idx ? RULES.swayShipPull : 1);
       options.push({ q, harbour, weight: pull / (d + 60 * L) });
     }
     // Neutral island harbours trade with anyone.
@@ -4155,6 +4203,125 @@ export class Simulation {
     if (p.idx === this.player && !this.autoplay) this.fortunes.push({ ...roll, amount, year: this.year });
   }
 
+  /**
+   * The neutral cities weigh the Greek cities around them: fear of their arms (nearby) and awe at their
+   * culture and renown (from further away). The strongest influence, if strong enough, holds sway.
+   */
+  private updateSway(dt: number) {
+    const greeks = this.poleis.filter(p => p.alive && !p.tribe && !p.trader && !p.captured);
+    if (!greeks.length) return;
+    const might = new Map(greeks.map(p => [p.idx, (p.garrison + p.mercs + this.fleetStrength(p.idx) * 150) * this.battleMultiplier(p.idx)]));
+    // Fear is measured against the strongest army in Hellas — but a small army frightens no one.
+    const strongest = Math.max(RULES.swayMightFloor, ...might.values());
+    const step = Math.min(1, (dt * RULES.swayRate) / RULES.secondsPerYear);
+    for (const n of this.poleis) {
+      if (!n.alive || !n.trader) continue;
+      let best = -1;
+      let bestValue = 0;
+      for (const p of greeks) {
+        const d = Math.hypot(p.cx - n.cx, p.cy - n.cy) / RULES.swayRange;
+        const reach = 1 / (1 + d * d);
+        const fearTarget = 100 * reach * Math.pow(might.get(p.idx)! / strongest, 0.5);
+        const fame = (p.culture / 5) * 0.35 + Math.min(1, p.prestige / 20) * 0.65;
+        const aweTarget = 100 * fame * (1 - RULES.swayAweReach + RULES.swayAweReach * reach);
+        const fear = (n.fear[p.idx] ?? 0) + (fearTarget - (n.fear[p.idx] ?? 0)) * step;
+        const awe = (n.awe[p.idx] ?? 0) + (aweTarget - (n.awe[p.idx] ?? 0)) * step;
+        n.fear[p.idx] = fear;
+        n.awe[p.idx] = awe;
+        const value = Math.max(fear, awe);
+        if (value > bestValue) {
+          bestValue = value;
+          best = p.idx;
+        }
+      }
+      for (let i = 0; i < n.fear.length; i++) {
+        if (!greeks.some(g => g.idx === i)) {
+          n.fear[i] = 0;
+          n.awe[i] = 0;
+        }
+      }
+      const patron = bestValue >= RULES.swayThreshold ? best : -1;
+      const kind = patron < 0 ? null : n.fear[patron] >= n.awe[patron] ? 'tribute' : 'awe';
+      if (patron !== n.patron || kind !== n.patronKind) {
+        if (n.patron >= 0 && patron !== n.patron) this.emit('swayLost', n.idx, n.patron);
+        if (patron >= 0) this.emit('sway', n.idx, patron, undefined, kind!);
+        n.patron = patron;
+        n.patronKind = kind;
+        n.version++;
+      }
+    }
+    for (const p of this.poleis) {
+      p.swayIn += (p.swayAcc / dt - p.swayIn) * Math.min(1, dt / RULES.inflowSmoothing);
+      p.swayAcc = 0;
+    }
+  }
+
+  /** A neutral city under sway pays its patron: tribute out of fear, gifts (and renown) out of awe. */
+  private paySway(n: PolisState, gross: number, dt: number) {
+    if (n.patron < 0) return;
+    const lord = this.poleis[n.patron];
+    if (!lord?.alive) {
+      n.patron = -1;
+      n.patronKind = null;
+      return;
+    }
+    const share = n.patronKind === 'tribute' ? RULES.swayTribute : RULES.swayGift;
+    const gold = Math.max(0, gross) * share * dt;
+    n.drachmae -= gold;
+    lord.drachmae += gold;
+    lord.swayAcc += gold;
+    if (n.patronKind === 'awe') lord.prestige += (RULES.swayPrestige * dt) / RULES.secondsPerYear;
+    else this.shiftRelation(n.idx, lord.idx, -0.02 * dt);
+  }
+
+  /** Neutral cities under this city's sway, and how (for the panels). */
+  swayOf(idx: number): { idx: number; kind: 'tribute' | 'awe' }[] {
+    return this.poleis.filter(n => n.alive && n.trader && n.patron === idx).map(n => ({ idx: n.idx, kind: n.patronKind! }));
+  }
+
+  // ─── The oracle at Delphi ──
+
+  /** Whether the Pythia will answer this city now (once a year). */
+  oracleReady(p: PolisState): boolean {
+    return p.alive && this.time - p.oracleAt >= ORACLE_RULES.cooldownYears * RULES.secondsPerYear;
+  }
+
+  /** Seconds until the Pythia will answer this city again. */
+  oracleWait(p: PolisState): number {
+    return Math.max(0, p.oracleAt + ORACLE_RULES.cooldownYears * RULES.secondsPerYear - this.time);
+  }
+
+  /** The offering at each level: months of the city's income. */
+  oracleStake(p: PolisState, level: number): number {
+    return Math.max(10, Math.round(this.monthIncome(p) * ORACLE_STAKES[level]));
+  }
+
+  /** The odds of each lot for this city and offering. */
+  oracleOdds(p: PolisState, level: number): Record<OracleOutcome, number> {
+    return oracleOdds(level, p.greatBuilt.delphi ?? 0);
+  }
+
+  /**
+   * The city's envoys put a question to the Pythia with an offering; she draws a lot. What the god grants
+   * goes into the fund of the question. Returns her answer, or null if she will not answer (too soon, or
+   * the city cannot pay).
+   */
+  consultOracle(idx: number, question: OracleQuestion, level: number): OracleAnswer | null {
+    const p = this.poleis[idx];
+    if (!p || !this.oracleReady(p) || level < 0 || level >= ORACLE_STAKES.length) return null;
+    const stake = this.oracleStake(p, level);
+    if (!this.spend(p, stake)) return null;
+    const outcome = drawLot(this.oracleOdds(p, level), this.rand());
+    const payout = Math.round(stake * ORACLE_RULES.payout[outcome]);
+    p.funds[ORACLE_FUND[question]] += payout;
+    if (outcome === 'blessing') p.prestige += ORACLE_RULES.blessingPrestige;
+    if (outcome === 'ill') this.mood(p, ORACLE_RULES.illMood);
+    p.oracleAt = this.time;
+    const answer: OracleAnswer = { question, level, outcome, stake, payout, verse: Math.floor(this.rand() * 3), year: this.year };
+    this.emit('oracle', idx, -1, payout, `${question}.${outcome}`);
+    return answer;
+  }
+
   /** Whole years since the game began. */
   get gameYear(): number {
     return Math.floor(this.time / RULES.secondsPerYear);
@@ -4168,6 +4335,16 @@ export class Simulation {
   /** The wider world's news, as its year comes. */
   private worldNotes() {
     if (this.status !== 'playing') return;
+    // Sardis falls to Cyrus: the Lydian kingdom is now a Persian satrapy, and its warbands Persian.
+    if (this.year <= SARDIS_FALLS) {
+      const lydia = this.poleis.find(p => p.tribe && p.def.id === 'lydians');
+      if (lydia) {
+        lydia.def = PERSIANS;
+        lydia.militarism = PERSIANS.militarism;
+        lydia.garrison = Math.max(lydia.garrison, RULES.tribeMax);
+        lydia.version++;
+      }
+    }
     while (this.worldNote < WORLD_NOTES_BY_YEAR.length && this.year <= WORLD_NOTES_BY_YEAR[this.worldNote].year) {
       this.emit('world', -1, -1, undefined, WORLD_NOTES_BY_YEAR[this.worldNote].id);
       this.worldNote++;
@@ -4179,16 +4356,21 @@ export class Simulation {
     if (this.player < 0 || this.autoplay || this.status !== 'playing' || this.pendingDilemma) return;
     const p = this.poleis[this.player];
     if (!p?.alive || !this.randomAllowed()) return;
+    // One choice at a time, every few years — and none in the first years, while the player finds their feet.
+    if (this.gameYear < RULES.dilemmaFirst || this.time - this.lastDilemmaAt < RULES.dilemmaSpacing * RULES.secondsPerYear) return;
     const due = DILEMMAS.find(
-      d => d.year !== undefined && !this.dilemmaSeen.has(d.id) && this.year <= d.year && this.year >= d.year - 3 && this.dilemmaFits(p, d)
+      d =>
+        d.year !== undefined &&
+        !this.dilemmaSeen.has(d.id) &&
+        this.year <= d.year &&
+        this.year >= d.year - RULES.dilemmaWindow &&
+        this.dilemmaFits(p, d)
     );
     if (due) {
       this.offerDilemma(due);
       return;
     }
     if (this.time < this.nextDilemma) return;
-    const gap = RULES.dilemmaGaps.find(g => this.gameYear < g.years)!;
-    this.nextDilemma = this.time + (gap.min + this.rand() * (gap.max - gap.min)) * RULES.secondsPerYear;
     const pool = DILEMMAS.filter(
       d => d.year === undefined && this.dilemmaFits(p, d) && (this.dilemmaSeen.get(d.id) ?? Infinity) - this.year >= RULES.dilemmaRepeatYears
     );
@@ -4214,6 +4396,9 @@ export class Simulation {
 
   private offerDilemma(d: DilemmaDef) {
     this.pendingDilemma = d.id;
+    this.lastDilemmaAt = this.time;
+    // The next chance choice waits three to five years from this one, whatever it was.
+    this.nextDilemma = this.time + (RULES.dilemmaGapMin + this.rand() * (RULES.dilemmaGapMax - RULES.dilemmaGapMin)) * RULES.secondsPerYear;
     this.dilemmaSeen.set(d.id, this.year);
     this.randomYear = this.gameYear;
     this.dilemmaQueue.push({ id: d.id, year: this.year });

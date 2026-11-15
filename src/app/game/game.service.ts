@@ -31,6 +31,7 @@ import { olympiadOf } from './olympics';
 import { Fortune } from './fortune';
 import { DilemmaChoice, DilemmaId } from './data/dilemmas';
 import { CampaignReport, PeaceItem, Posture } from './war';
+import { OracleAnswer, OracleQuestion } from './oracle';
 import { GREAT_WORKS, GreatWorkId } from './data/frontier';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
@@ -93,6 +94,12 @@ export interface PolisView {
   tribe: boolean;
   /** A neutral merchant city on its island (never at war). */
   trader: boolean;
+  /** Neutral cities: who holds sway over it (−1 none) and how, and the cities of greatest influence. */
+  patron: number;
+  patronKind: 'tribute' | 'awe' | null;
+  swayTop: { idx: number; fear: number; awe: number }[];
+  /** Silver a second from the neutral cities under this city's sway. */
+  swayIn: number;
   /** Player only: the great work receiving spare silver, saved so far, and cost / completions / availability of each. */
   greatWork: GreatWorkId | null;
   greatFund: number;
@@ -160,6 +167,7 @@ export type Notice =
   | { kind: 'peaceOffer'; from: number; deal: PeaceItem[] }
   | { kind: 'peaceTable'; enemy: number; deal: PeaceItem[] }
   | { kind: 'campaign'; report: CampaignReport }
+  | { kind: 'oracle' }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
 /** Clock multipliers behind the five speed keys (1–5). */
@@ -167,7 +175,7 @@ export const SPEEDS = [1, 2, 4, 8, 16] as const;
 /** A report the player may read when they like (it does not stop the game). */
 export interface ReportItem {
   id: number;
-  notice: Extract<Notice, { kind: 'victory' | 'warEnd' | 'develop' | 'fortune' | 'campaign' }>;
+  notice: Extract<Notice, { kind: 'victory' | 'warEnd' | 'develop' | 'fortune' | 'campaign' | 'built' | 'greatWork' }>;
   year: number;
   time: number;
 }
@@ -265,7 +273,9 @@ export class GameService {
   private budgetTimer = 0;
   /** This year's hegemony rankings, the player's score over the years, and podium news for the alerts. */
   readonly hegemony = signal<HegemonyStanding | null>(null);
-  readonly hegemonyLog = signal<{ year: number; score: number }[]>([]);
+  readonly hegemonyLog = signal<{ year: number; score: number; place: number }[]>([]);
+  /** Last year's standing (for the trend arrows). */
+  readonly hegemonyPrev = signal<HegemonyStanding | null>(null);
   readonly podiumNews = signal<PodiumNews[]>([]);
   /** Rankings ten years ago, for the trend arrows. */
   readonly hegemonyPast = signal<HegemonyStanding | null>(null);
@@ -325,6 +335,11 @@ export class GameService {
     this.selected.set(idx === this.player() ? -1 : idx);
   }
 
+  /** Brings a polis into view without selecting it (e.g. above a sheet that has just opened). */
+  centre(idx: number) {
+    if (idx >= 0) this.focusRequest.set({ idx });
+  }
+
   /** Selects a polis from a list and brings it into view. */
   focus(idx: number) {
     this.select(idx);
@@ -348,10 +363,14 @@ export class GameService {
   private rankYear(year: AnnalsYear) {
     const sim = this.sim;
     const { now, before } = year;
+    this.hegemonyPrev.set(this.hegemony());
     this.hegemony.set(now);
     this.hegemonyPast.set(this.annals.tenYearsAgo);
     const me = sim.player;
-    this.hegemonyLog.update(log => [...log, { year: now.year, score: now.scores[me] ?? 0 }]);
+    // The player's place in the overall ranking (by points; ties share the better place).
+    const mine = now.scores[me] ?? 0;
+    const place = 1 + Object.values(now.scores).filter(s => s > mine).length;
+    this.hegemonyLog.update(log => [...log, { year: now.year, score: mine, place }]);
     if (!before || sim.status !== 'playing') return;
 
     for (const c of year.newLeaders) sim.note('podium', c.lead, c.was, c.category);
@@ -669,6 +688,7 @@ export class GameService {
     this.historyVersion.update(v => v + 1);
     this.hegemony.set(null);
     this.hegemonyPast.set(null);
+    this.hegemonyPrev.set(null);
     this.hegemonyLog.set([]);
     this.podiumNews.set([]);
     this.queue.length = 0;
@@ -749,6 +769,16 @@ export class GameService {
         colonyIn: Math.max(0, p.nextColonyAt - sim.time),
         tribe: p.tribe,
         trader: p.trader,
+        patron: p.patron,
+        patronKind: p.patronKind,
+        swayTop: p.trader
+          ? p.fear
+              .map((fear, idx) => ({ idx, fear, awe: p.awe[idx] ?? 0 }))
+              .filter(x => x.fear + x.awe > 0.5)
+              .sort((x, y) => Math.max(y.fear, y.awe) - Math.max(x.fear, x.awe))
+              .slice(0, 4)
+          : [],
+        swayIn: p.swayIn,
         greatWork: p.greatWork,
         greatFund: p.greatFund,
         greatWorks:
@@ -819,10 +849,10 @@ export class GameService {
       } else if (e.kind === 'built' && e.a === sim.player && e.tag) {
         this.history.addEvent({ kind: 'built', year: e.year, id: e.tag });
       }
-      if (e.kind === 'greatWork' && e.a === sim.player && e.tag) incoming.push({ kind: 'greatWork', id: e.tag as GreatWorkId });
-      // Every finished building of the player's gets its own message.
+      // Finished buildings and great works wait in the alerts row: news, not a reason to stop the game.
+      if (e.kind === 'greatWork' && e.a === sim.player && e.tag) filed.push({ kind: 'greatWork', id: e.tag as GreatWorkId });
       if (e.a === sim.player && ((e.kind === 'built' && e.tag) || e.kind === 'farm' || e.kind === 'port')) {
-        incoming.push(
+        filed.push(
           e.kind === 'built'
             ? { kind: 'built', what: 'improvement', id: e.tag as ImprovementId }
             : { kind: 'built', what: e.kind, id: null }
@@ -909,6 +939,19 @@ export class GameService {
       out.push(n);
     }
     return out;
+  }
+
+  /** Opens the oracle at Delphi (the game waits while the envoys are away). */
+  openOracle() {
+    if (this.sim.status !== 'playing') return;
+    this.enqueue([{ kind: 'oracle' }]);
+  }
+
+  /** The player's envoys put a question to the Pythia. */
+  consultOracle(question: OracleQuestion, level: number): OracleAnswer | null {
+    const answer = this.sim.consultOracle(this.sim.player, question, level);
+    this.publish();
+    return answer;
   }
 
   /** The player's answer to the open choice. */

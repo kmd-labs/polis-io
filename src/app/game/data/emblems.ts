@@ -27,7 +27,21 @@ const EMBLEMS: Record<PolisId, Emblem> = {
   samos: { kind: 'letter', text: 'Σ' },
   naxos: { kind: 'symbol', symbol: 'kantharos' }, // Dionysus' wine cup
   knossos: { kind: 'symbol', symbol: 'labyrinth' },
-  lindos: { kind: 'symbol', symbol: 'rose' } // the rose (rhodon) of Rhodes
+  lindos: { kind: 'symbol', symbol: 'rose' }, // the rose (rhodon) of Rhodes
+  megara: { kind: 'letter', text: 'ΜΕ' },
+  sikyon: { kind: 'letter', text: 'Σ' }, // the san of Sicyon on its coins
+  eretria: { kind: 'letter', text: 'Ε' },
+  tegea: { kind: 'letter', text: 'Τ' },
+  miletus: { kind: 'letter', text: 'ΜΙ' }, // beneath the lion of Miletus
+  ephesus: { kind: 'letter', text: 'ΕΦ' }, // beside the bee of Artemis
+  phocaea: { kind: 'letter', text: 'Φ' }, // the seal (phoke) of Phocaea
+  halicarnassus: { kind: 'letter', text: 'ΑΛ' },
+  kyzikos: { kind: 'letter', text: 'ΚΥ' }, // above the tuna of Cyzicus
+  taras: { kind: 'symbol', symbol: 'trident' }, // Taras riding a dolphin
+  sybaris: { kind: 'letter', text: 'ΣΥ' }, // with the bull of Sybaris
+  kroton: { kind: 'letter', text: 'ϘΡ' }, // archaic koppa beside Apollo's tripod
+  rhegion: { kind: 'letter', text: 'ΡΗ' },
+  syracuse: { kind: 'symbol', symbol: 'amphora' }
 };
 
 /** Latin transliteration → Greek letter, longest prefix first. */

@@ -154,7 +154,13 @@ export class AlertsComponent {
                 : t.banes[n.fortune.bane].title
               : n.kind === 'campaign'
                 ? interpolate(t.alertCampaign, { title: t.campaignKinds[n.report.kind].title, place: name(n.report.near) })
-                : t.alertDevelop;
+                : n.kind === 'built'
+                  ? interpolate(t.builtTitle, {
+                      name: n.what === 'improvement' && n.id ? t.improvements[n.id].name : t.builtNames[n.what === 'farm' ? 'farm' : 'port']
+                    })
+                  : n.kind === 'greatWork'
+                    ? interpolate(t.builtTitle, { name: t.greatWorks[n.id].name })
+                    : t.alertDevelop;
       out.push({
         key: `report-${r.id}`,
         icon:
@@ -170,7 +176,7 @@ export class AlertsComponent {
                   ? Swords
                   : Hammer,
         tone:
-          n.kind === 'develop'
+          n.kind === 'develop' || n.kind === 'built' || n.kind === 'greatWork'
             ? 'info'
             : (n.kind === 'fortune' && !n.fortune.boon) || (n.kind === 'campaign' && !n.report.won)
               ? 'danger'

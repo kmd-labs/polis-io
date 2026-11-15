@@ -1,9 +1,13 @@
+import { ORACLE_PL } from './oracle.pl';
+import { SWAY_PL } from './sway.pl';
 import { WAR_PL } from './war.pl';
 import { DILEMMAS_PL, WORLD_NOTES_PL } from './dilemmas.pl';
 import { Dict } from './i18n.types';
 
 export const PL: Dict = {
   ...WAR_PL,
+  ...SWAY_PL,
+  ...ORACLE_PL,
   htmlLang: 'pl',
   docTitle: 'KMD · Polis',
   langName: 'Polski',
@@ -33,15 +37,23 @@ export const PL: Dict = {
     },
     {
       term: 'Igrzyska olimpijskie',
-      desc: 'Co cztery lata (licząc od pierwszej olimpiady w 776 p.n.e.) w Olimpii odbywają się igrzyska z konkurencjami swojej epoki: dwanaście w 600 p.n.e., później osiemnaście i więcej (biegi, zapasy, pięściarstwo, pankration, pięciobój, wyścigi rydwanów, bieg w zbroi, heroldowie i trębacze). Święty rozejm trwa od dwóch miesięcy przed do miesiąca po igrzyskach: nikt nie prowadzi wojny, armie wracają do miast. Ty decydujesz, jaką część rocznego dochodu przeznaczyć na reprezentację; najlepiej radzą sobie duże, bogate i hojne miasta (wojownicze w sportach walki, kulturalne w biegach i muzyce, bogate w wyścigach rydwanów). Każde startujące miasto zyskuje projekcję siły, a każdy wieniec — sławę i życzliwość innych; triumf (dwie piąte wieńców, co najmniej pięć) daje +1 kultury.'
+      desc: 'Co cztery lata (licząc od pierwszej olimpiady w 776 p.n.e.) w Olimpii odbywają się igrzyska z konkurencjami swojej epoki: dwanaście w 600 p.n.e., później osiemnaście i więcej (biegi, zapasy, pięściarstwo, pankration, pięciobój, wyścigi rydwanów, bieg w zbroi, heroldowie i trębacze). Święty rozejm trwa od dwóch miesięcy przed do miesiąca po igrzyskach: nikt nie prowadzi wojny, armie wracają do miast. Ty decydujesz, jaką część rocznego dochodu przeznaczyć na reprezentację; najlepiej radzą sobie duże, bogate i hojne miasta (wojownicze w sportach walki, kulturalne w biegach i muzyce, bogate w wyścigach rydwanów). Każde startujące miasto zyskuje projekcję siły, a każdy wieniec — projekcję siły i lepsze relacje z innymi; triumf (dwie piąte wieńców, co najmniej pięć) daje +1 kultury.'
     },
     {
       term: 'Ludy zza granicy',
-      desc: 'Ilirowie na północnym zachodzie, Pajonowie nad Aksjosem i Trakowie między Aksjosem a Strymonem żyją poza grecką granicą i nie da się ich podbić. Co kilka lat jeden z nich wysyła bandę przeciw bogatemu, słabo strzeżonemu miastu w zasięgu: bandy od 400 do 2000 wojowników porywają ludzi, rabują srebro i psują nastroje obywateli, po czym wracają do siebie. Miasto, na którego ziemię wkroczą, wybiera: zapłacić im sześć miesięcy dochodu, by łupili kogoś innego, albo walczyć z nimi w imię Hellady — od razu projekcja siły i życzliwość wszystkich greckich miast, więcej sławy, jeśli zostaną odparci — i wysłać obrońców. Banda, która straci połowę ludzi, zawraca. Rozejm olimpijski nic dla nich nie znaczy. Mury o połowę zmniejszają łupy.'
+      desc: 'Ilirowie na północnym zachodzie, Pajonowie nad Aksjosem i Trakowie między Aksjosem a Strymonem żyją poza grecką granicą i nie da się ich podbić. Na wschodzie Lidyjczycy z Sardes (Persowie, odkąd Cyrus zdobędzie je w 546 p.n.e.), Karowie i Myzowie za wybrzeżem Jonii; w Italii Mezapiowie i Enotrowie. Co kilka lat jeden z nich wysyła bandę przeciw bogatemu, słabo strzeżonemu miastu w zasięgu: bandy od 400 do 2000 wojowników porywają ludzi, rabują srebro i psują nastroje obywateli, po czym wracają do siebie. Miasto, na którego ziemię wkroczą, wybiera: zapłacić im sześć miesięcy dochodu, by łupili kogoś innego, albo walczyć z nimi w imię Hellady — od razu projekcja siły i relacje ze wszystkimi greckimi miastami, więcej projekcji siły, jeśli zostaną odparci — i wysłać obrońców. Banda, która straci połowę ludzi, zawraca. Rozejm olimpijski nic dla nich nie znaczy. Mury o połowę zmniejszają łupy.'
     },
     {
       term: 'Wybory i szeroki świat',
-      desc: 'Od czasu do czasu miasto musi wybrać: list z malowaną sceną, opowieścią i dwiema lub trzema odpowiedziami, z których każda mówi, ile kosztuje i co przyniesie. Niektóre przychodzą w swoim historycznym roku — prawa Solona, wojna święta, zaćmienie Talesa, złoto Krezusa, upadek Sardes, wojny perskie — inne w dowolnym czasie. Na początku gry są częste, później coraz rzadsze. Listu wymagającego decyzji nie można odłożyć: trzeba odpowiedzieć. Najwyżej dziesięć listów rocznie zatrzymuje grę, a po stu latach najwyżej jedno zdarzenie losowe na rok. Kronika odnotowuje w swoim roku, co dzieje się w szerokim świecie.'
+      desc: 'Od czasu do czasu miasto musi wybrać: list z malowaną sceną, opowieścią i dwiema lub trzema odpowiedziami, z których każda mówi, ile kosztuje i co przyniesie. Niektóre przychodzą w swoim historycznym roku — prawa Solona, wojna święta, zaćmienie Talesa, złoto Krezusa, upadek Sardes, wojny perskie — inne w dowolnym czasie. Pierwszy przychodzi w drugim lub trzecim roku, później jeden co trzy do pięciu lat. Listu wymagającego decyzji nie można odłożyć: trzeba odpowiedzieć. Najwyżej dziesięć listów rocznie zatrzymuje grę, a po stu latach najwyżej jedno zdarzenie losowe na rok. Kronika odnotowuje w swoim roku, co dzieje się w szerokim świecie.'
+    },
+    {
+      term: 'Miasta neutralne i strefy wpływów',
+      desc: 'Osiem miast neutralnych — Egina, Sifnos, Thera, Keos, Melos, Delos, Lipara i Tenedos — trzyma swoje wyspy i nie da się ich zdobyć. Każde ocenia greckie miasta wokół: strach przed potężnym wojskiem w pobliżu (hoplici, najemnicy, galery) i fascynację miastem słynącym z kultury i projekcji siły, która niesie się dalej przez morze. Miasto o największym wpływie zostaje patronem: ze strachu miasto neutralne płaci mu haracz, ćwierć swojego dochodu; z fascynacji przysyła dary, projekcję siły i swoje statki kupieckie. Zobacz tryb mapy Strefy wpływów, znaczki przy miastach neutralnych i grupę Miasta neutralne w panelu sytuacji.'
+    },
+    {
+      term: 'Wyrocznia w Delfach',
+      desc: 'Raz w roku (zakładka Polis) miasto może wysłać posłów do Delf z pytaniem — wojna, plony, morze, kolonie albo święta — i ofiarą: jeden, trzy lub sześć miesięcy dochodu. Pytia losuje: błogosławieństwo (pięciokrotność ofiary i projekcja siły), pomyślną odpowiedź (1,7 raza), zagadkę (zwrot połowy) albo złą wróżbę (nic, a lud się niepokoi). Co bóg da, trafia do funduszu z pytania. Hojniejsze ofiary i skarbce wzniesione w Delfach przechylają losy na korzyść miasta.'
     },
     {
       term: 'Wielkie dzieła i neutralne porty',
@@ -53,7 +65,7 @@ export const PL: Dict = {
     },
     {
       term: 'Hegemonia',
-      desc: 'Co roku trzy najlepsze miasta w srebrze (średni dochód z 10 lat, łącznie z daniną), ludziach (bieżąca ludność; wasale liczą się osobno) i orężu (ostatnie 25 lat: wygrana bitwa 1, zdobyta stolica 5, wygrana wojna 3) dostają 3, 2 i 1 punkt. Najwięcej punktów (na 9) czyni Hegemonem Hellady. Każdy punkt daje +0,1 projekcji siły rocznie; Hegemon zarabia o 5% więcej na handlu morskim i przyciąga więcej statków. Miasto, które przez dziesięć lat z rzędu ma 7 lub więcej punktów, jednoczy Helladę przeciw sobie: życzliwość wszystkich maleje o 2 rocznie, a rywale chętniej zawierają sojusze i atakują — dopóki jego wynik nie spadnie poniżej 6. Zobacz zakładkę Hegemonia, wieniec laurowy na górnym pasku i tryb mapy hegemonii.'
+      desc: 'Co roku trzy najlepsze miasta w srebrze (średni dochód z 10 lat, łącznie z daniną), ludziach (bieżąca ludność; wasale liczą się osobno) i orężu (ostatnie 25 lat: wygrana bitwa 1, zdobyta stolica 5, wygrana wojna 3) dostają 3, 2 i 1 punkt. Najwięcej punktów (na 9) czyni Hegemonem Hellady. Każdy punkt daje +0,1 projekcji siły rocznie; Hegemon zarabia o 5% więcej na handlu morskim i przyciąga więcej statków. Miasto, które przez dziesięć lat z rzędu ma 7 lub więcej punktów, jednoczy Helladę przeciw sobie: relacje ze wszystkimi maleją o 2 rocznie, a rywale chętniej zawierają sojusze i atakują — dopóki jego wynik nie spadnie poniżej 6. Zobacz zakładkę Hegemonia, wieniec laurowy na górnym pasku i tryb mapy hegemonii.'
     },
     {
       term: 'Polis',
@@ -109,11 +121,11 @@ export const PL: Dict = {
     },
     {
       term: 'Wojna',
-      desc: 'Po mapie nie maszerują armie: wojna to front, a przesuwa się tylko granica. Front między walczącymi miastami jest zaznaczony ciemnoczerwoną linią. Co miesiąc w sezonie kampanii (od kwietnia do października; zimy są spokojne) wojna może przynieść zdarzenie: bitwę falang (zwycięzca zabiera pas ziemi i sławę), spustoszenie pól, gdy obrońcy siedzą za murami, zdobycie fortu granicznego, zdradę, potyczkę, chorobę w obozie, przybycie sojuszników, napad od morza albo desant na wybrzeże, gdy dzieli ich morze. Szanse każdej strony zależą od hoplitów i najemników, militaryzmu i stratega (1–3 gwiazdki), odległości walk od domu — i odrobiny szczęścia. Na początku wojny wybierz postawę (pełna ofensywa, ofensywa, równowaga, obrona, za murami) i zmieniaj ją najwyżej raz w miesiącu. W czasie rozejmu olimpijskiego wszystkie fronty są zamrożone. Po czterech latach wojna co miesiąc obciąża obywateli. Żadne miasto nie prowadzi więcej niż trzech wojen naraz.'
+      desc: 'Po mapie nie maszerują armie: wojna to front, a przesuwa się tylko granica. Front między walczącymi miastami jest zaznaczony ciemnoczerwoną linią. Co miesiąc w sezonie kampanii (od kwietnia do października; zimy są spokojne) wojna może przynieść zdarzenie: bitwę falang (zwycięzca zabiera pas ziemi i projekcję siły), spustoszenie pól, gdy obrońcy siedzą za murami, zdobycie fortu granicznego, zdradę, potyczkę, chorobę w obozie, przybycie sojuszników, napad od morza albo desant na wybrzeże, gdy dzieli ich morze. Szanse każdej strony zależą od hoplitów i najemników, militaryzmu i stratega (1–3 gwiazdki), odległości walk od domu — i odrobiny szczęścia. Na początku wojny wybierz postawę (pełna ofensywa, ofensywa, równowaga, obrona, za murami) i zmieniaj ją najwyżej raz w miesiącu. W czasie rozejmu olimpijskiego wszystkie fronty są zamrożone. Po czterech latach wojna co miesiąc obciąża obywateli. Żadne miasto nie prowadzi więcej niż trzech wojen naraz.'
     },
     {
       term: 'Pokój',
-      desc: 'Pokój zawiera się przy stole, jak w Civilization: połóż warunki dla każdej ze stron — złoto (3, 6 lub 12 miesięcy dochodu dającego), pas ziemi, przymusowy sojusz, państwo klienckie (dający służy i płaci trybut) albo publiczne ośmieszenie (prestiż przechodzi z jednego na drugiego) — a wskaźnik pokaże, czy wróg przyjmie; „Czego chcą?” pokazuje ich warunki. Strona z przewagą w bilansie wojny żąda więcej; długa wojna łagodzi obie. Liczą się też nastroje: niezadowolony lud osłabia miasto przy stole, a miasto ogarnięte niepokojami samo szuka pokoju. Wrogowie przysyłają posłów z własnymi warunkami. Gdy ktoś wypowie ci wojnę, możesz od razu prosić o pokój za roczny dochód. Traktat pokojowy obowiązuje pięć lat.'
+      desc: 'Pokój zawiera się przy stole, jak w Civilization: połóż warunki dla każdej ze stron — złoto (3, 6 lub 12 miesięcy dochodu dającego), pas ziemi, przymusowy sojusz, państwo klienckie (dający służy i płaci trybut) albo publiczne ośmieszenie (projekcja siły przechodzi z jednego na drugiego) — a wskaźnik pokaże, czy wróg przyjmie; „Czego chcą?” pokazuje ich warunki. Strona z przewagą w bilansie wojny żąda więcej; długa wojna łagodzi obie. Liczą się też nastroje: niezadowolony lud osłabia miasto przy stole, a miasto ogarnięte niepokojami samo szuka pokoju. Wrogowie przysyłają posłów z własnymi warunkami. Gdy ktoś wypowie ci wojnę, możesz od razu prosić o pokój za roczny dochód. Traktat pokojowy obowiązuje pięć lat.'
     },
     {
       term: 'Najemnicy i flota wojenna',
@@ -133,7 +145,7 @@ export const PL: Dict = {
     },
     {
       term: 'Bitwa',
-      desc: 'Bitwa w polu to decydujące zdarzenie wojny: zwykle wygrywa silniejszy — hoplici i najemnicy, militaryzm, strateg, bliskość domu, postawa — ale nie zawsze. Przegrany zostawia poległych na polu, traci pas ziemi wokół pobojowiska i cofa się w bilansie wojny; zwycięzca stawia tropajon i zyskuje sławę.'
+      desc: 'Bitwa w polu to decydujące zdarzenie wojny: zwykle wygrywa silniejszy — hoplici i najemnicy, militaryzm, strateg, bliskość domu, postawa — ale nie zawsze. Przegrany zostawia poległych na polu, traci pas ziemi wokół pobojowiska i cofa się w bilansie wojny; zwycięzca stawia tropajon i zyskuje projekcję siły.'
     },
     {
       term: 'Zwycięstwo',
@@ -155,7 +167,7 @@ export const PL: Dict = {
   flagOf: 'Chorągiew polis {name}',
   startEyebrow: 'Hellada · 600 p.n.e.',
   startIntro:
-    'Wieki ciemne minęły. Wśród gór i wysp Grecji stoi osiemnaście miast-państw, a dzika ziemia między nimi czeka na tego, kto ją zajmie.',
+    'Wieki ciemne minęły. Od Sycylii po Jonię, wśród gór i wysp greckiego świata, stoją trzydzieści dwa miasta-państwa, a dzika ziemia między nimi czeka na tego, kto ją zajmie.',
   startHint: 'Wybierz miasto-państwo z listy albo na mapie',
   startLead: 'Prowadź: {name}',
   statArea: 'Ziemia',
@@ -341,9 +353,10 @@ export const PL: Dict = {
   versionLabel: 'Wersja',
   armyInfo: '{kind} — {name} · {n} ludzi · generał {stars} (+{bonus}% w bitwie)',
   armyKinds: { main: 'Armia główna', raider: 'Oddział łupieżczy', mercenary: 'Najemnicy', raid: 'Banda', defend: 'Obrońcy' },
-  tribeNames: { illyrians: 'Ilirowie', paeonians: 'Pajonowie', thracians: 'Trakowie' },
+  tribeNames: { illyrians: 'Ilirowie', paeonians: 'Pajonowie', thracians: 'Trakowie',
+    lydians: 'Lidyjczycy', persians: 'Persowie', carians: 'Karowie', mysians: 'Myzowie', messapians: 'Mezapiowie', oenotrians: 'Enotrowie'
+  },
   neutralPortNames: {
-    delos: 'Delos',
     syros: 'Syros',
     seriphos: 'Serifos',
     ios: 'Ios',
@@ -373,11 +386,11 @@ export const PL: Dict = {
   fx: {
     silver: '{v} dr',
     colonize: '{v} dr na kolonizację',
-    prestige: '{v} prestiżu',
+    prestige: '{v} projekcji siły',
     mood: '{v} zadowolenia',
-    culture: '{v} kultury',
-    militarism: '{v} militaryzmu',
-    regard: '{v} życzliwości każdego greckiego miasta',
+    culture: 'Kultura {from} → {to}',
+    militarism: 'Militaryzm {from} → {to}',
+    regard: '{v} relacji z każdym greckim miastem',
     hoplitesUp: '{v}% ludności chwyta za broń',
     hoplitesDown: '{v}% garnizonu odchodzi',
     people: '{v}% ludności',
@@ -385,7 +398,9 @@ export const PL: Dict = {
     none: 'Nic się nie zmienia',
     cantAfford: 'Nie stać nas na to'
   },
-  traderNames: { aegina: 'Egina', siphnos: 'Sifnos', thera: 'Thera', keos: 'Keos' },
+  traderNames: { aegina: 'Egina', siphnos: 'Sifnos', thera: 'Thera', keos: 'Keos',
+    melos: 'Melos', delos: 'Delos', lipara: 'Lipara', tenedos: 'Tenedos'
+  },
   traderNeutral: 'Neutralne miasto kupieckie: trzyma swoją wyspę, z nikim nie wojuje i żyje z handlu morskiego. Jego statki zawijają do każdego portu — miasto, które przyjmie taki statek, zatrzymuje połowę tego, co przywiózł.',
   hoverTrader: 'neutralne miasto kupieckie',
   buyMercenaries: 'Najmij {n} najemników teraz · {d} dr',
@@ -402,7 +417,7 @@ export const PL: Dict = {
   greatWorks: {
     delphi: {
       name: 'Skarbiec w Delfach',
-      desc: 'Marmurowy skarbiec obok świątyni Apollina na dary miasta: +1,5 projekcji siły, życzliwość wszystkich miast +5, kultura +0,2. Można budować wielokrotnie (za każdym razem drożej).'
+      desc: 'Marmurowy skarbiec obok świątyni Apollina na dary miasta: +1,5 projekcji siły, relacje ze wszystkimi miastami +5, kultura +0,2. Można budować wielokrotnie (za każdym razem drożej).'
     },
     temple: { name: 'Wielka świątynia', desc: 'Dorycka świątynia z kamienną kolumnadą: kultura +1, projekcja siły +1, zadowolenie +15.' },
     walls: { name: 'Mury miejskie', desc: 'Pierścień murów z ciosów i wież: garnizon dłużej wytrzymuje oblężenie, a najeźdźcy znajdują niewiele do zabrania.' },
@@ -487,7 +502,7 @@ export const PL: Dict = {
   olyYouWon: 'Nasi zawodnicy zdobyli wieńce oliwne: {n} — {place} miejsce na {of} miast.',
   olyYouNone: 'Nasi zawodnicy wrócili bez wieńca — {place} miejsce na {of} miast.',
   olyYouStayed: 'Tym razem nie wysłaliśmy reprezentacji.',
-  olyReward: 'Projekcja siły +{p}; życzliwość wszystkich miast +{r}.',
+  olyReward: 'Projekcja siły +{p}; relacje ze wszystkimi miastami +{r}.',
   olyTriumph: 'Triumf! Cała Hellada opiewa naszych zawodników: kultura +1.',
   olyTriumphOther: 'Triumf polis {name}: jej kultura rośnie o jeden.',
   olyTable: 'Wieńce według miast',
@@ -629,8 +644,8 @@ export const PL: Dict = {
   decToggle: 'Pokazuj raport co dziesięć lat',
   alertEmbassy: 'Posłowie z polis {name} czekają na odpowiedź — odjadą za {t}. Kliknij, by ich przyjąć.',
   incTreasuryNote: 'Skarbiec to pięć funduszy razem; każdy fundusz wydaje się sam na to, na co odkłada. W rankingu hegemonii „Pierwsi w skarbie” liczy dochód, nie oszczędności.',
-  hegCoalition: 'Hellada lęka się polis {name}: inne miasta jednoczą się przeciw niej — co roku maleje ich życzliwość, chętniej zawierają sojusze i wypowiadają wojny.',
-  hegCoalitionYou: 'Hellada lęka się waszej potęgi: inne miasta jednoczą się przeciw wam. Ich życzliwość maleje co roku, dopóki wasz wynik nie spadnie poniżej 6.',
+  hegCoalition: 'Hellada lęka się polis {name}: inne miasta jednoczą się przeciw niej — co roku pogarszają się ich relacje, chętniej zawierają sojusze i wypowiadają wojny.',
+  hegCoalitionYou: 'Hellada lęka się waszej potęgi: inne miasta jednoczą się przeciw wam. Ich relacje z wami pogarszają się co roku, dopóki wasz wynik nie spadnie poniżej 6.',
   alertCoalition: 'Cała Hellada jednoczy się przeciw nam: spodziewajcie się wrogów i mniejszej liczby przyjaciół, dopóki dominujemy.',
   hegTrendUp: 'wzrost od dziesięciu lat',
   hegTrendDown: 'spadek od dziesięciu lat',
@@ -794,6 +809,76 @@ export const PL: Dict = {
       sender: 'Kleobulos, tyran Lindos',
       taunt: 'Kleobulos uczy: miara jest najlepsza. Wasze wojsko jest poniżej wszelkiej miary.',
       challenge: 'Kleobulos uczy: miara jest najlepsza. Zmierzyliśmy was i uznaliśmy za godnego wroga.'
+    },
+    megara: {
+      sender: 'Teagenes, tyran Megary',
+      taunt: 'Wyrżnęliśmy bydło bogaczy; waszego też nie oszczędzimy.',
+      challenge: 'Mała Megara wysłała w świat więcej miast, niż wy macie wsi. Stańcie do walki.'
+    },
+    sikyon: {
+      sender: 'Klejstenes, tyran Sykionu',
+      taunt: 'Nazwałem fyle Dorów od świń i osłów. Dla was też znajdę imię.',
+      challenge: 'Niech bogowie, którzy patrzą na igrzyska, popatrzą i na to.'
+    },
+    eretria: {
+      sender: 'Hippeis z Eretrii',
+      taunt: 'Nasi jeźdźcy jadą, dokąd chcą. Wasze pola są następne.',
+      challenge: 'Eubea już walczyła o swoje równiny. Zawalczy znowu.'
+    },
+    tegea: {
+      sender: 'Rada Tegei',
+      taunt: 'Nawet Sparta przyszła tu z kajdanami dla nas — i sama je nosiła.',
+      challenge: 'Arkadyjczycy walczą włócznią, nie listami. Chodźcie.'
+    },
+    miletus: {
+      sender: 'Trazybul, tyran Miletu',
+      taunt: 'Jak Periander ścinam najwyższe kłosy. Wasze sterczą.',
+      challenge: 'Milet odpierał króla Lidii przez dwanaście lat. Was się nie ulęknie.'
+    },
+    ephesus: {
+      sender: 'Basilidzi z Efezu',
+      taunt: 'Artemida jest z nami, a z nią lidyjskie złoto.',
+      challenge: 'Niech bogini rozsądzi między nami.'
+    },
+    phocaea: {
+      sender: 'Nawarchowie Fokai',
+      taunt: 'Nasze pentekontory płynęły do Tartessos. Do waszego portu to krótka droga.',
+      challenge: 'Żeglarze rozstrzygają spory na morzu. Wypłyńcie.'
+    },
+    halicarnassus: {
+      sender: 'Rada Halikarnasu',
+      taunt: 'Karowie w naszych górach są groźniejsi od was. Nie boimy się.',
+      challenge: 'Dorowie odpowiadają na wyzwanie osobiście.'
+    },
+    kyzikos: {
+      sender: 'Archonci Kyzikos',
+      taunt: 'Co wiosnę ławice tuńczyków płyną pod naszymi murami. Wasza armia też odpłynie.',
+      challenge: 'Córka Miletu dorosła. Zobaczmy, kto silniejszy.'
+    },
+    taras: {
+      sender: 'Partheniowie z Tarasu',
+      taunt: 'Jesteśmy Spartanami urodzonymi po złej stronie morza. Przekonacie się, co to znaczy.',
+      challenge: 'Taras nie prosi o łaski. Stańcie w polu.'
+    },
+    sybaris: {
+      sender: 'Smindyrides z Sybaris',
+      taunt: 'Nasze konie tańczą przy aulosie; za nasze srebro kupilibyśmy wasze miasto dwa razy.',
+      challenge: 'Nawet najmiększe miasto ma twardych mężów. Przekonajcie się.'
+    },
+    kroton: {
+      sender: 'Tysiąc z Krotonu',
+      taunt: 'Sami nasi zapaśnicy pokonaliby waszą armię.',
+      challenge: 'Atleci Krotonu wygrywali w Olimpii. Teraz wygrają na waszych polach.'
+    },
+    rhegion: {
+      sender: 'Rada Rhegionu',
+      taunt: 'Trzymamy cieśninę. Nic nie przepłynie bez naszej zgody — a już na pewno nie wy.',
+      challenge: 'Chalkidyjczycy nie czekają, aż ktoś ich zaatakuje.'
+    },
+    syracuse: {
+      sender: 'Gamoroi z Syrakuz',
+      taunt: 'Mamy najlepszy port na Zachodzie. Wasze okręty zgniją w naszym.',
+      challenge: 'Córka Koryntu nikogo się nie boi. Niech będzie wojna.'
     }
   },
 
@@ -831,7 +916,21 @@ export const PL: Dict = {
     samos: 'Samos',
     naxos: 'Naksos',
     knossos: 'Knossos',
-    lindos: 'Lindos'
+    lindos: 'Lindos',
+    megara: 'Megara',
+    sikyon: 'Sykion',
+    eretria: 'Eretria',
+    tegea: 'Tegea',
+    miletus: 'Milet',
+    ephesus: 'Efez',
+    phocaea: 'Fokaja',
+    halicarnassus: 'Halikarnas',
+    kyzikos: 'Kyzikos',
+    taras: 'Taras',
+    sybaris: 'Sybaris',
+    kroton: 'Kroton',
+    rhegion: 'Rhegion',
+    syracuse: 'Syrakuzy'
   },
 
   polisInfo: {
@@ -852,19 +951,31 @@ export const PL: Dict = {
     samos: { region: 'Samos', blurb: 'Potęga morska z wielką świątynią Hery i śmiałymi inżynierami.' },
     naxos: { region: 'Cyklady', blurb: 'Największa z Cyklad, rzeźbiąca marmurowe lwy dla bogów Delos.' },
     knossos: { region: 'Kreta', blurb: 'Dziedziczka minojskich pałaców pośród stu miast Krety.' },
-    lindos: { region: 'Rodos', blurb: 'Kupieckie miasto Rodos u stóp akropolu Ateny Lindyjskiej.' }
+    lindos: { region: 'Rodos', blurb: 'Kupieckie miasto Rodos u stóp akropolu Ateny Lindyjskiej.' },
+    megara: { region: 'Megaryda', blurb: 'Małe miasto między Atenami a Koryntem, które posłało synów, by założyli Bizancjum i Chalcedon.' },
+    sikyon: { region: 'Sykionia', blurb: 'Bogata równina nad Zatoką Koryncką, ojczyzna malarzy i tyrana Klejstenesa.' },
+    eretria: { region: 'Eubea', blurb: 'Jeźdźcy i żeglarze, odwieczni rywale Chalkis w wojnie o równinę Lelantu.' },
+    tegea: { region: 'Arkadia', blurb: 'Górale z Arkadii, którzy nie kłaniają się Sparcie — jeszcze nie.' },
+    miletus: { region: 'Jonia', blurb: 'Pierwsze miasto Jonii: wełna, dziewięćdziesiąt kolonii nad Morzem Czarnym i Tales wpatrzony w niebo.' },
+    ephesus: { region: 'Jonia', blurb: 'Strażnik wielkiej świątyni Artemidy u ujścia Kaystru, w cieniu Lidii.' },
+    phocaea: { region: 'Eolia', blurb: 'Najśmielsi żeglarze wśród Greków, których pentekontory docierają aż do Hiszpanii.' },
+    halicarnassus: { region: 'Karia', blurb: 'Doryjski port wśród Karów, gdzie Grecy mieszają się z miejscowymi.' },
+    kyzikos: { region: 'Propontyda', blurb: 'Kolonia Miletu na wyspie w Propontydzie, bogata z tuńczyków i handlu czarnomorskiego.' },
+    taras: { region: 'Japygia', blurb: 'Założony przez Partheniów ze Sparty nad najlepszym portem południowej Italii.' },
+    sybaris: { region: 'Italia', blurb: 'Przysłowiowy zbytek: najbogatsze miasto greckiego Zachodu, między dwiema rzekami.' },
+    kroton: { region: 'Italia', blurb: 'Zdrowy, twardy i wysportowany: jego biegacze i zapaśnicy wygrywają w Olimpii.' },
+    rhegion: { region: 'Italia', blurb: 'Chalkidyjskie miasto strzegące cieśniny na Sycylię.' },
+    syracuse: { region: 'Sycylia', blurb: 'Kolonia Koryntu na Ortygii, z dwoma portami i najlepszą ziemią wschodniej Sycylii.' }
   },
 
-  siteNames: {
-    tegea: 'Tegea', mantineia: 'Mantineja', sikyon: 'Sykion', epidauros: 'Epidauros', troizen: 'Trojzena',
-    megara: 'Megara', plataea: 'Plateje', orchomenos: 'Orchomenos', delphi: 'Delfy', amphissa: 'Amfissa',
+  siteNames: { mantineia: 'Mantineja', epidauros: 'Epidauros', troizen: 'Trojzena', plataea: 'Plateje', orchomenos: 'Orchomenos', delphi: 'Delfy', amphissa: 'Amfissa',
     naupaktos: 'Naupaktos', kalydon: 'Kalydon', pylos: 'Pylos', methone: 'Metone', gytheion: 'Gytejon',
     pharsalos: 'Farsalos', pherai: 'Fery', dion: 'Dion', olynthos: 'Olint', mende: 'Mende',
     stageira: 'Stagira', abdera: 'Abdera', maroneia: 'Maronea', amphipolis: 'Amfipolis', kassope: 'Kassope',
     dodona: 'Dodona', thermon: 'Termos', leukas: 'Leukas', ithaca: 'Itaka', zakynthos: 'Zakintos',
-    kythera: 'Kytera', melos: 'Melos', paros: 'Paros', andros: 'Andros', tenos: 'Tenos', karystos: 'Karystos',
-    eretria: 'Eretria', histiaia: 'Histiaja', lamia: 'Lamia', hermione: 'Hermiona', phleious: 'Fliunt',
+    kythera: 'Kytera', paros: 'Paros', andros: 'Andros', tenos: 'Tenos', karystos: 'Karystos', histiaia: 'Histiaja', lamia: 'Lamia', hermione: 'Hermiona', phleious: 'Fliunt',
     gortyn: 'Gortyna', kydonia: 'Kydonia', lyttos: 'Lyttos', ialysos: 'Ialysos', kos: 'Kos', methymna: 'Metymna',
-    myrina: 'Myrina', samothrace: 'Samotraka', skiathos: 'Skiatos'
+    myrina: 'Myrina', samothrace: 'Samotraka', skiathos: 'Skiatos',
+    erythrai: 'Erytraje', teos: 'Teos', klazomenai: 'Klazomenaj', kolophon: 'Kolofon', priene: 'Priene', kyme: 'Kyme', knidos: 'Knidos', lampsakos: 'Lampsakos', abydos: 'Abydos', sestos: 'Sestos', metapontion: 'Metapontion', siris: 'Siris', lokroi: 'Lokroj', kaulonia: 'Kaulonia', zankle: 'Zankle', katane: 'Katane', leontinoi: 'Leontinoj', megarahyblaea: 'Megara Hyblaja'
   }
 };

@@ -19,17 +19,24 @@
   }
 
   &__pip {
+    position: relative;
     width: 6px;
     height: 6px;
     border-radius: 2px;
     background: color("line-strong");
+    overflow: hidden;
   }
 
-  &--militarism &__pip--on {
+  &__fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+  }
+
+  &--militarism &__fill {
     background: color("danger");
   }
 
-  &--culture &__pip--on {
+  &--culture &__fill {
     background: color("purple-500");
   }
 }

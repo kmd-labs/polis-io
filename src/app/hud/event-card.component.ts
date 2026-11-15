@@ -4,6 +4,7 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { fmt1, formatNumber, formatYear, interpolate } from '../core/i18n/format';
 import { DILEMMA_BY_ID, DilemmaChoice, DilemmaId } from '../game/data/dilemmas';
 import { eventSceneSvg } from './event-scene';
+import { GameService } from '../game/game.service';
 
 /**
  * A choice put before the player, laid out like a grand-strategy event: a painted scene, the story,
@@ -44,6 +45,7 @@ import { eventSceneSvg } from './event-scene';
 })
 export class EventCardComponent {
   readonly i18n = inject(I18nService);
+  private readonly game = inject(GameService);
   private readonly sanitizer = inject(DomSanitizer);
 
   readonly id = input.required<DilemmaId>();
@@ -72,8 +74,15 @@ export class EventCardComponent {
       if (c.colonize) fx.push({ text: interpolate(t.fx.colonize, { v: formatNumber(c.colonize, lang) }), good: true });
       add(e.prestige, t.fx.prestige, true);
       add(e.mood, t.fx.mood);
-      add(e.culture, t.fx.culture, true);
-      add(e.militarism, t.fx.militarism, true);
+      // Militarism and culture are shown as pips (1–5): give the value before and after.
+      const me = this.game.me();
+      const trait = (v: number | undefined, tpl: string, now: number) => {
+        if (!v) return;
+        const to = Math.max(0, Math.min(5, now + v));
+        fx.push({ text: interpolate(tpl, { from: fmt1(now, lang), to: fmt1(to, lang) }), good: v > 0 });
+      };
+      trait(e.culture, t.fx.culture, me?.culture ?? 0);
+      trait(e.militarism, t.fx.militarism, me?.militarism ?? 0);
       add(e.regard, t.fx.regard);
       if (e.hoplites) {
         fx.push({

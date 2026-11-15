@@ -28,7 +28,7 @@ const TILE = (z, x, y) => `https://s3.amazonaws.com/elevation-tiles-prod/terrari
 const TILE_ZOOM = 8;
 
 // Map window (degrees). Cells are square on the ground at the window's mid latitude.
-const LON0 = 19.2;
+const LON0 = 14.8;
 const LON1 = 28.4;
 const LAT0 = 34.75;
 const LAT1 = 41.85;
@@ -60,7 +60,7 @@ async function cached(url, file) {
 
 console.log('Rasterizing coastlines & borders…');
 const geo = JSON.parse((await cached(COUNTRIES, 'countries.geojson')).toString('utf8'));
-const terrain = new Uint8Array(cols * rows); // 0 sea, 1 Greek, 2 foreign
+const terrain = new Uint8Array(cols * rows); // 0 sea, 1 Greek, 2 foreign (3 Italy, 4 Anatolia until classified)
 
 function ringsOf(feature) {
   const g = feature.geometry;
@@ -109,10 +109,48 @@ for (const f of geo.features) {
   const iso = f.properties.ADM0_A3 ?? f.properties.ISO_A3;
   const rings = ringsOf(f);
   if (!rings.length) continue;
-  fill(rings, iso === 'GRC' ? 1 : 2);
+  fill(rings, iso === 'GRC' ? 1 : iso === 'ITA' ? 3 : iso === 'TUR' ? 4 : 2);
   foundGreece ||= iso === 'GRC';
 }
 if (!foundGreece) throw new Error('Greece not found in source data');
+
+// The coasts the Greeks settled outside modern Greece are playable too: Magna Graecia (southern Italy
+// below Taras, and eastern Sicily) and the Aegean shore of Anatolia — within a day or two's walk of
+// the sea. The interior stays foreign: the land of Messapians, Lucanians, Lydians and Carians.
+{
+  const dist = new Float32Array(cols * rows).fill(Infinity);
+  const queue = new Int32Array(cols * rows);
+  let head = 0;
+  let tail = 0;
+  for (let i = 0; i < cols * rows; i++) {
+    if (terrain[i] === 0) continue;
+    const c = i % cols;
+    const r = (i - c) / cols;
+    const sea =
+      (c > 0 && terrain[i - 1] === 0) || (c < cols - 1 && terrain[i + 1] === 0) || (r > 0 && terrain[i - cols] === 0) || (r < rows - 1 && terrain[i + cols] === 0);
+    if (sea) {
+      dist[i] = 0;
+      queue[tail++] = i;
+    }
+  }
+  while (head < tail) {
+    const i = queue[head++];
+    const c = i % cols;
+    for (const n of [c > 0 ? i - 1 : -1, c < cols - 1 ? i + 1 : -1, i - cols, i + cols]) {
+      if (n < 0 || n >= cols * rows || terrain[n] === 0 || dist[n] !== Infinity) continue;
+      dist[n] = dist[i] + CELL_KM;
+      queue[tail++] = n;
+    }
+  }
+  for (let i = 0; i < cols * rows; i++) {
+    const t = terrain[i];
+    if (t !== 3 && t !== 4) continue;
+    const lon = LON0 + ((i % cols) + 0.5) * CELL_LON;
+    const lat = LAT1 - (Math.floor(i / cols) + 0.5) * CELL_LAT;
+    const greek = t === 3 ? lat < 40.55 && dist[i] <= 32 : lon < 28.3 && dist[i] <= 40;
+    terrain[i] = greek ? 1 : 2;
+  }
+}
 
 // ─── 2. Elevation ────────────────────────────────────────────────────────────
 

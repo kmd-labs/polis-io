@@ -9,6 +9,7 @@
     @case ('polis') {
       <app-polis-panel [embedded]="true"></app-polis-panel>
       <app-polis-screen class="drawer__trees"></app-polis-screen>
+      <app-oracle-entry></app-oracle-entry>
       <app-great-works></app-great-works>
     }
     @case ('diplomacy') {
@@ -97,7 +98,10 @@
       @if (game.target()) {
         <app-diplomacy-panel></app-diplomacy-panel>
       } @else if (mobile && hud.sheet(); as sheet) {
-        <section class="sheet glass-panel--heavy" data-occlude="bottom" [attr.aria-label]="sheetTitle()">
+        <section class="sheet glass-panel--heavy" [class.sheet--tall]="sheetTall()" data-occlude="bottom" [attr.aria-label]="sheetTitle()">
+          <button type="button" class="sheet__handle" [attr.aria-label]="sheetTall() ? t.sheetLower : t.sheetRaise" [attr.aria-expanded]="sheetTall()" (click)="sheetTall.set(!sheetTall())">
+            <span></span>
+          </button>
           <header class="sheet__head">
             <h2 class="drawer__title">{{ sheetTitle() }}</h2>
             <button type="button" class="sheet__close" [attr.aria-label]="t.close" (click)="hud.sheet.set(null)">
@@ -115,6 +119,39 @@
       }
     </div>
 
+    <div class="mapdock">
+    @if (legend(); as items) {
+      <ul class="legend glass-panel" [attr.aria-label]="currentMode().label">
+        @for (item of items; track item.label) {
+          <li class="legend__item"><span class="legend__swatch" [style.background]="item.swatch"></span>{{ item.label }}</li>
+        }
+      </ul>
+    }
+    @if (mobile) {
+      @if (modesOpen()) {
+        <div class="modes-menu glass-panel" role="radiogroup" [attr.aria-label]="t.mapModes">
+          @for (m of modes(); track m.id) {
+            <button
+              type="button"
+              role="radio"
+              class="modes-menu__btn"
+              [class.modes-menu__btn--on]="hud.mapMode() === m.id"
+              [attr.aria-checked]="hud.mapMode() === m.id"
+              (click)="setMode(m.id)">
+              <lucide-icon [img]="m.icon" [size]="18"></lucide-icon>
+              <span>{{ m.label }}</span>
+            </button>
+          }
+          <button type="button" class="modes-menu__btn" (click)="fit.emit(); modesOpen.set(false)">
+            <lucide-icon [img]="icons.Maximize" [size]="17"></lucide-icon>
+            <span>{{ t.fitMap }}</span>
+          </button>
+        </div>
+      }
+      <button type="button" class="modes-toggle glass-panel" [attr.aria-expanded]="modesOpen()" [attr.aria-label]="t.mapModes + ': ' + currentMode().label" (click)="modesOpen.set(!modesOpen())">
+        <lucide-icon [img]="currentMode().icon" [size]="20"></lucide-icon>
+      </button>
+    } @else {
     <div class="modes glass-panel" role="radiogroup" [attr.aria-label]="t.mapModes">
       @for (m of modes(); track m.id) {
         <button
@@ -135,6 +172,8 @@
         <lucide-icon [img]="icons.Maximize" [size]="15"></lucide-icon>
       </button>
     </div>
+    }
+    </div>
 
     @if (mobile) {
       <nav class="tabbar glass-panel" data-occlude="bottom" [attr.aria-label]="t.drawerLabel">
@@ -146,7 +185,7 @@
             [attr.aria-pressed]="hud.sheet() === tab.id"
             (click)="openSheet(tab.id)">
             <lucide-icon [img]="tab.icon" [size]="18"></lucide-icon>
-            <span>{{ tab.label }}</span>
+            <span>{{ tab.short }}</span>
           </button>
         }
         <button

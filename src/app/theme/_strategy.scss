@@ -110,3 +110,59 @@ $ink: palette("neutral-900");
     0 1px 2px rgba($ink, 0.3);
   color: palette("warning-100");
 }
+
+$crimson: palette("danger-700");
+$crimson-dark: palette("danger-900");
+
+/** A gilt laurel wreath (two sprays meeting at the bottom), for an active medallion. */
+@function laurel() {
+  @return url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cg fill='#{-enc($gold)}' stroke='#{-enc($bronze)}' stroke-width='0.4'%3E%3Cpath d='M24 45c-9-1-17-9-18-20' fill='none' stroke='#{-enc($gold)}' stroke-width='1.6'/%3E%3Cpath d='M24 45c9-1 17-9 18-20' fill='none' stroke='#{-enc($gold)}' stroke-width='1.6'/%3E%3Cellipse cx='7' cy='20' rx='2' ry='4' transform='rotate(-20 7 20)'/%3E%3Cellipse cx='9' cy='29' rx='2' ry='4' transform='rotate(-50 9 29)'/%3E%3Cellipse cx='14' cy='37' rx='2' ry='4' transform='rotate(-70 14 37)'/%3E%3Cellipse cx='41' cy='20' rx='2' ry='4' transform='rotate(20 41 20)'/%3E%3Cellipse cx='39' cy='29' rx='2' ry='4' transform='rotate(50 39 29)'/%3E%3Cellipse cx='34' cy='37' rx='2' ry='4' transform='rotate(70 34 37)'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/** A bronze coin-like medallion (the tab buttons). */
+@mixin medallion {
+  border: 1px solid $bronze;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, palette("warning-300") 0%, palette("warning-600") 45%, $bronze-mid 80%, $bronze 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba($gold-light, 0.55),
+    inset 0 -3px 6px rgba($ink, 0.35),
+    0 2px 4px rgba($ink, 0.35);
+  color: palette("warning-50");
+}
+
+/** The chosen medallion: struck brighter and crowned with a laurel wreath. */
+@mixin medallion-active {
+  background:
+    laurel() center / 100% 100% no-repeat,
+    radial-gradient(circle at 35% 30%, palette("warning-200") 0%, palette("warning-400") 45%, palette("warning-600") 85%, $bronze 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(palette("neutral-0"), 0.6),
+    0 0 0 2px $crimson,
+    0 0 10px rgba($gold, 0.8);
+  color: $bronze;
+}
+
+/** A title chiselled into a light stone plaque, a crimson ribbon behind it. */
+@mixin plaque {
+  position: relative;
+  display: block;
+  padding: 6px 12px 7px;
+  border: 1px solid rgba($bronze, 0.5);
+  border-radius: 1px;
+  background: linear-gradient(180deg, palette("neutral-50") 0%, palette("neutral-200") 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(palette("neutral-0"), 0.9),
+    inset 0 -1px 0 rgba($bronze, 0.25),
+    0 2px 0 $crimson,
+    0 3px 0 $crimson-dark;
+  font-family: var(--font-family-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: palette("neutral-800");
+  // Letters cut into the stone: a highlight below, a shadow above.
+  text-shadow:
+    0 1px 0 rgba(palette("neutral-0"), 0.9),
+    0 -1px 0 rgba($ink, 0.25);
+}

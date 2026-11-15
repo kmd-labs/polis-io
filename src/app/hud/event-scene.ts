@@ -149,6 +149,38 @@ function scene(kind: DilemmaScene): string {
     case 'plague':
       return hills(base) + temple(290, base, 110) + figure(100, base, 'up') + figure(150, base, 'down', true) +
         `<path d="M0 30q100 20 200 0t200 0" stroke="${FIGURE}" stroke-width="10" opacity="0.15" fill="none"/>`;
+    case 'coins': {
+      // A merchant's balance between stacks of stamped coins.
+      let s = `<path d="M200 ${base}v-86M150 ${base - 82}h100" stroke="${FIGURE}" stroke-width="3"/><path d="M186 ${base}h28" stroke="${FIGURE}" stroke-width="6"/>`;
+      s += `<path d="M150 ${base - 82}l-18 34h36zM250 ${base - 82}l-18 34h36z" fill="none" stroke="${FIGURE}" stroke-width="1.6"/>`;
+      s += `<path d="M130 ${base - 48}h40q-4 10-20 10t-20-10zM230 ${base - 48}h40q-4 10-20 10t-20-10z" fill="${FIGURE}"/>`;
+      for (let i = 0; i < 5; i++) s += `<ellipse cx="80" cy="${base - 6 - i * 7}" rx="16" ry="5" fill="${FIGURE}" stroke="${GROUND}" stroke-width="1"/>`;
+      for (let i = 0; i < 3; i++) s += `<ellipse cx="320" cy="${base - 6 - i * 7}" rx="16" ry="5" fill="${FIGURE}" stroke="${GROUND}" stroke-width="1"/>`;
+      return s + `<circle cx="346" cy="40" r="16" fill="${FIGURE}"/><circle cx="346" cy="40" r="11" fill="none" stroke="${GROUND}" stroke-width="1.5"/>`;
+    }
+    case 'strife':
+      // Two factions of armed retainers come to blows in the street.
+      return column(40, base, 80) + column(360, base, 80) + figure(110, base, 'out') + figure(150, base, 'up') +
+        figure(250, base, 'up', true) + figure(290, base, 'out', true) +
+        `<path d="M170 ${base - 70}l60 -20M230 ${base - 70}l-60 -20" stroke="${FIGURE}" stroke-width="3"/>`;
+    case 'altar':
+      // Suppliants with olive branches before a smoking altar.
+      return hills(base) + `<rect x="180" y="${base - 34}" width="40" height="34" fill="${FIGURE}"/><rect x="174" y="${base - 40}" width="52" height="7" fill="${FIGURE}"/>` +
+        `<path d="M190 ${base - 42}q-6 -14 6 -24q4 10 4 0q10 12 4 24z" fill="${FIGURE}"/>` +
+        `<path d="M200 ${base - 66}q-10 -18 4 -36" stroke="${FIGURE}" stroke-width="2" fill="none" opacity="0.5"/>` +
+        figure(110, base, 'out') + figure(140, base, 'out') + figure(290, base, 'up', true) +
+        `<path d="M86 ${base - 40}q-8 -10 0 -20M126 ${base - 40}q-8 -10 0 -20" stroke="${FIGURE}" stroke-width="2" fill="none"/>`;
+    case 'mine':
+      // A shaft into the silver hill; a miner with his pick and a basket of ore.
+      return `<path d="M0 ${base - 70}q90 -40 200 -20t200 0v${220 - base}h-400z" fill="${FIGURE}" opacity="0.25"/>` +
+        `<rect x="160" y="${base - 74}" width="22" height="74" fill="${FIGURE}"/><path d="M150 ${base - 74}h42" stroke="${FIGURE}" stroke-width="4"/>` +
+        figure(230, base, 'up') + `<path d="M236 ${base - 60}l18 -14l6 8" stroke="${FIGURE}" stroke-width="3" fill="none"/>` +
+        `<path d="M290 ${base}l6 -22h28l6 22z" fill="${FIGURE}"/>` + figure(110, base, 'down', true);
+    case 'assembly':
+      // The assembly: a speaker on the bema, citizens with hands raised to vote.
+      return `<rect x="170" y="${base - 26}" width="60" height="26" fill="${FIGURE}"/>` + figure(200, base - 26, 'out') +
+        figure(70, base, 'up') + figure(110, base, 'up') + figure(290, base, 'up', true) + figure(330, base, 'up', true) +
+        `<path d="M0 34h400" stroke="${FIGURE}" stroke-width="1" opacity="0.4"/>`;
   }
 }
 

@@ -4,15 +4,15 @@
 /** Grid metadata of src/assets/map/hellas.png (R = terrain class, G/B = elevation). */
 export const GREECE_MAP = {
   url: 'assets/map/hellas.png',
-  cols: 1278,
+  cols: 1889,
   rows: 1257,
-  lon0: 19.2,
+  lon0: 14.8,
   lat1: 41.85,
   cellLon: 0.0071995,
   cellLat: 0.00565,
   /** Edge length of one cell on the ground. */
   cellKm: 0.628,
-  greekCells: 336165,
+  greekCells: 512712,
   elevationStep: 5,
   elevationOffset: 1200
 } as const;

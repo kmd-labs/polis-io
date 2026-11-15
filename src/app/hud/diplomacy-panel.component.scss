@@ -241,3 +241,117 @@
     letter-spacing: 2px;
   }
 }
+
+// A neutral city: who holds sway over it, and the cities it fears or admires most.
+.sway {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+  padding: 8px 10px;
+  border: 1px solid rgba(palette("warning-900"), 0.35);
+  border-radius: 2px;
+  background: rgba(palette("neutral-0"), 0.4);
+
+  &__title {
+    margin: 0;
+    font-family: var(--font-family-display);
+    font-size: font-size("xs");
+    color: palette("warning-900");
+  }
+
+  &__status,
+  &__mine,
+  &__legend {
+    margin: 0;
+    font-size: font-size("xxs");
+    line-height: 1.4;
+    color: color("text-main");
+  }
+
+  &__mine {
+    font-weight: 600;
+  }
+
+  &__legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: color("text-dim");
+  }
+
+  &__key {
+    display: inline-block;
+    width: 12px;
+    height: 6px;
+
+    &--fear {
+      background: palette("danger-500");
+    }
+
+    &--awe {
+      background: palette("info-500");
+    }
+  }
+
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 16px 88px minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    font-size: font-size("xxs");
+
+    &--me .sway__name {
+      font-weight: 700;
+    }
+
+    &--patron .sway__name {
+      color: palette("warning-800");
+    }
+  }
+
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__bars {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    height: 10px;
+    background: rgba(palette("warning-900"), 0.08);
+  }
+
+  &__bar {
+    height: 4px;
+
+    &--fear {
+      background: palette("danger-500");
+    }
+
+    &--awe {
+      background: palette("info-500");
+    }
+  }
+
+  // The line a city must reach to hold sway.
+  &__threshold {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 1px;
+    background: palette("warning-900");
+  }
+}

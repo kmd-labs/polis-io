@@ -18,17 +18,32 @@ export type PolisId =
   | 'samos'
   | 'naxos'
   | 'knossos'
-  | 'lindos';
+  | 'lindos'
+  | 'megara'
+  | 'sikyon'
+  | 'eretria'
+  | 'tegea'
+  | 'miletus'
+  | 'ephesus'
+  | 'phocaea'
+  | 'halicarnassus'
+  | 'kyzikos'
+  | 'taras'
+  | 'sybaris'
+  | 'kroton'
+  | 'rhegion'
+  | 'syracuse';
 
 /** Historical towns where a vassal polis can be founded. */
 export type SiteId =
-  | 'tegea' | 'mantineia' | 'sikyon' | 'epidauros' | 'troizen' | 'megara' | 'plataea' | 'orchomenos'
-  | 'delphi' | 'amphissa' | 'naupaktos' | 'kalydon' | 'pylos' | 'methone' | 'gytheion' | 'pharsalos'
-  | 'pherai' | 'dion' | 'olynthos' | 'mende' | 'stageira' | 'abdera' | 'maroneia' | 'amphipolis'
-  | 'kassope' | 'dodona' | 'thermon' | 'leukas' | 'ithaca' | 'zakynthos' | 'kythera' | 'melos'
-  | 'paros' | 'andros' | 'tenos' | 'karystos' | 'eretria' | 'histiaia' | 'lamia' | 'hermione'
-  | 'phleious' | 'gortyn' | 'kydonia' | 'lyttos' | 'ialysos' | 'kos' | 'methymna' | 'myrina'
-  | 'samothrace' | 'skiathos';
+  | 'mantineia' | 'epidauros' | 'troizen' | 'plataea' | 'orchomenos' | 'delphi' | 'amphissa' | 'naupaktos'
+  | 'kalydon' | 'pylos' | 'methone' | 'gytheion' | 'pharsalos' | 'pherai' | 'dion' | 'olynthos'
+  | 'mende' | 'stageira' | 'abdera' | 'maroneia' | 'amphipolis' | 'kassope' | 'dodona' | 'thermon'
+  | 'leukas' | 'ithaca' | 'zakynthos' | 'kythera' | 'paros' | 'andros' | 'tenos' | 'karystos'
+  | 'histiaia' | 'lamia' | 'hermione' | 'phleious' | 'gortyn' | 'kydonia' | 'lyttos' | 'ialysos'
+  | 'kos' | 'methymna' | 'myrina' | 'samothrace' | 'skiathos' | 'erythrai' | 'teos' | 'klazomenai'
+  | 'kolophon' | 'priene' | 'kyme' | 'knidos' | 'lampsakos' | 'abydos' | 'sestos' | 'metapontion'
+  | 'siris' | 'lokroi' | 'kaulonia' | 'zankle' | 'katane' | 'leontinoi' | 'megarahyblaea';
 
 export interface MajorPolisDef {
   kind: 'major';
@@ -79,17 +94,28 @@ export const POLEIS: readonly MajorPolisDef[] = [
   { kind: 'major', id: 'samos', lon: 26.95, lat: 37.7, color: 'primary-400', militarism: 3, culture: 4 },
   { kind: 'major', id: 'naxos', lon: 25.43, lat: 37.06, color: 'info-300', militarism: 2, culture: 3 },
   { kind: 'major', id: 'knossos', lon: 25.163, lat: 35.298, color: 'purple-600', militarism: 3, culture: 2 },
-  { kind: 'major', id: 'lindos', lon: 28.0, lat: 36.15, color: 'danger-800', militarism: 2, culture: 3 }
+  { kind: 'major', id: 'lindos', lon: 28.0, lat: 36.15, color: 'danger-800', militarism: 2, culture: 3 },
+  { kind: 'major', id: 'megara', lon: 23.35, lat: 38.0, color: 'info-400', militarism: 2, culture: 3 },
+  { kind: 'major', id: 'sikyon', lon: 22.72, lat: 37.98, color: 'success-500', militarism: 2, culture: 4 },
+  { kind: 'major', id: 'eretria', lon: 23.79, lat: 38.39, color: 'primary-300', militarism: 3, culture: 3 },
+  { kind: 'major', id: 'tegea', lon: 22.4, lat: 37.46, color: 'danger-700', militarism: 4, culture: 1 },
+  { kind: 'major', id: 'miletus', lon: 27.27, lat: 37.53, color: 'info-600', militarism: 2, culture: 5 },
+  { kind: 'major', id: 'ephesus', lon: 27.34, lat: 37.94, color: 'purple-400', militarism: 2, culture: 4 },
+  { kind: 'major', id: 'phocaea', lon: 26.75, lat: 38.67, color: 'primary-500', militarism: 3, culture: 3 },
+  { kind: 'major', id: 'halicarnassus', lon: 27.42, lat: 37.04, color: 'danger-500', militarism: 2, culture: 3 },
+  { kind: 'major', id: 'kyzikos', lon: 27.88, lat: 40.39, color: 'success-700', militarism: 2, culture: 2 },
+  { kind: 'major', id: 'taras', lon: 17.24, lat: 40.47, color: 'danger-900', militarism: 3, culture: 3 },
+  { kind: 'major', id: 'sybaris', lon: 16.49, lat: 39.72, color: 'success-900', militarism: 1, culture: 4 },
+  { kind: 'major', id: 'kroton', lon: 17.13, lat: 39.08, color: 'primary-700', militarism: 4, culture: 3 },
+  { kind: 'major', id: 'rhegion', lon: 15.65, lat: 38.11, color: 'info-800', militarism: 2, culture: 2 },
+  { kind: 'major', id: 'syracuse', lon: 15.29, lat: 37.07, color: 'primary-900', militarism: 3, culture: 3 }
 ];
 
 /** Lesser towns of the Archaic world, available as sites for vassal poleis. */
 export const SITES: readonly { id: SiteId; lon: number; lat: number }[] = [
-  { id: 'tegea', lon: 22.4, lat: 37.46 },
   { id: 'mantineia', lon: 22.39, lat: 37.62 },
-  { id: 'sikyon', lon: 22.72, lat: 37.98 },
   { id: 'epidauros', lon: 23.16, lat: 37.63 },
   { id: 'troizen', lon: 23.36, lat: 37.5 },
-  { id: 'megara', lon: 23.35, lat: 38.0 },
   { id: 'plataea', lon: 23.27, lat: 38.21 },
   { id: 'orchomenos', lon: 22.97, lat: 38.49 },
   { id: 'delphi', lon: 22.5, lat: 38.48 },
@@ -115,12 +141,10 @@ export const SITES: readonly { id: SiteId; lon: number; lat: number }[] = [
   { id: 'ithaca', lon: 20.71, lat: 38.37 },
   { id: 'zakynthos', lon: 20.9, lat: 37.78 },
   { id: 'kythera', lon: 22.99, lat: 36.25 },
-  { id: 'melos', lon: 24.42, lat: 36.72 },
   { id: 'paros', lon: 25.15, lat: 37.08 },
   { id: 'andros', lon: 24.94, lat: 37.84 },
   { id: 'tenos', lon: 25.16, lat: 37.54 },
   { id: 'karystos', lon: 24.42, lat: 38.02 },
-  { id: 'eretria', lon: 23.79, lat: 38.39 },
   { id: 'histiaia', lon: 23.15, lat: 38.95 },
   { id: 'lamia', lon: 22.43, lat: 38.9 },
   { id: 'hermione', lon: 23.25, lat: 37.38 },
@@ -133,5 +157,23 @@ export const SITES: readonly { id: SiteId; lon: number; lat: number }[] = [
   { id: 'methymna', lon: 26.18, lat: 39.37 },
   { id: 'myrina', lon: 25.06, lat: 39.88 },
   { id: 'samothrace', lon: 25.53, lat: 40.5 },
-  { id: 'skiathos', lon: 23.49, lat: 39.16 }
+  { id: 'skiathos', lon: 23.49, lat: 39.16 },
+  { id: 'erythrai', lon: 26.49, lat: 38.38 },
+  { id: 'teos', lon: 26.78, lat: 38.18 },
+  { id: 'klazomenai', lon: 26.77, lat: 38.36 },
+  { id: 'kolophon', lon: 27.13, lat: 38.11 },
+  { id: 'priene', lon: 27.3, lat: 37.66 },
+  { id: 'kyme', lon: 26.94, lat: 38.76 },
+  { id: 'knidos', lon: 27.37, lat: 36.69 },
+  { id: 'lampsakos', lon: 26.69, lat: 40.35 },
+  { id: 'abydos', lon: 26.4, lat: 40.2 },
+  { id: 'sestos', lon: 26.42, lat: 40.23 },
+  { id: 'metapontion', lon: 16.82, lat: 40.38 },
+  { id: 'siris', lon: 16.62, lat: 40.18 },
+  { id: 'lokroi', lon: 16.25, lat: 38.24 },
+  { id: 'kaulonia', lon: 16.46, lat: 38.47 },
+  { id: 'zankle', lon: 15.55, lat: 38.19 },
+  { id: 'katane', lon: 15.09, lat: 37.5 },
+  { id: 'leontinoi', lon: 15.0, lat: 37.29 },
+  { id: 'megarahyblaea', lon: 15.18, lat: 37.2 }
 ];

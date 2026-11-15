@@ -32,6 +32,34 @@
   </div>
 
   <div class="group">
+    <button type="button" class="group__head" [attr.aria-expanded]="!folded('sway')" (click)="hud.toggleGroup('sway')">
+      <lucide-icon class="group__icon" [img]="icons.Coins" [size]="13"></lucide-icon>
+      <span class="group__title">{{ t.outSway }}</span>
+      @if (mineCount()) {
+        <span class="group__count">{{ mineCount() }}</span>
+      }
+      <lucide-icon class="group__chevron" [class.group__chevron--open]="!folded('sway')" [img]="icons.ChevronDown" [size]="13"></lucide-icon>
+    </button>
+    @if (!folded('sway')) {
+      <ul class="group__list">
+        @for (n of neutrals(); track n.idx) {
+          <li>
+            <button type="button" class="item" [class.item--mine]="n.mine" [appTooltip]="n.hint" (click)="game.focus(n.idx)">
+              <app-polis-flag [def]="n.def" [size]="14" [label]="n.name"></app-polis-flag>
+              <span class="item__name">{{ n.name }}</span>
+              @if (n.patronDef) {
+                <lucide-icon class="item__sway" [img]="n.kind === 'tribute' ? icons.Coins : icons.Star" [size]="12"></lucide-icon>
+                <app-polis-flag [def]="n.patronDef" [size]="14" [label]="n.patronName"></app-polis-flag>
+              } @else {
+                <span class="item__sway item__sway--free">—</span>
+              }
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+  <div class="group">
     <button type="button" class="group__head" [attr.aria-expanded]="!folded('allies')" (click)="hud.toggleGroup('allies')">
       <lucide-icon class="group__icon" [img]="icons.Handshake" [size]="13"></lucide-icon>
       <span class="group__title">{{ t.outAllies }}</span>
@@ -58,29 +86,6 @@
     }
   </div>
 
-  <div class="group">
-    <button type="button" class="group__head" [attr.aria-expanded]="!folded('sieges')" (click)="hud.toggleGroup('sieges')">
-      <lucide-icon class="group__icon" [img]="icons.Tent" [size]="13"></lucide-icon>
-      <span class="group__title">{{ t.outSieges }}</span>
-      @if (sieges().length) {
-        <span class="group__count group__count--hot">{{ sieges().length }}</span>
-      }
-      <lucide-icon class="group__chevron" [class.group__chevron--open]="!folded('sieges')" [img]="icons.ChevronDown" [size]="13"></lucide-icon>
-    </button>
-    @if (!folded('sieges')) {
-      @if (sieges().length) {
-        <ul class="group__list">
-          @for (s of sieges(); track s.key) {
-            <li>
-              <button type="button" class="item item--text" [class.item--ours]="s.ours" (click)="game.focus(s.city)">{{ s.text }}</button>
-            </li>
-          }
-        </ul>
-      } @else {
-        <p class="group__empty">{{ t.outNoSieges }}</p>
-      }
-    }
-  </div>
 
   <div class="group">
     <button type="button" class="group__head" [attr.aria-expanded]="!folded('chronicle')" (click)="hud.toggleGroup('chronicle')">

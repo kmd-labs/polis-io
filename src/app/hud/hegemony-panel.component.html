@@ -66,6 +66,18 @@
       [formatYear]="ch.formatYear"
       color="warning-600"></app-line-chart>
   }
+
+  @if (v.places; as pl) {
+    <app-line-chart
+      class="chart"
+      [title]="t.hegPlaceChart"
+      [points]="pl.points"
+      [from]="pl.from"
+      [to]="pl.to"
+      [format]="pl.format"
+      [formatYear]="pl.formatYear"
+      color="primary-600"></app-line-chart>
+  }
 } @else {
   <p class="intro">{{ t.hegEmpty }}</p>
 }

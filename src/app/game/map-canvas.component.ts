@@ -204,6 +204,21 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     };
   }
 
+  /** The HUD's rectangles on screen (re-read a few times a second, not every frame). */
+  private hudRectCache: { at: number; rects: { x: number; y: number; w: number; h: number }[] } = { at: 0, rects: [] };
+
+  private hudRects() {
+    const now = performance.now();
+    if (now - this.hudRectCache.at < 400) return this.hudRectCache.rects;
+    const canvas = this.canvasRef.nativeElement.getBoundingClientRect();
+    const rects = Array.from(document.querySelectorAll<HTMLElement>('[data-occlude], .glass-panel, .glass-panel--heavy'))
+      .map(el => el.getBoundingClientRect())
+      .filter(r => r.width && r.height)
+      .map(r => ({ x: r.left - canvas.left, y: r.top - canvas.top, w: r.width, h: r.height }));
+    this.hudRectCache = { at: now, rects };
+    return rects;
+  }
+
   /** Re-frames the map after HUD panels open or fold, unless the player has moved the camera. */
   reframe() {
     if (!this.userMoved) requestAnimationFrame(() => this.fit(true));
@@ -297,6 +312,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
           selected: this.game.selected(),
           names: this.game.sim.poleis.map(p => polisName(t, p.def)),
           labels,
+          blocked: this.hudRects(),
           locale: t.htmlLang
         },
         now

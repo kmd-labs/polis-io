@@ -57,6 +57,36 @@ export class DiplomacyPanelComponent {
     return { score: (score > 0 ? '+' : '') + score, fill: (score + 100) / 2, stars: '★'.repeat(stars) + '☆'.repeat(3 - stars) };
   });
 
+  /** A neutral city: who holds sway over it and how, the strongest influences on it, and ours. */
+  readonly sway = computed(() => {
+    const target = this.game.target();
+    const t = this.i18n.t();
+    if (!target?.trader) return null;
+    const me = this.game.player();
+    const status =
+      target.patron < 0
+        ? t.swayNone
+        : interpolate(target.patronKind === 'tribute' ? t.swayTributeTo : t.swayAweOf, { name: this.name(target.patron) });
+    const mine = target.swayTop.find(x => x.idx === me) ?? {
+      fear: this.game.sim.poleis[target.idx].fear[me] ?? 0,
+      awe: this.game.sim.poleis[target.idx].awe[me] ?? 0
+    };
+    return {
+      status,
+      patron: target.patron,
+      rows: target.swayTop.map(x => ({
+        idx: x.idx,
+        name: this.name(x.idx),
+        def: this.game.sim.poleis[x.idx].def,
+        fear: Math.round(x.fear),
+        awe: Math.round(x.awe),
+        me: x.idx === me
+      })),
+      threshold: RULES.swayThreshold,
+      mine: interpolate(t.swayYou, { f: Math.round(mine.fear), a: Math.round(mine.awe), t: RULES.swayThreshold })
+    };
+  });
+
   /** Why war cannot be declared on the selected city right now, if it cannot. */
   readonly declareBlock = computed(() => {
     const target = this.game.target();

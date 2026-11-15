@@ -21,7 +21,7 @@ function game(seed = 4) {
 }
 
 describe('choices put before the player', () => {
-  it('come often while the game is young and ever more rarely later', () => {
+  it('come one every three to five years, the first not before the second year', () => {
     const rules = RULES as unknown as Record<string, number>;
     const year = rules['secondsPerYear'];
     rules['secondsPerYear'] = 16;
@@ -38,11 +38,11 @@ describe('choices put before the player', () => {
       for (const c of sim.takeConquests()) sim.resolveConquest(c, 'subjugate');
     }
     rules['secondsPerYear'] = year;
-    const early = offered.filter(y => y < 10).length;
-    const later = offered.filter(y => y >= 30 && y < 60).length;
-    expect(early).toBeGreaterThanOrEqual(6);
-    // Thirty later years bring fewer than ten earlier ones did, three times over.
-    expect(later / 30).toBeLessThan(early / 10 / 2);
+    expect(offered.length).toBeGreaterThanOrEqual(8);
+    expect(offered[0]).toBeGreaterThanOrEqual(RULES.dilemmaFirst);
+    for (let i = 1; i < offered.length; i++) expect(offered[i] - offered[i - 1]).toBeGreaterThanOrEqual(RULES.dilemmaSpacing - 1);
+    // Over sixty years, no more than one every three years.
+    expect(offered.length).toBeLessThanOrEqual(Math.ceil(60 / RULES.dilemmaSpacing) + 1);
   }, 300_000);
 
   it('come in their historical year: the eclipse of Thales in 585 BC', () => {

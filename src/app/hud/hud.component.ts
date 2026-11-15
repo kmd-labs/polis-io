@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, output, untracked } from '@angular/core';
+import { Component, computed, effect, inject, output, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   LucideAngularModule,
@@ -24,6 +24,7 @@ import { I18nService } from '../core/i18n/i18n.service';
 import { GameService } from '../game/game.service';
 import { MapView } from '../game/map-renderer';
 import { AlertsComponent } from './alerts.component';
+import { OracleEntryComponent } from './oracle-entry.component';
 import { BudgetPanelComponent } from './budget-panel.component';
 import { ChronicleComponent } from './chronicle.component';
 import { DiplomacyListComponent } from './diplomacy-list.component';
@@ -61,8 +62,7 @@ import { TopBarComponent } from './top-bar.component';
     GreatWorksComponent,
     DiplomacyPanelComponent,
     ChronicleComponent,
-    OutlinerComponent
-  ],
+    OutlinerComponent, OracleEntryComponent],
   templateUrl: './hud.component.html',
   styleUrl: './hud.component.scss'
 })
@@ -90,7 +90,13 @@ export class HudComponent {
 
   readonly tabs = computed(() => {
     const t = this.i18n.t();
-    return HUD_TABS.map(id => ({ id, icon: this.tabIcons[id], label: t.tabs[id], key: id === 'budget' ? 'B' : id === 'hegemony' ? 'H' : '' }));
+    return HUD_TABS.map(id => ({
+      id,
+      icon: this.tabIcons[id],
+      label: t.tabs[id],
+      short: t.tabsShort[id],
+      key: id === 'budget' ? 'B' : id === 'hegemony' ? 'H' : ''
+    }));
   });
 
   readonly tabTitle = computed(() => this.i18n.t().tabs[this.hud.tab()]);
@@ -102,9 +108,52 @@ export class HudComponent {
       { id: 'relief', icon: Mountain, label: t.viewRelief },
       { id: 'fertility', icon: Wheat, label: t.viewFertility },
       { id: 'relations', icon: HeartHandshake, label: t.viewRelations },
-      { id: 'hegemony', icon: Crown, label: t.viewHegemony }
+      { id: 'hegemony', icon: Crown, label: t.viewHegemony },
+      { id: 'influence', icon: Coins, label: t.viewInfluence }
     ];
     return modes;
+  });
+
+  /** Phones: the list of map modes behind the single mode button, and a sheet pulled up to full height. */
+  readonly modesOpen = signal(false);
+  readonly sheetTall = signal(false);
+
+  readonly currentMode = computed(() => this.modes().find(m => m.id === this.hud.mapMode()) ?? this.modes()[0]);
+
+  /** What the colours of the current map mode mean. */
+  readonly legend = computed(() => {
+    const t = this.i18n.t();
+    const L = t.legend;
+    const v = (name: string) => `var(--color-${name})`;
+    switch (this.hud.mapMode()) {
+      case 'relations':
+        return [
+          { swatch: v('danger-700'), label: L.relations.hostile },
+          { swatch: v('neutral-300'), label: L.relations.neutral },
+          { swatch: v('success-400'), label: L.relations.friendly },
+          { swatch: v('success-700'), label: L.relations.ally }
+        ];
+      case 'hegemony':
+        return [
+          { swatch: v('warning-400'), label: L.hegemony.first },
+          { swatch: v('neutral-400'), label: L.hegemony.second },
+          { swatch: v('warning-700'), label: L.hegemony.third },
+          { swatch: v('neutral-200'), label: L.hegemony.rest }
+        ];
+      case 'influence':
+        return [
+          { swatch: `repeating-linear-gradient(135deg, ${v('primary-600')} 0 3px, ${v('primary-200')} 3px 6px)`, label: L.influence.tribute },
+          { swatch: v('primary-400'), label: L.influence.awe },
+          { swatch: v('warning-200'), label: L.influence.free }
+        ];
+      case 'fertility':
+        return [
+          { swatch: v('neutral-200'), label: L.fertility.poor },
+          { swatch: v('success-600'), label: L.fertility.rich }
+        ];
+      default:
+        return null;
+    }
   });
 
   /** Unless the player chose, the outliner starts folded on narrow screens. */
@@ -124,6 +173,14 @@ export class HudComponent {
       untracked(() => this.layoutChange.emit());
     });
 
+    // Phones: a sheet coming up moves the camera so the player's city stays in sight above it.
+    effect(() => {
+      const sheet = this.hud.sheet();
+      this.sheetTall();
+      if (!sheet || !this.bp.mobile()) return;
+      untracked(() => setTimeout(() => this.game.centre(this.game.player()), 120));
+    });
+
     // Phones: picking a city on the map swaps the sheet for that city's card.
     effect(() => {
       if (this.game.target() && this.bp.mobile()) untracked(() => this.hud.sheet.set(null));
@@ -136,6 +193,7 @@ export class HudComponent {
 
   setMode(mode: MapView) {
     this.hud.mapMode.set(mode);
+    this.modesOpen.set(false);
   }
 
   openSheet(which: HudTab | 'outliner') {

@@ -1,0 +1,71 @@
+@let t = i18n.t();
+
+@if (view(); as v) {
+  <div class="oracle" [class]="'oracle oracle--' + phase()">
+    <p class="oracle__intro">{{ t.oracleIntro }}</p>
+
+    @if (phase() === 'choose') {
+      <h3 class="oracle__label">{{ t.oracleAsk }}</h3>
+      <div class="choices choices--questions" role="radiogroup" [attr.aria-label]="t.oracleAsk">
+        @for (q of questions; track q) {
+          <button type="button" role="radio" class="choice" [class.choice--on]="question() === q" [attr.aria-checked]="question() === q" (click)="pickQuestion(q)">
+            <span class="choice__name">{{ t.oracleQuestions[q].name }}</span>
+            <span class="choice__hint">{{ t.oracleQuestions[q].ask }}</span>
+          </button>
+        }
+      </div>
+
+      <h3 class="oracle__label">{{ t.oracleOffer }}</h3>
+      <div class="choices" role="radiogroup" [attr.aria-label]="t.oracleOffer">
+        @for (s of v.stakes; track s.level) {
+          <button
+            type="button"
+            role="radio"
+            class="choice"
+            [class.choice--on]="level() === s.level"
+            [attr.aria-checked]="level() === s.level"
+            [disabled]="!s.affordable"
+            (click)="pickLevel(s.level)">
+            <span class="choice__name">{{ s.name }} · {{ s.amount }} dr</span>
+            <span class="choice__hint">{{ s.hint }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    <h3 class="oracle__label">{{ t.oracleOdds }}</h3>
+    <div class="lots" [class.lots--drawing]="phase() !== 'choose'" [style.--target]="target() + '%'">
+      @for (lot of v.lots; track lot.outcome) {
+        <span [class]="outcomeClass(lot.outcome)" [class.lots__lot--won]="phase() === 'result' && answer()?.outcome === lot.outcome" [style.width.%]="lot.width">
+          <span class="lots__name">{{ lot.name }}</span>
+          <span class="lots__pct">{{ lot.pct }}%</span>
+        </span>
+      }
+      @if (phase() !== 'choose') {
+        <span class="lots__marker" [class.lots__marker--still]="phase() === 'result'"></span>
+      }
+    </div>
+
+    @if (phase() === 'choose') {
+      @if (v.ready) {
+        <button type="button" class="oracle__go" [disabled]="!v.stake.affordable" (click)="consult()">
+          {{ t.oracleConsult.replace('{d}', v.stake.amount) }}
+        </button>
+        @if (!v.stake.affordable) {
+          <p class="oracle__note">{{ t.oracleCannot }}</p>
+        }
+      } @else {
+        <p class="oracle__note">{{ v.wait }}</p>
+      }
+    } @else if (phase() === 'drawing') {
+      <p class="oracle__drawing">{{ t.oracleDrawing }}</p>
+    } @else if (result(); as r) {
+      <div class="verdict" [class]="'verdict verdict--' + r.outcome">
+        <p class="verdict__name">{{ r.name }}</p>
+        <blockquote class="verdict__verse">{{ r.verse }}</blockquote>
+        <p class="verdict__text">{{ r.text }}</p>
+      </div>
+      <button type="button" class="oracle__go" (click)="close()()">{{ t.oracleClose }}</button>
+    }
+  </div>
+}

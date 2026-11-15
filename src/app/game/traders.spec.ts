@@ -21,7 +21,7 @@ describe('neutral merchant cities', () => {
   it('hold four small islands, each whole', () => {
     const sim = game();
     const traders = sim.poleis.filter(p => p.trader);
-    expect(traders.map(p => p.def.id)).toEqual(['aegina', 'siphnos', 'thera', 'keos']);
+    expect(traders.map(p => p.def.id)).toEqual(['aegina', 'siphnos', 'thera', 'keos', 'melos', 'delos', 'lipara', 'tenedos']);
     for (const p of traders) {
       expect(p.cells).toBeGreaterThan(10);
       expect(p.cells).toBeLessThanOrEqual(RULES.traderIsland);

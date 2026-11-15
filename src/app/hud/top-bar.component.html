@@ -10,7 +10,7 @@
   }
 
   <dl class="bar__resources">
-    @for (r of resources(); track r.key) {
+    @for (r of shown(); track r.key) {
       <div class="res" [class]="'res res--' + r.key + (r.tone ? ' res--' + r.tone : '')" [appTooltip]="r.key === 'drachmae' ? null : r.label + ' — ' + r.hint" tabindex="0">
         <dt class="res__icon"><lucide-icon [img]="r.icon" [size]="13"></lucide-icon><span class="sr-only">{{ r.label }}</span></dt>
         <dd class="res__value">
@@ -37,6 +37,28 @@
       </div>
     }
   </dl>
+
+  @if (hidden().length || (laurel() && bp.mobile())) {
+    <div class="more" [class.more--open]="moreOpen()">
+      <button type="button" class="more__btn" [attr.aria-expanded]="moreOpen()" [attr.aria-label]="t.topMore" (click)="moreOpen.set(!moreOpen())">⋯</button>
+      <div class="more__list" role="tooltip">
+        @for (r of hidden(); track r.key) {
+          <div class="more__row">
+            <lucide-icon class="res__icon" [img]="r.icon" [size]="12"></lucide-icon>
+            <span class="more__label">{{ r.label }}</span>
+            <span class="more__value">{{ r.value }}</span>
+          </div>
+        }
+        @if (bp.mobile() && laurel(); as l) {
+          <button type="button" class="more__row more__row--link" (click)="openHegemony(); moreOpen.set(false)">
+            <span class="more__laurel">❦</span>
+            <span class="more__label">{{ t.viewHegemony }}</span>
+            <span class="more__value">{{ l.score }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  }
 
   @if (laurel(); as l) {
     @if (!bp.mobile()) {

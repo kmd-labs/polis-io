@@ -30,6 +30,8 @@
             <span class="row__name">{{ row.name }}</span>
             <span class="row__share">{{ row.share }}%</span>
           </div>
+          <div class="row__control">
+          <button type="button" class="row__step" [attr.aria-label]="row.name + ' −5%'" (click)="step(row.key, row.share, -5)">−</button>
           <input
             class="row__slider"
             type="range"
@@ -43,6 +45,8 @@
             (pointerup)="release()"
             (keyup)="release()"
             (input)="set(row.key, $event)" />
+          <button type="button" class="row__step" [attr.aria-label]="row.name + ' +5%'" (click)="step(row.key, row.share, 5)">+</button>
+          </div>
           <div class="row__meta">
             <span class="row__fund">{{ row.fund }} dr</span>
             <span class="row__next" [attr.title]="row.next">
