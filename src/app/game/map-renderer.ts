@@ -12,7 +12,7 @@ export interface Camera {
   oy: number;
 }
 
-export type MapView = 'political' | 'relief' | 'fertility' | 'relations' | 'hegemony';
+export type MapView = 'political' | 'relief' | 'fertility' | 'relations' | 'hegemony' | 'influence';
 
 /** Cartographic label (a mountain peak) placed by longitude / latitude. */
 export interface MapLabel {
@@ -37,6 +37,8 @@ export interface RenderOptions {
   labels: MapLabel[];
   /** BCP 47 locale for numbers drawn on the map. */
   locale: string;
+  /** Screen rectangles under the HUD (the logo, the bars, the panels): labels are not drawn there. */
+  blocked?: { x: number; y: number; w: number; h: number }[];
 }
 
 type Rgb = [number, number, number];
@@ -82,10 +84,30 @@ const LAND_BAND = 250;
 /** Depth thresholds (m) of the stepped sea tints and isobaths. */
 const SEA_BANDS = [0, 60, 250, 1000, 2200];
 
+/** A pixel-art cumulus: its blocky body and its shadow, drawn from a small bitmap (one pixel a block). */
 interface Cloud {
   x: number;
   y: number;
-  puffs: [number, number, number][];
+  /** 0: low clouds, slow and dense; 1: high ones, faster and thinner. */
+  layer: number;
+  /** Size of the bitmap in blocks, and of one block in map cells. */
+  cols: number;
+  rows: number;
+  block: number;
+  /** Which blocks are cloud, from the seeded generator. */
+  mask: Uint8Array;
+  body?: HTMLCanvasElement;
+  shadow?: HTMLCanvasElement;
+}
+
+/** A mote of dust (or a spark) drifting through the warm air, in screen space. */
+interface Mote {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  phase: number;
 }
 
 /**
@@ -107,6 +129,9 @@ export class MapRenderer {
   private wavePatterns: CanvasPattern[] = [];
 
   private readonly clouds: Cloud[];
+  private readonly motes: Mote[];
+  /** Film grain: a tile of noise drawn at a random offset every frame. */
+  private grain: HTMLCanvasElement | null = null;
   private readonly sprites = new SpriteAtlas();
   private outline: Path2D | null = null;
   private outlineKey = '';
@@ -134,16 +159,49 @@ export class MapRenderer {
     }
     this.image = new ImageData(cols, rows);
     this.base = new Uint8ClampedArray(size * 3);
-    // A handful of slow cumulus shadows drifting east with the meltemi.
+    // Pixel-art cumulus drifting east with the meltemi: low, dense clouds and a few thin high ones.
     const rnd = mulberry32(99);
-    this.clouds = Array.from({ length: 8 }, () => {
-      const r = (22 + rnd() * 40) * GRID_SCALE;
+    this.clouds = Array.from({ length: 30 }, (_, i) => {
+      const layer = i < 22 ? 0 : 1;
+      const cw = 26 + Math.floor(rnd() * 26);
+      const ch = 13 + Math.floor(rnd() * 6);
+      const mask = new Uint8Array(cw * ch);
+      // The classic cumulus: a row of puffs on a flat base, tallest in the middle, joined by a low slab.
+      const base = ch - 2;
+      const n = 4 + Math.floor(rnd() * 3);
+      const spacing = (cw - 6) / n;
+      const puffs = Array.from({ length: n }, (_, k) => {
+        const u = (k + 0.5) / n;
+        const r = Math.max(spacing * 0.62, (0.3 + 0.7 * Math.pow(Math.sin(Math.PI * u), 1.5)) * (ch * 0.62) * (0.8 + rnd() * 0.35));
+        return { x: 3 + u * (cw - 6) + (rnd() - 0.5) * 2, y: base - r * 0.42, r };
+      });
+      const left = puffs[0].x - puffs[0].r * 0.6;
+      const right = puffs[n - 1].x + puffs[n - 1].r * 0.6;
+      for (let y = 0; y <= base; y++) {
+        for (let x = 0; x < cw; x++) {
+          const slab = y >= base - 2 && x + 0.5 > left && x + 0.5 < right;
+          if (slab || puffs.some(p => Math.hypot(x + 0.5 - p.x, (y + 0.5 - p.y) * 1.1) < p.r)) mask[y * cw + x] = 1;
+        }
+      }
       return {
         x: rnd() * cols,
         y: rnd() * rows,
-        puffs: Array.from({ length: 3 + Math.floor(rnd() * 3) }, () => [(rnd() - 0.5) * r * 1.6, (rnd() - 0.5) * r * 0.7, r * (0.45 + rnd() * 0.5)] as [number, number, number])
+        layer,
+        cols: cw,
+        rows: ch,
+        block: (layer ? 4 : 3) * GRID_SCALE,
+        mask
       };
     });
+    const mrnd = mulberry32(7);
+    this.motes = Array.from({ length: 70 }, () => ({
+      x: mrnd(),
+      y: mrnd(),
+      vx: 0.004 + mrnd() * 0.01,
+      vy: -0.002 - mrnd() * 0.006,
+      size: mrnd() < 0.8 ? 2 : 3,
+      phase: mrnd() * Math.PI * 2
+    }));
     this.resolveTokens();
   }
 
@@ -154,7 +212,7 @@ export class MapRenderer {
       'neutral-600', 'success-100', 'success-200', 'success-600', 'warning-100', 'warning-200', 'warning-300',
       'info-50', 'info-100', 'info-200', 'info-300', 'info-400', 'info-700', 'primary-200', 'primary-300', 'primary-400',
       'primary-800', 'neutral-700', 'neutral-900', 'warning-50', 'warning-700', 'warning-800', 'success-500', 'accent', 'text-bright', 'text-main',
-      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong', 'danger-400', 'danger-500', 'danger-600', 'danger-700', 'success-400', 'success-700', 'warning-400', 'warning-500', 'warning-600'
+      'text-dim', 'panel-bg', 'panel-bg-heavy', 'line', 'line-strong', 'danger-400', 'danger-500', 'danger-600', 'danger-700', 'success-400', 'success-700', 'warning-400', 'warning-500', 'warning-600', 'warning-900'
     ];
     for (const t of tokens) {
       this.css[t] = this.theme.getTokenColor(t, '#888888');
@@ -175,6 +233,7 @@ export class MapRenderer {
       getComputedStyle(document.documentElement).getPropertyValue('--font-family-display').trim() || this.font;
     this.mono = getComputedStyle(document.documentElement).getPropertyValue('--font-family-mono').trim() || 'monospace';
     this.buildSeaLayers();
+    this.buildClouds();
     this.sprites.clear();
     this.baseView = null;
     this.paintedKey = '';
@@ -219,9 +278,72 @@ export class MapRenderer {
     this.drawFrontier(ctx, cam, opt, width, height);
     this.drawCapitals(ctx, cam, opt, width, height);
     this.drawArmies(ctx, cam, now, opt);
+    this.drawSway(ctx, cam, opt);
     this.drawTradeFx(ctx, cam, opt);
     this.drawBattles(ctx, cam);
     this.drawWarFx(ctx, cam);
+  }
+
+  /**
+   * Who holds sway over each neutral city: a small badge by its town — a coin (it pays tribute) or a
+   * star (it is fascinated) in the patron's colour; in the influence view, a dashed line to the patron too.
+   */
+  private drawSway(ctx: CanvasRenderingContext2D, cam: Camera, opt: RenderOptions) {
+    const sim = this.sim;
+    const influence = opt.view === 'influence';
+    ctx.save();
+    for (const n of sim.poleis) {
+      if (!n.alive || !n.trader || n.patron < 0) continue;
+      const lord = sim.poleis[n.patron];
+      const [r, g, b] = this.polisRgb[n.patron];
+      const colour = `rgb(${r}, ${g}, ${b})`;
+      const x = cam.ox + n.cx * cam.scale;
+      const y = cam.oy + n.cy * cam.scale;
+      if (influence) {
+        ctx.strokeStyle = colour;
+        ctx.globalAlpha = 0.75;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 5]);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(cam.ox + lord.cx * cam.scale, cam.oy + lord.cy * cam.scale);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+      }
+      const bx = x + 13;
+      const by = y - 13;
+      ctx.fillStyle = colour;
+      ctx.strokeStyle = this.css['neutral-0'];
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(bx, by, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = this.css['neutral-0'];
+      ctx.strokeStyle = this.css['neutral-0'];
+      ctx.lineWidth = 1.2;
+      if (n.patronKind === 'tribute') {
+        // A coin: a ring with a stamped dot.
+        ctx.beginPath();
+        ctx.arc(bx, by, 3.6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(bx, by, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // A five-pointed star.
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const a = -Math.PI / 2 + (i * Math.PI) / 5;
+          const rr = i % 2 ? 1.8 : 4.4;
+          ctx.lineTo(bx + Math.cos(a) * rr, by + Math.sin(a) * rr);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   /**
@@ -386,7 +508,9 @@ export class MapRenderer {
     // In the relations view, a city repaints when its standing with the player moves a step.
     const standing = opt.view === 'relations' && me ? sim.poleis.map(p => Math.round(sim.relation(p.idx, me.idx) / 10)).join(',') + [...me.allies].join(',') : '';
     const podium = opt.view === 'hegemony' ? (opt.podium ?? []).join(',') : '';
-    const key = `${sim.resets}|${opt.view}|${opt.hover}|${opt.selected}|${sim.player}|${wars}|${standing}|${podium}`;
+    // Neutral cities repaint when their patron changes (their colour shows on every map, in full in the influence view).
+    const sway = sim.poleis.filter(p => p.trader).map(p => `${p.patron}${p.patronKind ?? ''}`).join(',');
+    const key = `${sim.resets}|${opt.view}|${opt.hover}|${opt.selected}|${sim.player}|${wars}|${standing}|${podium}|${sway}`;
     const dirty = sim.takeDirty();
 
     if (key !== this.paintedKey) {
@@ -446,6 +570,22 @@ export class MapRenderer {
       const medal = [mix(c['warning-400'], c['warning-500'], 0.4), c['neutral-400'], mix(c['warning-700'], c['danger-400'], 0.25)][place];
       const m = medal ? mix(medal, c['neutral-0'], focus ? 0.1 : 0.22) : mix(c['neutral-200'], c['neutral-0'], 0.35);
       const k = 0.7 + 0.3 * s;
+      col = [m[0] * k, m[1] * k, m[2] * k];
+    } else if (opt.view === 'influence') {
+      // Neutral cities wear their patron's colour (stripes: tribute out of fear; solid: fascination); the rest fades.
+      const c = this.rgb;
+      const q = sim.poleis[o];
+      const k = 0.7 + 0.3 * s;
+      let m: Rgb;
+      if (q.trader && q.patron >= 0) {
+        const patron = this.polisRgb[q.patron];
+        const stripe = q.patronKind === 'tribute' && (x + y) % 6 < 3;
+        m = mix(patron, c['neutral-0'], stripe ? 0.05 : 0.3);
+      } else if (q.trader) {
+        m = mix(c['warning-200'], c['neutral-0'], 0.2);
+      } else {
+        m = mix(tint, c['neutral-0'], o === sim.player ? 0.55 : 0.78);
+      }
       col = [m[0] * k, m[1] * k, m[2] * k];
     } else if (opt.view === 'relations') {
       const k = 0.7 + 0.3 * s;
@@ -545,55 +685,142 @@ export class MapRenderer {
     ctx.restore();
   }
 
+  /** Paints every cloud's bitmap: white body lit from the north-west, a cool shaded belly, and its shadow. */
+  private buildClouds() {
+    const c = this.rgb;
+    const top = mix(c['neutral-0'], c['warning-50'], 0.5);
+    const mid = c['neutral-0'];
+    const belly = mix(c['neutral-200'], c['info-200'], 0.35);
+    for (const cloud of this.clouds) {
+      const body = document.createElement('canvas');
+      const shadow = document.createElement('canvas');
+      body.width = shadow.width = cloud.cols;
+      body.height = shadow.height = cloud.rows;
+      const b = body.getContext('2d')!;
+      const sh = shadow.getContext('2d')!;
+      const img = b.createImageData(cloud.cols, cloud.rows);
+      const simg = sh.createImageData(cloud.cols, cloud.rows);
+      const at = (x: number, y: number) => (x >= 0 && y >= 0 && x < cloud.cols && y < cloud.rows ? cloud.mask[y * cloud.cols + x] : 0);
+      for (let y = 0; y < cloud.rows; y++) {
+        for (let x = 0; x < cloud.cols; x++) {
+          if (!at(x, y)) continue;
+          const p = (y * cloud.cols + x) * 4;
+          // Lit where the block above-left is open sky; shaded where the block below is.
+          const lit = !at(x - 1, y - 1) || !at(x, y - 1);
+          const dark = !at(x, y + 1) || !at(x + 1, y + 1);
+          const col = lit ? top : dark ? belly : mid;
+          img.data.set([col[0], col[1], col[2], 255], p);
+          simg.data.set([40, 26, 10, 255], p);
+        }
+      }
+      b.putImageData(img, 0, 0);
+      sh.putImageData(simg, 0, 0);
+      cloud.body = body;
+      cloud.shadow = shadow;
+    }
+  }
+
   /**
-   * Thin fair-weather clouds drifting east: a faint shadow on the ground and, lifted to the north-west
-   * of it, the translucent white body of the cloud itself.
+   * Pixel-art cumulus sailing east with the meltemi: first their shadows on the land and sea, then
+   * the clouds themselves — low ones slow and dense, high ones faster and thinner.
    */
   private drawClouds(ctx: CanvasRenderingContext2D, cam: Camera, t: number) {
     const { cols } = this.sim.world;
-    const [sr, sg, sb] = this.rgb['neutral-900'];
-    const [cr, cg, cb] = this.rgb['neutral-0'];
-    const layers: [number, number, string, number][] = [
-      [0, 0, `${sr}, ${sg}, ${sb}`, 0.06],
-      [-7 * GRID_SCALE, -9 * GRID_SCALE, `${cr}, ${cg}, ${cb}`, 0.28]
-    ];
     ctx.save();
-    for (const [lx, ly, rgb, alpha] of layers) {
+    ctx.imageSmoothingEnabled = false;
+    for (const pass of ['shadow', 'body'] as const) {
       for (const cloud of this.clouds) {
-        const span = cols + 160 * GRID_SCALE;
-        const cx = ((((cloud.x + t * 1.3 * GRID_SCALE) % span) + span) % span) - 80 * GRID_SCALE;
-        for (const [dx, dy, pr] of cloud.puffs) {
-          const x = cam.ox + (cx + dx + lx) * cam.scale;
-          const y = cam.oy + (cloud.y + dy + ly) * cam.scale;
-          const rad = pr * cam.scale;
-          const grad = ctx.createRadialGradient(x, y, 0, x, y, rad);
-          grad.addColorStop(0, `rgba(${rgb}, ${alpha})`);
-          grad.addColorStop(0.6, `rgba(${rgb}, ${alpha * 0.45})`);
-          grad.addColorStop(1, `rgba(${rgb}, 0)`);
-          ctx.fillStyle = grad;
-          ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+        if (!cloud.body || !cloud.shadow) continue;
+        const w = cloud.cols * cloud.block;
+        const h = cloud.rows * cloud.block;
+        const speed = (cloud.layer ? 5 : 3) * GRID_SCALE;
+        const span = cols + w * 2;
+        const x = ((((cloud.x + t * speed) % span) + span) % span) - w;
+        const sx = cam.ox + x * cam.scale;
+        const sy = cam.oy + cloud.y * cam.scale;
+        const sw = w * cam.scale;
+        const shh = h * cam.scale;
+        if (pass === 'shadow') {
+          // The sun stands in the north-west: shadows fall to the south-east.
+          ctx.globalAlpha = cloud.layer ? 0.08 : 0.13;
+          ctx.drawImage(cloud.shadow, sx + sw * 0.18, sy + shh * 1.3, sw, shh);
+        } else {
+          ctx.globalAlpha = cloud.layer ? 0.55 : 0.82;
+          ctx.drawImage(cloud.body, sx, sy, sw, shh);
         }
       }
     }
     ctx.restore();
   }
 
-  /** Cinematic grade: warm light from the north-west and a gentle vignette. */
+  /**
+   * The look of a sun-baked epic: a warm sepia wash, gold light from the north-west, deep umber at the
+   * edges — then film grain and motes of dust drifting through the light.
+   */
   private drawGrade(ctx: CanvasRenderingContext2D, width: number, height: number) {
     const diag = Math.hypot(width, height);
-    const [wr, wg, wb] = this.rgb['warning-200'];
-    const [vr, vg, vb] = this.rgb['neutral-900'];
+    const [wr, wg, wb] = this.rgb['warning-300'];
+    const [ar, ag, ab] = this.rgb['warning-500'];
+    const [vr, vg, vb] = this.rgb['warning-900'];
     ctx.save();
-    const light = ctx.createRadialGradient(width * 0.12, height * 0.05, 0, width * 0.12, height * 0.05, diag * 0.7);
-    light.addColorStop(0, `rgba(${wr}, ${wg}, ${wb}, 0.16)`);
+    // Sepia: a soft-light wash of amber warms the midtones and deepens the contrast.
+    ctx.globalCompositeOperation = 'soft-light';
+    ctx.fillStyle = `rgba(${ar}, ${ag}, ${ab}, 0.32)`;
+    ctx.fillRect(0, 0, width, height);
+    ctx.globalCompositeOperation = 'source-over';
+    const light = ctx.createRadialGradient(width * 0.12, height * 0.05, 0, width * 0.12, height * 0.05, diag * 0.75);
+    light.addColorStop(0, `rgba(${wr}, ${wg}, ${wb}, 0.22)`);
     light.addColorStop(1, `rgba(${wr}, ${wg}, ${wb}, 0)`);
     ctx.fillStyle = light;
     ctx.fillRect(0, 0, width, height);
-    const vignette = ctx.createRadialGradient(width / 2, height / 2, diag * 0.3, width / 2, height / 2, diag * 0.62);
+    const vignette = ctx.createRadialGradient(width / 2, height / 2, diag * 0.28, width / 2, height / 2, diag * 0.62);
     vignette.addColorStop(0, `rgba(${vr}, ${vg}, ${vb}, 0)`);
-    vignette.addColorStop(1, `rgba(${vr}, ${vg}, ${vb}, 0.14)`);
+    vignette.addColorStop(1, `rgba(${vr}, ${vg}, ${vb}, 0.3)`);
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+    this.drawGrain(ctx, width, height);
+    this.drawMotes(ctx, width, height);
+  }
+
+  /** Film grain: a tile of noise laid at a random offset each frame, barely there. */
+  private drawGrain(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    if (!this.grain) {
+      const g = document.createElement('canvas');
+      g.width = g.height = 128;
+      const gx = g.getContext('2d')!;
+      const img = gx.createImageData(128, 128);
+      const rnd = mulberry32(3);
+      for (let i = 0; i < 128 * 128; i++) {
+        const v = 110 + rnd() * 140;
+        img.data.set([v, v * 0.92, v * 0.8, 255], i * 4);
+      }
+      gx.putImageData(img, 0, 0);
+      this.grain = g;
+    }
+    const pattern = ctx.createPattern(this.grain, 'repeat');
+    if (!pattern) return;
+    pattern.setTransform(new DOMMatrix().translate(Math.floor(Math.random() * 128), Math.floor(Math.random() * 128)));
+    ctx.save();
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.globalAlpha = 0.07;
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+
+  /** Motes of golden dust drifting up and east through the light, twinkling as they turn. */
+  private drawMotes(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    const t = performance.now() / 1000;
+    const [r, g, b] = this.rgb['warning-200'];
+    ctx.save();
+    for (const m of this.motes) {
+      const x = (((m.x + m.vx * t) % 1) + 1) % 1;
+      const y = (((m.y + m.vy * t + Math.sin(t * 0.6 + m.phase) * 0.004) % 1) + 1) % 1;
+      const alpha = 0.18 + 0.32 * (0.5 + 0.5 * Math.sin(t * 1.7 + m.phase * 3));
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      ctx.fillRect(Math.round(x * width), Math.round(y * height), m.size, m.size);
+    }
     ctx.restore();
   }
 
@@ -646,6 +873,11 @@ export class MapRenderer {
    * The world beyond the city-states: a camp of hide tents and the name of each people across the
    * border, and an anchor on every neutral island harbour.
    */
+  /** Whether a screen rectangle overlaps any part of the HUD. */
+  private underHud(x: number, y: number, w: number, h: number, opt: RenderOptions): boolean {
+    return (opt.blocked ?? []).some(r => x < r.x + r.w && x + w > r.x && y < r.y + r.h && y + h > r.y);
+  }
+
   private drawFrontier(ctx: CanvasRenderingContext2D, cam: Camera, opt: RenderOptions, width: number, height: number) {
     const sim = this.sim;
     const w = sim.world;
@@ -673,6 +905,8 @@ export class MapRenderer {
       ctx.font = `italic 600 11px ${this.display}`;
       const label = opt.names[p.idx];
       const lw = ctx.measureText(label).width + 14;
+      // No label under the HUD (the logo, the bars).
+      if (this.underHud(x - lw / 2, y + s * 0.7, lw, 16, opt)) continue;
       ctx.fillStyle = this.css['panel-bg'];
       ctx.strokeStyle = this.colorOf(p.idx);
       ctx.beginPath();

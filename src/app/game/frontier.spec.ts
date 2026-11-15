@@ -21,7 +21,7 @@ describe('peoples beyond the frontier', () => {
   it('sit on non-Greek land, own no Greek land and are never ranked among the cities', () => {
     const sim = game();
     const tribes = sim.poleis.filter(p => p.tribe);
-    expect(tribes.map(t => t.def.id)).toEqual(['illyrians', 'paeonians', 'thracians']);
+    expect(tribes.map(t => t.def.id)).toEqual(['illyrians', 'paeonians', 'thracians', 'lydians', 'carians', 'mysians', 'messapians', 'oenotrians']);
     for (const t of tribes) {
       expect(world.terrain[t.capital]).toBe(Terrain.Foreign);
       expect(t.cells).toBe(0);

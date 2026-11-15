@@ -8,6 +8,8 @@ import { Bane } from '../../game/fortune';
 import { DilemmaId, WorldNoteId } from '../../game/data/dilemmas';
 import { DilemmaText } from './dilemmas.en';
 import { WarTexts } from './war.en';
+import { SwayTexts } from './sway.en';
+import { OracleTexts } from './oracle.en';
 import { GreatWorkId, NeutralPortId, TraderId, TribeId } from '../../game/data/frontier';
 
 export type Lang = 'en' | 'pl';
@@ -35,7 +37,7 @@ export interface GlossaryEntry {
  * Every user-facing text of the application in one language.
  * Add new translation keys here first so TypeScript enforces parity across en.ts and pl.ts.
  */
-export interface Dict extends WarTexts {
+export interface Dict extends WarTexts, SwayTexts, OracleTexts {
   htmlLang: string;
   docTitle: string;
   langName: string;

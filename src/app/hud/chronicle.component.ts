@@ -9,6 +9,7 @@ import { HegemonyCategory } from '../game/hegemony';
 import { GreatWorkId } from '../game/data/frontier';
 import { DilemmaId, WorldNoteId } from '../game/data/dilemmas';
 import { CampaignKind, PeaceItemKind } from '../game/war';
+import { OracleOutcome } from '../game/oracle';
 
 const TEMPLATE_KEY = {
   war: 'evWar',
@@ -53,7 +54,10 @@ const TEMPLATE_KEY = {
   world: 'evWorld',
   campaign: 'evCampaign',
   treaty: 'evTreaty',
-  peaceBought: 'evPeaceBought'
+  peaceBought: 'evPeaceBought',
+  sway: 'evSway',
+  swayLost: 'evSwayLost',
+  oracle: 'evOracle'
 } as const satisfies Record<GameEventKind, string>;
 
 /** Feed of the latest wars, treaties, colonies and conquests: a few lines in the outliner, the full record in the drawer. */
@@ -88,7 +92,7 @@ export class ChronicleComponent {
         if (['siege', 'navalBattle', 'blockade', 'raid', 'raidRepelled', 'raidBribed', 'raidStand'].includes(e.kind)) return e.a === player || e.b === player;
         // From the fronts: the player's own fighting, and the great battles and fallen walls of Hellas.
         if (e.kind === 'campaign') return e.a === player || e.b === player || e.tag === 'battle' || e.tag === 'assault';
-        if (['settle', 'colony', 'farm', 'port', 'festival', 'farmPlanned', 'portPlanned', 'built', 'mercenaries', 'warship', 'greatWork', 'dilemma'].includes(e.kind)) return e.a === player;
+        if (['settle', 'colony', 'farm', 'port', 'festival', 'farmPlanned', 'portPlanned', 'built', 'mercenaries', 'warship', 'greatWork', 'dilemma', 'oracle'].includes(e.kind)) return e.a === player;
         return e.kind !== 'allianceOffer';
       })
       .slice(-limit)
@@ -96,7 +100,7 @@ export class ChronicleComponent {
       .map(e => ({
         id: e.id,
         year: formatYear(e.year, t),
-        text: interpolate(t[TEMPLATE_KEY[e.kind]], {
+        text: interpolate(e.kind === 'sway' && e.tag === 'awe' ? t.evSwayAwe : t[TEMPLATE_KEY[e.kind]], {
           a: name(e.a),
           b: name(e.b),
           m: e.n ? formatPlural(e.n, t.monthsOne, t.monthsFew, t.monthsMany) : '',
@@ -116,7 +120,9 @@ export class ChronicleComponent {
                         ? interpolate(t.campaignKinds[e.tag as CampaignKind]?.line ?? '', { a: name(e.a), b: name(e.b), w: name(e.n ?? -1) })
                         : e.kind === 'treaty'
                           ? this.treatyTerms(e.tag ?? '')
-                          : ''
+                          : e.kind === 'oracle' && e.tag
+                            ? (t.oracleOutcomes[e.tag.split('.')[1] as OracleOutcome]?.name ?? '').toLowerCase()
+                            : ''
         }),
         mine: e.a === player || e.b === player,
         world: e.kind === 'world',

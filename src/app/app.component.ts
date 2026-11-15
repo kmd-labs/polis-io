@@ -52,6 +52,7 @@ import { SiteId } from './game/data/poleis';
 import { StartScreenComponent } from './hud/start-screen.component';
 import { EventCardComponent } from './hud/event-card.component';
 import { WarPostureComponent } from './hud/war-posture.component';
+import { OracleComponent } from './hud/oracle.component';
 import { PeaceTableComponent } from './hud/peace-table.component';
 import { describeTerms } from './hud/peace-terms';
 import { CampaignReport, PeaceItem } from './game/war';
@@ -310,6 +311,7 @@ export class AppComponent {
         else if (n.kind === 'peaceOffer') this.openPeaceOffer(n.from, n.deal);
         else if (n.kind === 'peaceTable') this.openPeaceTable(n.enemy, n.deal);
         else if (n.kind === 'campaign') this.openCampaign(n.report);
+        else if (n.kind === 'oracle') this.openOracle();
         else this.openReport(n.near);
       });
     });
@@ -469,6 +471,18 @@ export class AppComponent {
       component: PeaceTableComponent,
       componentInputs: { enemy, initial: deal, close: () => this.popup.close() },
       size: 'lg',
+      onClose: () => this.game.closeNotice()
+    });
+  }
+
+  /** The oracle at Delphi: a question, an offering, and the god's lot. */
+  private openOracle() {
+    this.popup.open({
+      id: 'oracle',
+      title: computed(() => this.i18n.t().oracleTitle),
+      component: OracleComponent,
+      componentInputs: { close: () => this.popup.close() },
+      size: 'md',
       onClose: () => this.game.closeNotice()
     });
   }

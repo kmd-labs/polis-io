@@ -1,4 +1,4 @@
-import { Component, computed, inject, output } from '@angular/core';
+import { Component, NgZone, computed, inject, output, signal } from '@angular/core';
 import {
   LucideAngularModule,
   BookOpen,
@@ -14,7 +14,7 @@ import {
   Swords,
   Users
 } from 'lucide-angular';
-import { BreakpointService, ButtonComponent, TooltipDirective } from '@kmd/design-system';
+import { BreakpointService, ButtonComponent, TooltipDirective, breakpointPx } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { fmt1, formatCompact, formatNumber, formatOrdinal, formatRate, formatYear, interpolate } from '../core/i18n/format';
 import { HEGEMONY_CATEGORIES } from '../game/hegemony';
@@ -49,6 +49,7 @@ export class TopBarComponent {
   readonly game = inject(GameService);
   readonly bp = inject(BreakpointService);
   private readonly hud = inject(HudStateService);
+  private readonly zone = inject(NgZone);
 
   readonly help = output<void>();
   readonly restart = output<void>();
@@ -91,7 +92,7 @@ export class TopBarComponent {
         key: 'hoplites',
         icon: Swords,
         label: t.statWarriors,
-        value: `${num(me.warriors)}/${num(me.armyTarget)}`,
+        value: this.bp.mobile() ? num(me.warriors) : `${num(me.warriors)}/${num(me.armyTarget)}`,
         hint: t.topHoplitesHint
       },
       {
@@ -111,13 +112,49 @@ export class TopBarComponent {
         hint: t.statTerritoryHint
       }
     ];
-    const keep = this.bp.mobile()
-      ? ['drachmae', 'population', 'satisfaction']
-      : compact
-        ? ['drachmae', 'population', 'hoplites', 'satisfaction']
-        : null;
+    return all;
+  });
+
+  /** The figures that fit the bar at this width (the rest wait behind the ⋯ button): money, hoplites and
+   * satisfaction always; population and power projection when there is room; everything on wide screens. */
+  readonly shown = computed(() => {
+    const keep =
+      this.bp.tablet() || this.narrow()
+        ? ['drachmae', 'hoplites', 'satisfaction']
+        : this.medium()
+          ? ['drachmae', 'population', 'hoplites', 'satisfaction', 'prestige']
+          : null;
+    const all = this.resources();
     return keep ? all.filter(r => keep.includes(r.key)) : all;
   });
+
+  readonly hidden = computed(() => {
+    const shown = new Set(this.shown().map(r => r.key));
+    return this.resources().filter(r => !shown.has(r.key));
+  });
+
+  /** At or below the desktop breakpoint (1280 px): room for five figures, not seven. */
+  private readonly narrow = (() => {
+    const state = signal(false);
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return state;
+    const mql = window.matchMedia(`(max-width: ${breakpointPx('desktop')}px)`);
+    state.set(mql.matches);
+    mql.addEventListener('change', e => this.zone.run(() => state.set(e.matches)));
+    return state;
+  })();
+
+  /** Up to 1600 px: room for five figures. */
+  private readonly medium = (() => {
+    const state = signal(false);
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return state;
+    const mql = window.matchMedia('(max-width: 1600px)');
+    state.set(mql.matches);
+    mql.addEventListener('change', e => this.zone.run(() => state.set(e.matches)));
+    return state;
+  })();
+
+  /** The ⋯ list (on touch screens it opens on a tap). */
+  readonly moreOpen = signal(false);
 
   /** Income line by line, per month, for the treasury popover. */
   readonly breakdown = computed(() => {
@@ -135,10 +172,11 @@ export class TopBarComponent {
       { label: t.incDues, value: dr(b.dues) },
       { label: t.incBuildings, value: pct(b.buildings) },
       { label: t.incMood, value: `×${b.mood.toLocaleString(t.htmlLang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+      { label: t.incSway, value: dr(b.sway) },
       { label: t.incOther, value: dr(b.other) },
       { label: t.incUpkeep, value: dr(-b.upkeep) }
     ];
-    return { rows, total: dr(b.gross + b.other - b.upkeep), blockaded: b.blockaded };
+    return { rows, total: dr(b.gross + b.sway + b.other - b.upkeep), blockaded: b.blockaded };
   });
 
   /** The laurel: the player's hegemony points and places in the three categories. */

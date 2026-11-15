@@ -14,6 +14,7 @@
   height: 46px;
   padding: 0 6px 0 4px;
   pointer-events: auto;
+  border-bottom: 2px solid strategy.$crimson;
 
   // The city's arms in a round gilt medallion, standing proud of the bar.
   &__polis {
@@ -57,8 +58,10 @@
     display: flex;
     align-items: center;
     gap: spacing("sm");
+    flex: 0 1 auto;
     min-width: 0;
     margin: 0;
+    overflow: hidden;
   }
 
   &__clock {
@@ -257,21 +260,39 @@
   height: 22px;
   padding: 0 4px;
 
+  // Each pip is a 24 px target; the bar drawn inside it grows with the speed.
   &__pip {
-    width: 7px;
-    border: 1px solid rgba(strategy.$bronze, 0.6);
-    border-radius: 1px;
-    background: strategy.$vellum-deep;
+    position: relative;
+    width: 24px;
+    height: 24px;
+    margin: 0 -4px;
+    border: 0;
+    background: transparent;
     padding: 0;
     cursor: pointer;
 
+    &::before {
+      content: "";
+      position: absolute;
+      bottom: 3px;
+      left: 8px;
+      width: 8px;
+      border: 1px solid rgba(strategy.$bronze, 0.6);
+      border-radius: 1px;
+      background: strategy.$vellum-deep;
+    }
+
     @for $i from 1 through 5 {
-      &:nth-child(#{$i}) {
+      &:nth-child(#{$i})::before {
         height: 6px + $i * 3px;
       }
     }
 
-    &--on {
+    &:hover::before {
+      border-color: strategy.$bronze;
+    }
+
+    &--on::before {
       background: linear-gradient(180deg, strategy.$gold-light, strategy.$gold);
       border-color: strategy.$bronze;
       box-shadow: 0 0 4px rgba(strategy.$gold, 0.7);
@@ -354,4 +375,109 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+// Figures that do not fit the bar: behind a ⋯ button, listed on hover, focus or tap.
+.more {
+  position: relative;
+  flex: none;
+
+  &__btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    @include strategy.tile;
+    font: inherit;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  &__list {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 30;
+    min-width: 200px;
+    padding: 6px 10px;
+    @include strategy.frame(false);
+  }
+
+  &:hover &__list,
+  &:focus-within &__list,
+  &--open &__list {
+    display: block;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 4px 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: font-size("xs");
+    color: color("text-main");
+    text-align: left;
+
+    &--link {
+      cursor: pointer;
+    }
+  }
+
+  &__label {
+    flex: 1;
+  }
+
+  &__value {
+    font-family: var(--font-family-mono);
+    font-weight: 600;
+  }
+
+  &__laurel {
+    width: 22px;
+    text-align: center;
+    color: strategy.$gold;
+  }
+}
+
+// Up to 1280 px: the medallion speaks for the city, and the monthly rate waits in the treasury tooltip.
+@include respond-to("desktop") {
+  .bar__name,
+  .res__rate {
+    display: none;
+  }
+}
+
+// Phones: a tighter ledger, so money, hoplites and satisfaction all fit beside the date.
+@include respond-to("mobile") {
+  .bar {
+    gap: 4px;
+  }
+
+  .bar__resources {
+    gap: 2px;
+  }
+
+  .res {
+    gap: 3px;
+    padding: 2px 3px 2px 2px;
+
+    & + & {
+      padding-left: 5px;
+    }
+  }
+
+  .res__icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .bar__date {
+    padding: 3px 6px;
+    font-size: font-size("xs");
+  }
 }

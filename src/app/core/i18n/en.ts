@@ -1,9 +1,13 @@
+import { ORACLE_EN } from './oracle.en';
+import { SWAY_EN } from './sway.en';
 import { WAR_EN } from './war.en';
 import { DILEMMAS_EN, WORLD_NOTES_EN } from './dilemmas.en';
 import { Dict } from './i18n.types';
 
 export const EN: Dict = {
   ...WAR_EN,
+  ...SWAY_EN,
+  ...ORACLE_EN,
   htmlLang: 'en',
   docTitle: 'KMD · Polis',
   langName: 'English',
@@ -33,15 +37,23 @@ export const EN: Dict = {
     },
     {
       term: 'The Olympic Games',
-      desc: 'Every fourth year (counted from the first Olympiad of 776 BC) the Games are held at Olympia, with the contests of their time: twelve in 600 BC, up to eighteen and more later (races, wrestling, boxing, pankration, pentathlon, chariots, the race in armour, heralds and trumpeters). The sacred truce runs from two months before to a month after: no war is waged, armies march home. You choose how much of a year’s income to spend on your delegation; big, wealthy, well-funded cities do best (warlike ones in combat sports, cultured ones in races and music, rich ones in chariots). Every city that competes gains power projection, and every wreath raises its renown and others’ regard; a triumph (two-fifths of all wreaths, at least five) adds +1 culture.'
+      desc: 'Every fourth year (counted from the first Olympiad of 776 BC) the Games are held at Olympia, with the contests of their time: twelve in 600 BC, up to eighteen and more later (races, wrestling, boxing, pankration, pentathlon, chariots, the race in armour, heralds and trumpeters). The sacred truce runs from two months before to a month after: no war is waged, armies march home. You choose how much of a year’s income to spend on your delegation; big, wealthy, well-funded cities do best (warlike ones in combat sports, cultured ones in races and music, rich ones in chariots). Every city that competes gains power projection, and every wreath raises its power projection and its relations with others; a triumph (two-fifths of all wreaths, at least five) adds +1 culture.'
     },
     {
       term: 'Peoples beyond the frontier',
-      desc: 'Illyrians in the north-west, Paeonians on the Axios and Thracians between the Axios and the Strymon live beyond the Greek border and cannot be conquered. Every few years one of them sends a warband against a rich, poorly guarded city within reach: warbands of 400 to 2,000 men carry off people and silver and sour the citizens’ mood, then go home. A city they enter chooses: pay them six months of its income to plunder someone else, or fight them in the name of Hellas — power projection and every Greek city’s regard at once, more renown if they are driven off — and send out defenders. A warband that loses half its men turns back. The Olympic truce means nothing to them. Walls halve what they carry off.'
+      desc: 'Illyrians in the north-west, Paeonians on the Axios and Thracians between the Axios and the Strymon; Lydians at Sardis (Persians once Cyrus takes it in 546 BC), Carians and Mysians behind the Ionian coast; Messapians and Oenotrians in Italy — they live beyond the Greek lands and cannot be conquered. Every few years one of them sends a warband against a rich, poorly guarded city within reach: warbands of 400 to 2,000 men carry off people and silver and sour the citizens’ satisfaction, then go home. A city they enter chooses: pay them six months of its income to plunder someone else, or fight them in the name of Hellas — power projection and relations with every Greek city at once, more power projection if they are driven off — and send out defenders. A warband that loses half its men turns back. The Olympic truce means nothing to them. Walls halve what they carry off.'
     },
     {
       term: 'Choices and the wider world',
-      desc: 'Now and then the city must choose: a letter with a painted scene, the story and two or three answers, each listing what it will cost and bring. Some come in their historical year — Solon’s laws, the Sacred War, Thales’ eclipse, the gold of Croesus, the fall of Sardis, the Persian Wars — others at any time. They come often while the game is young and ever more rarely later. A letter that asks for a decision cannot be put aside: an answer must be given. At most ten letters a year stop the game, and after a century at most one chance event a year. The chronicle notes what happens in the wider world in its year.'
+      desc: 'Now and then the city must choose: a letter with a painted scene, the story and two or three answers, each listing what it will cost and bring. Some come in their historical year — Solon’s laws, the Sacred War, Thales’ eclipse, the gold of Croesus, the fall of Sardis, the Persian Wars — others at any time. The first comes in the second or third year; after that one every three to five years. A letter that asks for a decision cannot be put aside: an answer must be given. At most ten letters a year stop the game, and after a century at most one chance event a year. The chronicle notes what happens in the wider world in its year.'
+    },
+    {
+      term: 'Neutral cities and spheres of influence',
+      desc: 'Eight neutral cities — Aegina, Siphnos, Thera, Keos, Melos, Delos, Lipara and Tenedos — hold their islands and cannot be conquered. Each weighs the Greek cities around it: fear of a mighty army nearby (hoplites, mercenaries, war galleys) and fascination with a city famed for its culture and power projection, which carries further over the sea. The city of greatest influence holds sway: out of fear the neutral city pays it tribute, a quarter of its income; out of fascination it sends gifts, power projection and its merchant ships. See the Spheres of influence map mode, the badges by each neutral city and the Neutral cities group of the situation panel.'
+    },
+    {
+      term: 'The oracle at Delphi',
+      desc: 'Once a year (Polis tab) the city may send envoys to Delphi with a question — war, harvest, sea, colonies or festival — and an offering of one, three or six months of income. The Pythia draws a lot: a blessing (five times the offering and power projection), a favourable answer (1.7 times), a riddle (half back) or an ill omen (nothing, and the citizens grow uneasy). What the god grants goes to the fund of the question. Richer offerings and treasuries raised at Delphi tilt the lots in the city’s favour.'
     },
     {
       term: 'Great works and neutral harbours',
@@ -53,7 +65,7 @@ export const EN: Dict = {
     },
     {
       term: 'Hegemony',
-      desc: 'Every year the three best cities in silver (average income over 10 years, tribute included), people (today’s population; vassals count for themselves) and arms (last 25 years: battle won 1, capital taken 5, war won 3) earn 3, 2 and 1 points. The most points (out of 9) makes the Hegemon of Hellas. Each point brings +0.1 power projection a year; the Hegemon earns 5% more from sea trade and draws more ships. A city holding 7 or more points for ten years running unites Hellas against it: everyone’s regard for it sinks by 2 a year, and its rivals ally and attack more readily, until its score falls below 6. See the Hegemony tab, the laurel in the top bar and the hegemony map mode.'
+      desc: 'Every year the three best cities in silver (average income over 10 years, tribute included), people (today’s population; vassals count for themselves) and arms (last 25 years: battle won 1, capital taken 5, war won 3) earn 3, 2 and 1 points. The most points (out of 9) makes the Hegemon of Hellas. Each point brings +0.1 power projection a year; the Hegemon earns 5% more from sea trade and draws more ships. A city holding 7 or more points for ten years running unites Hellas against it: everyone’s relations with it sink by 2 a year, and its rivals ally and attack more readily, until its score falls below 6. See the Hegemony tab, the laurel in the top bar and the hegemony map mode.'
     },
     {
       term: 'Polis',
@@ -109,11 +121,11 @@ export const EN: Dict = {
     },
     {
       term: 'War',
-      desc: 'No armies march across the map: a war is a front, and only the border moves. The front between warring cities is drawn as a dark red line. Every month of the campaigning season (April to October; winters are quiet) the war may bring an event: a pitched battle of the phalanxes (the winner takes a strip of land and renown), fields ravaged while the defenders sit behind their walls, a border fort taken, a town betrayed, a skirmish, sickness in the camp, allies arriving, a raid from the sea or a landing on the coast where the sea divides the two. Each side’s chance rests on its hoplites and mercenaries, its militarism and strategos (1–3 stars), the distance of the fighting from its home — and a little luck. Choose a posture when the war begins (all-out offensive, offensive, balanced, defensive, behind the walls) and change it at most once a month. During the Olympic truce every front is frozen. After four years a war weighs on the citizens every month. No city fights more than three wars at once.'
+      desc: 'No armies march across the map: a war is a front, and only the border moves. The front between warring cities is drawn as a dark red line. Every month of the campaigning season (April to October; winters are quiet) the war may bring an event: a pitched battle of the phalanxes (the winner takes a strip of land and power projection), fields ravaged while the defenders sit behind their walls, a border fort taken, a town betrayed, a skirmish, sickness in the camp, allies arriving, a raid from the sea or a landing on the coast where the sea divides the two. Each side’s chance rests on its hoplites and mercenaries, its militarism and strategos (1–3 stars), the distance of the fighting from its home — and a little luck. Choose a posture when the war begins (all-out offensive, offensive, balanced, defensive, behind the walls) and change it at most once a month. During the Olympic truce every front is frozen. After four years a war weighs on the citizens every month. No city fights more than three wars at once.'
     },
     {
       term: 'Peace',
-      desc: 'Peace is made at a table, as in Civilization: put terms on it for either side — gold (3, 6 or 12 months of the giver’s income), a strip of land, a forced alliance, clientship (the giver serves and pays tribute) or a public humiliation (renown passes from one to the other) — and a gauge shows whether the enemy will accept; “What would make this work?” shows their terms. The side ahead in the balance of the war asks more; a long war softens both. Contentment counts too: discontented citizens weaken a city at the table, and a city in unrest presses for peace. Enemies send envoys with terms of their own. When war is declared on you, you may sue for peace at once for a year of your income. A peace treaty holds five years.'
+      desc: 'Peace is made at a table, as in Civilization: put terms on it for either side — gold (3, 6 or 12 months of the giver’s income), a strip of land, a forced alliance, clientship (the giver serves and pays tribute) or a public humiliation (power projection passes from one to the other) — and a gauge shows whether the enemy will accept; “What would make this work?” shows their terms. The side ahead in the balance of the war asks more; a long war softens both. Satisfaction counts too: dissatisfied citizens weaken a city at the table, and a city in unrest presses for peace. Enemies send envoys with terms of their own. When war is declared on you, you may sue for peace at once for a year of your income. A peace treaty holds five years.'
     },
     {
       term: 'Mercenaries and the war fleet',
@@ -133,7 +145,7 @@ export const EN: Dict = {
     },
     {
       term: 'Battle',
-      desc: 'A pitched battle is the decisive event of a war: the stronger side — hoplites and mercenaries, militarism, strategos, nearness to home, posture — usually wins, but not always. The loser leaves its dead on the field, loses a strip of land around the battlefield and falls back in the balance of the war; the victor sets up a trophy and gains renown.'
+      desc: 'A pitched battle is the decisive event of a war: the stronger side — hoplites and mercenaries, militarism, strategos, nearness to home, posture — usually wins, but not always. The loser leaves its dead on the field, loses a strip of land around the battlefield and falls back in the balance of the war; the victor sets up a trophy and gains power projection.'
     },
     {
       term: 'Victory',
@@ -155,7 +167,7 @@ export const EN: Dict = {
   flagOf: 'Banner of {name}',
   startEyebrow: 'Hellas · 600 BC',
   startIntro:
-    'The Dark Ages are over. Eighteen city-states stand among the mountains and islands of Greece, and the wild land between them is up for grabs.',
+    'The Dark Ages are over. Thirty-two city-states stand from Sicily to Ionia, among the mountains and islands of the Greek world, and the wild land between them is up for grabs.',
   startHint: 'Pick a city-state from the list or on the map',
   startLead: 'Lead {name}',
   statArea: 'Land',
@@ -341,9 +353,10 @@ export const EN: Dict = {
   versionLabel: 'Version',
   armyInfo: '{kind} of {name} · {n} men · general {stars} (+{bonus}% in battle)',
   armyKinds: { main: 'Main army', raider: 'Raiding party', mercenary: 'Mercenaries', raid: 'Warband', defend: 'Defenders' },
-  tribeNames: { illyrians: 'Illyrians', paeonians: 'Paeonians', thracians: 'Thracians' },
+  tribeNames: { illyrians: 'Illyrians', paeonians: 'Paeonians', thracians: 'Thracians',
+    lydians: 'Lydians', persians: 'Persians', carians: 'Carians', mysians: 'Mysians', messapians: 'Messapians', oenotrians: 'Oenotrians'
+  },
   neutralPortNames: {
-    delos: 'Delos',
     syros: 'Syros',
     seriphos: 'Seriphos',
     ios: 'Ios',
@@ -373,11 +386,11 @@ export const EN: Dict = {
   fx: {
     silver: '{v} dr',
     colonize: '{v} dr for colonization',
-    prestige: '{v} prestige',
-    mood: '{v} contentment',
-    culture: '{v} culture',
-    militarism: '{v} militarism',
-    regard: '{v} regard of every Greek city',
+    prestige: '{v} power projection',
+    mood: '{v} satisfaction',
+    culture: 'Culture {from} → {to}',
+    militarism: 'Militarism {from} → {to}',
+    regard: '{v} relations with every Greek city',
     hoplitesUp: '{v}% of the people take up arms',
     hoplitesDown: '{v}% of the garrison sent away',
     people: '{v}% population',
@@ -385,7 +398,9 @@ export const EN: Dict = {
     none: 'Nothing changes',
     cantAfford: 'We cannot afford it'
   },
-  traderNames: { aegina: 'Aegina', siphnos: 'Siphnos', thera: 'Thera', keos: 'Keos' },
+  traderNames: { aegina: 'Aegina', siphnos: 'Siphnos', thera: 'Thera', keos: 'Keos',
+    melos: 'Melos', delos: 'Delos', lipara: 'Lipara', tenedos: 'Tenedos'
+  },
   traderNeutral: 'A neutral merchant city: it holds its island, goes to war with no one and lives by the sea trade. Its ships call at every harbour — the city receiving one keeps half of what it brings.',
   hoverTrader: 'neutral merchant city',
   buyMercenaries: 'Hire {n} mercenaries now · {d} dr',
@@ -402,7 +417,7 @@ export const EN: Dict = {
   greatWorks: {
     delphi: {
       name: 'Treasury at Delphi',
-      desc: 'A marble treasury beside Apollo’s temple to hold the city’s offerings: +1.5 power projection, every city’s regard +5, culture +0.2. Can be built again (dearer each time).'
+      desc: 'A marble treasury beside Apollo’s temple to hold the city’s offerings: +1.5 power projection, relations with every city +5, culture +0.2. Can be built again (dearer each time).'
     },
     temple: { name: 'Great temple', desc: 'A Doric temple with a peristyle of stone columns: culture +1, power projection +1, satisfaction +15.' },
     walls: { name: 'City walls', desc: 'A ring of ashlar walls and towers: the garrison holds a siege far longer, and raiders find little left to carry off.' },
@@ -487,7 +502,7 @@ export const EN: Dict = {
   olyYouWon: 'Our athletes won {n} olive wreaths — {place} of {of} cities.',
   olyYouNone: 'Our athletes came home without a wreath — {place} of {of} cities.',
   olyYouStayed: 'We sent no delegation this time.',
-  olyReward: 'Power projection +{p}; every city’s regard for us +{r}.',
+  olyReward: 'Power projection +{p}; relations with every city +{r}.',
   olyTriumph: 'A triumph! All Hellas sings of our athletes: culture +1.',
   olyTriumphOther: 'A triumph for {name}: its culture rises by one.',
   olyTable: 'Wreaths by city',
@@ -571,7 +586,7 @@ export const EN: Dict = {
   topBarLabel: 'Your polis at a glance',
   perMonth: '{n}/mo',
   topHoplitesHint: 'Hoplites under arms now / the army your military budget aims for. Raise the Military slider to grow it; lower it and men go back to the fields.',
-  topSatisfactionHint: 'How content the citizens are. Above 70% your reputation improves and work goes faster; low contentment slows growth and income.',
+  topSatisfactionHint: 'How content the citizens are. Above 70% your reputation improves and work goes faster; low satisfaction slows growth and income.',
   speedN: 'Speed {n}×',
   drawerLabel: 'Polis panels',
   drawerCollapse: 'Fold the panel',
@@ -794,6 +809,76 @@ export const EN: Dict = {
       sender: 'Cleobulus, tyrant of Lindos',
       taunt: 'Cleobulus teaches: measure is best. Your army is below every measure.',
       challenge: 'Cleobulus teaches: measure is best. We have measured you and found you a worthy enemy.'
+    },
+    megara: {
+      sender: 'Theagenes, tyrant of Megara',
+      taunt: 'We slaughtered the rich men’s cattle; we will not spare yours.',
+      challenge: 'Small Megara has sent out more cities than you have villages. Meet us.'
+    },
+    sikyon: {
+      sender: 'Cleisthenes, tyrant of Sicyon',
+      taunt: 'I renamed the tribes of the Dorians after pigs and asses. I shall find a name for you as well.',
+      challenge: 'Let the gods who watch the games watch this too.'
+    },
+    eretria: {
+      sender: 'The Hippeis of Eretria',
+      taunt: 'Our horsemen ride where they please. Your fields are next.',
+      challenge: 'Euboea has fought for its plains before. It will again.'
+    },
+    tegea: {
+      sender: 'The council of Tegea',
+      taunt: 'Even Sparta came here with fetters for us — and wore them itself.',
+      challenge: 'Arcadians fight with the spear, not with letters. Come.'
+    },
+    miletus: {
+      sender: 'Thrasybulus, tyrant of Miletus',
+      taunt: 'Like Periander I cut down the tallest ears of wheat. Yours stick out.',
+      challenge: 'Miletus has held off the Lydian king for twelve years. You will not trouble it.'
+    },
+    ephesus: {
+      sender: 'The Basilids of Ephesus',
+      taunt: 'Artemis is on our side, and so is Lydian gold.',
+      challenge: 'May the goddess judge between us.'
+    },
+    phocaea: {
+      sender: 'The navarchs of Phocaea',
+      taunt: 'Our penteconters have sailed to Tartessos. Your harbour is a short trip.',
+      challenge: 'Sailors settle their quarrels at sea. Put out your ships.'
+    },
+    halicarnassus: {
+      sender: 'The council of Halicarnassus',
+      taunt: 'The Carians in our hills are fiercer than you. We are not afraid.',
+      challenge: 'Dorians answer a challenge in person.'
+    },
+    kyzikos: {
+      sender: 'The archons of Cyzicus',
+      taunt: 'The tuna run past our walls every spring. So will your army — away.',
+      challenge: 'Miletus’ daughter has grown up. Let us see who is stronger.'
+    },
+    taras: {
+      sender: 'The Partheniai of Taras',
+      taunt: 'We are Spartans born on the wrong side of the sea. You will learn what that means.',
+      challenge: 'Taras asks no favours. Meet us in the field.'
+    },
+    sybaris: {
+      sender: 'Smindyrides of Sybaris',
+      taunt: 'Our horses dance to the flute; our silver could buy your city twice over.',
+      challenge: 'Even the softest city has hard men. Come and see.'
+    },
+    kroton: {
+      sender: 'The Thousand of Croton',
+      taunt: 'Our wrestlers alone would beat your army.',
+      challenge: 'Croton’s athletes have won at Olympia. Now they will win on your fields.'
+    },
+    rhegion: {
+      sender: 'The council of Rhegium',
+      taunt: 'We hold the straits. Nothing passes without our leave — least of all you.',
+      challenge: 'Chalcidians do not wait to be attacked.'
+    },
+    syracuse: {
+      sender: 'The Gamoroi of Syracuse',
+      taunt: 'We hold the best harbour in the west. Your ships will rot in ours.',
+      challenge: 'Corinth’s daughter fears no one. Let it be war.'
     }
   },
 
@@ -831,7 +916,21 @@ export const EN: Dict = {
     samos: 'Samos',
     naxos: 'Naxos',
     knossos: 'Knossos',
-    lindos: 'Lindos'
+    lindos: 'Lindos',
+    megara: 'Megara',
+    sikyon: 'Sicyon',
+    eretria: 'Eretria',
+    tegea: 'Tegea',
+    miletus: 'Miletus',
+    ephesus: 'Ephesus',
+    phocaea: 'Phocaea',
+    halicarnassus: 'Halicarnassus',
+    kyzikos: 'Cyzicus',
+    taras: 'Taras',
+    sybaris: 'Sybaris',
+    kroton: 'Croton',
+    rhegion: 'Rhegium',
+    syracuse: 'Syracuse'
   },
 
   polisInfo: {
@@ -852,19 +951,31 @@ export const EN: Dict = {
     samos: { region: 'Samos', blurb: 'A naval power with a great temple of Hera and bold engineers.' },
     naxos: { region: 'Cyclades', blurb: 'Largest of the Cyclades, carving marble lions for the gods of Delos.' },
     knossos: { region: 'Crete', blurb: 'Heir to the Minoan palaces among the hundred cities of Crete.' },
-    lindos: { region: 'Rhodes', blurb: 'A merchant city of Rhodes beneath the acropolis of Athena Lindia.' }
+    lindos: { region: 'Rhodes', blurb: 'A merchant city of Rhodes beneath the acropolis of Athena Lindia.' },
+    megara: { region: 'Megaris', blurb: 'A small city between Athens and Corinth that sent its sons to found Byzantium and Chalcedon.' },
+    sikyon: { region: 'Sicyonia', blurb: 'Rich plain by the Corinthian gulf, home of painters and of the tyrant Cleisthenes.' },
+    eretria: { region: 'Euboea', blurb: 'Horsemen and seafarers, Chalcis’ old rival in the war over the Lelantine plain.' },
+    tegea: { region: 'Arcadia', blurb: 'Upland Arcadians who will not bow to Sparta — not yet.' },
+    miletus: { region: 'Ionia', blurb: 'The first city of Ionia: wool, ninety colonies on the Black Sea, and Thales gazing at the sky.' },
+    ephesus: { region: 'Ionia', blurb: 'Keeper of the great temple of Artemis at the mouth of the Cayster, in Lydia’s shadow.' },
+    phocaea: { region: 'Aeolis', blurb: 'Boldest sailors of all the Greeks, whose penteconters reach as far as Spain.' },
+    halicarnassus: { region: 'Caria', blurb: 'A Dorian harbour among the Carians, where Greek and native mingle.' },
+    kyzikos: { region: 'Propontis', blurb: 'Milesian colony on its island in the Propontis, rich from tuna and the Black Sea trade.' },
+    taras: { region: 'Iapygia', blurb: 'Founded by the Partheniai of Sparta on the finest harbour of southern Italy.' },
+    sybaris: { region: 'Italy', blurb: 'Proverbial for luxury: the richest city of the Greek west, between two rivers.' },
+    kroton: { region: 'Italy', blurb: 'Healthy, hard and athletic: its runners and wrestlers win at Olympia.' },
+    rhegion: { region: 'Italy', blurb: 'Chalcidian city guarding the straits to Sicily.' },
+    syracuse: { region: 'Sicily', blurb: 'Corinthian colony on Ortygia, with two harbours and the best land of eastern Sicily.' }
   },
 
-  siteNames: {
-    tegea: 'Tegea', mantineia: 'Mantinea', sikyon: 'Sicyon', epidauros: 'Epidaurus', troizen: 'Troezen',
-    megara: 'Megara', plataea: 'Plataea', orchomenos: 'Orchomenus', delphi: 'Delphi', amphissa: 'Amphissa',
+  siteNames: { mantineia: 'Mantinea', epidauros: 'Epidaurus', troizen: 'Troezen', plataea: 'Plataea', orchomenos: 'Orchomenus', delphi: 'Delphi', amphissa: 'Amphissa',
     naupaktos: 'Naupactus', kalydon: 'Calydon', pylos: 'Pylos', methone: 'Methone', gytheion: 'Gytheio',
     pharsalos: 'Pharsalus', pherai: 'Pherae', dion: 'Dion', olynthos: 'Olynthus', mende: 'Mende',
     stageira: 'Stagira', abdera: 'Abdera', maroneia: 'Maroneia', amphipolis: 'Amphipolis', kassope: 'Cassope',
     dodona: 'Dodona', thermon: 'Thermon', leukas: 'Leucas', ithaca: 'Ithaca', zakynthos: 'Zacynthus',
-    kythera: 'Cythera', melos: 'Melos', paros: 'Paros', andros: 'Andros', tenos: 'Tenos', karystos: 'Carystus',
-    eretria: 'Eretria', histiaia: 'Histiaea', lamia: 'Lamia', hermione: 'Hermione', phleious: 'Phlius',
+    kythera: 'Cythera', paros: 'Paros', andros: 'Andros', tenos: 'Tenos', karystos: 'Carystus', histiaia: 'Histiaea', lamia: 'Lamia', hermione: 'Hermione', phleious: 'Phlius',
     gortyn: 'Gortyn', kydonia: 'Cydonia', lyttos: 'Lyttus', ialysos: 'Ialysos', kos: 'Kos', methymna: 'Methymna',
-    myrina: 'Myrina', samothrace: 'Samothrace', skiathos: 'Sciathus'
+    myrina: 'Myrina', samothrace: 'Samothrace', skiathos: 'Sciathus',
+    erythrai: 'Erythrae', teos: 'Teos', klazomenai: 'Clazomenae', kolophon: 'Colophon', priene: 'Priene', kyme: 'Cyme', knidos: 'Cnidus', lampsakos: 'Lampsacus', abydos: 'Abydos', sestos: 'Sestos', metapontion: 'Metapontum', siris: 'Siris', lokroi: 'Locri', kaulonia: 'Caulonia', zankle: 'Zancle', katane: 'Catana', leontinoi: 'Leontini', megarahyblaea: 'Megara Hyblaea'
   }
 };

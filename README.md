@@ -3,9 +3,9 @@
 A pixel real-time strategy game set in Archaic Greece, 600 BC, built on the
 [KMD design system](https://github.com/kmd-labs/design-system) (Angular 21, standalone components, signals).
 
-The map is a 1278×1257 raster of ~0.63 km pixels: coastlines and borders from Natural Earth, elevation and
-sea depth from AWS Terrain Tiles. Every one of the 336,000 Greek land pixels belongs to one of 18 poleis (or a
-neutral merchant city) or is still wild; land outside modern Greece is shown but never playable. Rules that measure land in pixels (reaches, speeds,
+The map is a 1889×1257 raster of ~0.63 km pixels, from eastern Sicily to the Ionian coast: coastlines and borders from Natural Earth, elevation and
+sea depth from AWS Terrain Tiles. Every one of the 513,000 playable land pixels (Greece, the coasts of Magna Graecia and eastern Sicily, and the Aegean shore of Anatolia within about 40 km of the sea) belongs to one of 32 poleis (or a
+neutral city) or is still wild; the rest (the interior of Italy and Anatolia, the Balkans) is shown but never playable. Rules that measure land in pixels (reaches, speeds,
 ranges, enclave sizes, settlers per pixel) are scaled by `GRID_SCALE` in `world.ts`, so the game plays the same at any
 map resolution. The map is drawn as a stylised relief —
 terraced contour tints with warm light and cool shade, an inked coastline, stepped sea depths with isobaths,
@@ -92,8 +92,8 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   debts (594 BC), the Sacred War on Kirrha, Thales' eclipse (585), the Pythian Games, Peisistratos' bodyguard, the gold
   of Croesus, the fall of Sardis (546), Pythagoras, Polycrates, Cleisthenes, the Ionian revolt, Darius' heralds and
   Xerxes (481) — and fifteen others at any time (the Pythia's riddles, drought, fever, blood feuds, poets, silver veins,
-  coinage, suppliants, omens, ransom, Olympic victors, stone temples, pirates, the phalanx, restless serfs). They come
-  about once a year at first and ever more rarely later. A letter that asks for a decision — a choice, a declaration
+  coinage, suppliants, omens, ransom, Olympic victors, stone temples, pirates, the phalanx, restless serfs). The first
+  comes in the second or third year; after that one every three to five years. A letter that asks for a decision — a choice, a declaration
   of war, a posture, envoys with terms or an alliance, a fallen city's fate, the Olympic delegation, a warband — has no
   close button and cannot be put aside: an answer must be given.
 - **Letters that stop the game** are kept to at most ten a year (threats and choices always come through). After a
@@ -106,6 +106,15 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   medallion, the treasury and figures in a ledger of bronze roundels, the date in a bronze cartouche, carved tiles for
   the tabs and map modes, and events on bronze banners.
   They wait in the alerts row.
+- **Look of a sun-baked epic**: a warm sepia grade with gold light from the north-west and umber edges, film grain,
+  motes of golden dust drifting through the light, and pixel-art cumulus clouds sailing east with their shadows.
+  Tabs are bronze medallions (the chosen one wreathed in laurel), panel titles are cut into stone plaques over a crimson
+  ribbon, and the top bar has a crimson hem.
+- **Readability**: the top bar keeps money, hoplites and satisfaction at any width and puts the rest behind ⋯; speed
+  pips are 24 px targets; each map mode has a legend; finished buildings wait in the alerts row; militarism and culture
+  pips fill in fractions; one name for each figure (satisfaction, power projection, relations).
+- **Phones**: the sheet opens at under half the screen with a handle to raise it, and the camera keeps your city above
+  it; map modes behind one 44 px button; budget sliders with 28 px thumbs and −5 / +5 steps.
 - **Peoples beyond the frontier**: Illyrians (north-west, beyond Epirus), Paeonians (Axios valley) and Thracians
   (Edoni and Bisaltae, between the Axios and the Strymon) sit on the non-Greek land around Hellas and cannot be
   conquered. Every 3–7 years each sends a warband of 400–2,000 men against a rich, poorly guarded city within reach;
@@ -118,7 +127,20 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
 - **Small islands and neutral harbours**: islets missing from the coastline data are added (Delos, Rheneia, Donousa…);
   twelve small unclaimed islands carry neutral harbours (Delos, Syros, Ios, Ithaca…) that belong to no one,
   cannot be settled or taken, and pay merchantmen 30% more.
-- **Neutral merchant cities**: Aegina, Siphnos, Thera and Keos each hold their whole small island, go to war with no
+- **More of the Greek world**: Megara, Sicyon, Eretria and Tegea join the mainland cities; Miletus, Ephesus,
+  Phocaea, Halicarnassus and Cyzicus hold the Anatolian shore; Taras, Sybaris, Croton, Rhegium and Syracuse are the
+  cities of Magna Graecia. New sites for colonies from Erythrae to Sestos and from Metapontum to Megara Hyblaea.
+- **Hostile neighbours in Anatolia and Italy**: the kingdom of Lydia at Sardis (Persian from 546 BC, when Cyrus takes
+  it), the Carians and the Mysians raid the Ionian coast; the Messapians and the Oenotrians raid Magna Graecia.
+- **Spheres of influence**: neutral cities cannot be conquered. Each weighs every Greek city by fear of its arms
+  (hoplites, mercenaries and galleys, fading with distance) and fascination with its culture and power projection
+  (carrying further). The strongest influence holds sway: tribute (a quarter of the neutral's income) out of fear, or
+  gifts, power projection and merchant ships out of fascination. Shown in the *Spheres of influence* map mode, by badges
+  on the map and in the situation panel.
+- **The oracle at Delphi** (Polis tab), a game of chance once a year: a question and an offering of 1, 3 or 6 months of
+  income; the Pythia draws a lot — blessing (×5 and power projection), favour (×1.7), riddle (×0.5) or ill omen (lost,
+  satisfaction −6) — paid into the fund of the question. Richer offerings and Delphic treasuries tilt the lots.
+- **Neutral merchant cities**: Aegina, Siphnos, Thera, Keos, Melos, Delos, Lipara and Tenedos each hold their whole small island, go to war with no
   one (nor do barbarians raid them), found no colonies and stand outside the hegemony and victory reckoning. They spend
   mostly on their harbours, keep three extra merchantmen at sea, sail twice as often and draw other cities' ships twice
   as strongly; a city their ship calls at keeps half of what it brings (30% for an ordinary city's ship).

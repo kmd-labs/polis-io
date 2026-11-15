@@ -18,7 +18,7 @@
           [class.card--selected]="active"
           [attr.aria-pressed]="active"
           [attr.aria-label]="c.name + ', ' + c.region"
-          (click)="game.select(c.idx)"
+          (click)="game.focus(c.idx)"
           (pointerenter)="game.preview.set(c.idx)"
           (pointerleave)="game.preview.set(-1)"
           (focus)="game.preview.set(c.idx)"

@@ -276,13 +276,43 @@
     font-weight: font-weight("bold");
   }
 
-  &__slider {
-    width: 100%;
-    height: 18px;
+  &__control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin: 2px 0 0;
+  }
+
+  // −5 / +5 beside the slider.
+  &__step {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid rgba(palette("warning-900"), 0.4);
+    border-radius: 2px;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    line-height: 1;
+    color: palette("warning-900");
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(palette("warning-900"), 0.08);
+    }
+  }
+
+  &__slider {
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    margin: 0;
     background: transparent;
     appearance: none;
     cursor: pointer;
+    // A vertical swipe scrolls the panel instead of moving the slider.
+    touch-action: pan-y;
 
     &::-webkit-slider-runnable-track {
       height: 6px;
@@ -298,9 +328,9 @@
 
     &::-webkit-slider-thumb {
       appearance: none;
-      width: 16px;
-      height: 16px;
-      margin-top: -5px;
+      width: 20px;
+      height: 20px;
+      margin-top: -7px;
       border-radius: 50%;
       border: 2px solid var(--row-color);
       background: color("panel-bg-solid");
@@ -386,5 +416,24 @@
       opacity: 0.6;
       transition: width transition("base");
     }
+  }
+}
+
+// Phones: thumbs big enough for a finger.
+@include respond-to("mobile") {
+  .row__slider::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+    margin-top: -11px;
+  }
+
+  .row__slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  .row__step {
+    width: 32px;
+    height: 32px;
   }
 }

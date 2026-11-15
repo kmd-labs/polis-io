@@ -34,7 +34,22 @@ export interface DilemmaChoice {
   affordable: boolean;
 }
 
-export type DilemmaScene = 'oracle' | 'temple' | 'sea' | 'army' | 'agora' | 'harvest' | 'eclipse' | 'games' | 'east' | 'plague';
+export type DilemmaScene =
+  | 'oracle'
+  | 'temple'
+  | 'sea'
+  | 'army'
+  | 'agora'
+  | 'harvest'
+  | 'eclipse'
+  | 'games'
+  | 'east'
+  | 'plague'
+  | 'coins'
+  | 'strife'
+  | 'altar'
+  | 'mine'
+  | 'assembly';
 
 /** When a dilemma may come up. */
 export type DilemmaNeed = 'coastal' | 'war' | 'peace' | 'militant' | 'warlike';
@@ -182,7 +197,7 @@ export const DILEMMAS: readonly DilemmaDef[] = [
   },
   {
     id: 'isonomia',
-    scene: 'agora',
+    scene: 'assembly',
     year: 508,
     options: [
       { id: 'grant', effects: { mood: 15, militarism: -0.2, culture: 0.2 } },
@@ -246,7 +261,7 @@ export const DILEMMAS: readonly DilemmaDef[] = [
   },
   {
     id: 'feud',
-    scene: 'agora',
+    scene: 'strife',
     options: [
       { id: 'nobles', effects: { militarism: 0.2, mood: -5 } },
       { id: 'demos', effects: { mood: 6, prestige: -0.3 } },
@@ -263,7 +278,7 @@ export const DILEMMAS: readonly DilemmaDef[] = [
   },
   {
     id: 'silverVein',
-    scene: 'harvest',
+    scene: 'mine',
     options: [
       { id: 'slaves', effects: { silver: 3, mood: -3 } },
       { id: 'citizens', effects: { silver: 1.5, mood: 3 } }
@@ -271,7 +286,7 @@ export const DILEMMAS: readonly DilemmaDef[] = [
   },
   {
     id: 'coinage',
-    scene: 'agora',
+    scene: 'coins',
     options: [
       { id: 'mint', effects: { silver: -1.5, prosperity: 0.08 } },
       { id: 'barter', effects: {} }
@@ -279,7 +294,7 @@ export const DILEMMAS: readonly DilemmaDef[] = [
   },
   {
     id: 'exiles',
-    scene: 'agora',
+    scene: 'altar',
     options: [
       { id: 'shelter', effects: { prestige: 0.5, regard: -2, hoplites: 0.005 } },
       { id: 'refuse', effects: { regard: 1 } }

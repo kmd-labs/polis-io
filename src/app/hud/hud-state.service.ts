@@ -5,7 +5,7 @@ export type HudTab = 'budget' | 'polis' | 'diplomacy' | 'hegemony' | 'chronicle'
 export const HUD_TABS: readonly HudTab[] = ['budget', 'polis', 'diplomacy', 'hegemony', 'chronicle'];
 
 /** Outliner groups that can be folded away one by one. */
-export type OutlinerGroup = 'wars' | 'allies' | 'sieges' | 'chronicle';
+export type OutlinerGroup = 'wars' | 'allies' | 'sway' | 'chronicle';
 
 interface Saved {
   drawer: boolean;

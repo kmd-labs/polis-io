@@ -153,3 +153,11 @@ app-tooltip .ui-tooltip.ui-tooltip {
 body.popup-forced .popup-dialog__close {
   display: none !important;
 }
+
+// Inside the phone sheet the situation panel loses its own frame (no frame within a frame).
+.sheet .outliner.glass-panel {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}

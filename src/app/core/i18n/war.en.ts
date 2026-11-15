@@ -67,7 +67,7 @@ export const WAR_EN: WarTexts = {
   warScoreHint: 'Who has the upper hand: battles, raids and towns taken move it; the further ahead, the more one can ask at the peace table.',
   strategosLabel: 'Strategos',
   peaceBalanceLabel: 'Balance at the table',
-  peaceMoodLine: 'The fighting {w} · contentment: ours {a}%, {name} {b}% — discontented citizens weaken a city at the table.',
+  peaceMoodLine: 'The fighting {w} · satisfaction: ours {a}%, {name} {b}% — dissatisfied citizens weaken a city at the table.',
   negotiate: 'Negotiate peace',
   maxWarsHint: 'A city fights no more than three wars at once.',
   treatyHint: 'A peace treaty holds until {year}.',
@@ -149,7 +149,7 @@ export const WAR_EN: WarTexts = {
     land: { name: 'Land', hint: 'A strip of the giver’s land along the common border.' },
     alliance: { name: 'Forced alliance', hint: 'The two cities become allies: each must come to the other’s aid.' },
     client: { name: 'Client state', hint: 'The giver serves the other as a client and pays it tribute.' },
-    humiliation: { name: 'Humiliation', hint: 'A public humiliation: the giver loses renown, the other gains it.' }
+    humiliation: { name: 'Humiliation', hint: 'A public humiliation: the giver loses power projection, the other gains it.' }
   },
   peaceGoldLevel: '{d} dr',
   peaceLandLevel: '{n} km²',

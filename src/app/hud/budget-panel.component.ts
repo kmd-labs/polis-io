@@ -102,6 +102,13 @@ export class BudgetPanelComponent {
     });
   });
 
+  /** −5 / +5: a precise step without dragging (handy on a phone). */
+  step(key: BudgetKey, share: number, delta: number) {
+    this.hold();
+    this.game.setBudget(key, Math.max(this.min, Math.min(this.max, share + delta)));
+    this.release();
+  }
+
   set(key: BudgetKey, event: Event) {
     this.hold();
     this.game.setBudget(key, Number((event.target as HTMLInputElement).value));

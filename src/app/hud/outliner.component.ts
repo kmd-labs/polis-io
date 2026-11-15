@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { LucideAngularModule, ChevronDown, Handshake, ScrollText, Swords, Tent } from 'lucide-angular';
+import { LucideAngularModule, ChevronDown, Handshake, ScrollText, Swords, Tent, Coins, Star } from 'lucide-angular';
 import { TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, interpolate } from '../core/i18n/format';
@@ -24,7 +24,7 @@ export class OutlinerComponent {
   readonly game = inject(GameService);
   readonly hud = inject(HudStateService);
 
-  readonly icons = { ChevronDown, Handshake, ScrollText, Swords, Tent };
+  readonly icons = { ChevronDown, Coins, Handshake, ScrollText, Star, Swords, Tent };
 
   /** Each war with our share of the hoplites both sides can field (0–1). */
   readonly wars = computed(() => {
@@ -47,6 +47,29 @@ export class OutlinerComponent {
       };
     });
   });
+
+  /** Every neutral city: who holds sway over it (ours first). */
+  readonly neutrals = computed(() => {
+    const me = this.game.player();
+    const t = this.i18n.t();
+    return this.game
+      .poleis()
+      .filter(p => p.trader && p.alive)
+      .map(p => ({
+        idx: p.idx,
+        name: this.game.name(p.idx),
+        def: this.game.sim.poleis[p.idx].def,
+        patron: p.patron,
+        patronDef: p.patron >= 0 ? this.game.sim.poleis[p.patron].def : null,
+        patronName: p.patron >= 0 ? this.game.name(p.patron) : '',
+        kind: p.patronKind,
+        mine: p.patron === me,
+        hint: p.patron < 0 ? t.swayNone : interpolate(p.patronKind === 'tribute' ? t.swayTributeTo : t.swayAweOf, { name: this.game.name(p.patron) })
+      }))
+      .sort((a, b) => Number(b.mine) - Number(a.mine) || a.name.localeCompare(b.name));
+  });
+
+  readonly mineCount = computed(() => this.neutrals().filter(n => n.mine).length);
 
   readonly allies = computed(() => {
     const me = this.game.me();

@@ -78,8 +78,26 @@
             <lucide-icon [img]="icons.Handshake" [size]="14"></lucide-icon>
             <span>{{ t.negotiate }}</span>
           </app-button>
-        } @else if (target.trader) {
-          <p class="panel__hint">{{ t.traderNeutral }}</p>
+        } @else if (sway(); as sw) {
+          <section class="sway" [appTooltip]="t.swayHint">
+            <h3 class="sway__title">{{ t.swayTitle }}</h3>
+            <p class="sway__status">{{ sw.status }}</p>
+            <ul class="sway__rows">
+              @for (r of sw.rows; track r.idx) {
+                <li class="sway__row" [class.sway__row--me]="r.me" [class.sway__row--patron]="r.idx === sw.patron">
+                  <app-polis-flag [def]="r.def" [size]="14" [label]="r.name"></app-polis-flag>
+                  <span class="sway__name">{{ r.name }}</span>
+                  <span class="sway__bars">
+                    <span class="sway__bar sway__bar--fear" [style.width.%]="r.fear" [attr.title]="t.swayFear + ' ' + r.fear"></span>
+                    <span class="sway__bar sway__bar--awe" [style.width.%]="r.awe" [attr.title]="t.swayAwe + ' ' + r.awe"></span>
+                    <span class="sway__threshold" [style.left.%]="sw.threshold"></span>
+                  </span>
+                </li>
+              }
+            </ul>
+            <p class="sway__legend"><span class="sway__key sway__key--fear"></span>{{ t.swayFear }} <span class="sway__key sway__key--awe"></span>{{ t.swayAwe }}</p>
+            <p class="sway__mine">{{ sw.mine }}</p>
+          </section>
         } @else if (target.overlord !== game.player()) {
           <app-button
             variant="toggle"

@@ -15,5 +15,7 @@ export class TraitPipsComponent {
   readonly kind = input<'militarism' | 'culture'>('militarism');
   readonly hint = input<string | null>(null);
 
-  readonly pips = computed(() => [1, 2, 3, 4, 5].map(n => n <= this.value()));
+  readonly rounded = computed(() => Math.round(this.value() * 10) / 10);
+
+  readonly pips = computed(() => [1, 2, 3, 4, 5].map(n => Math.max(0, Math.min(1, this.value() - (n - 1)))));
 }

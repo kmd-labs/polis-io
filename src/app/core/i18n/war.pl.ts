@@ -98,7 +98,7 @@ export const WAR_PL: WarTexts = {
     land: { name: 'Ziemia', hint: 'Pas ziemi dającego wzdłuż wspólnej granicy.' },
     alliance: { name: 'Przymusowy sojusz', hint: 'Oba miasta stają się sojusznikami: każde musi przyjść drugiemu z pomocą.' },
     client: { name: 'Państwo klienckie', hint: 'Dający służy drugiemu jako państwo klienckie i płaci mu trybut.' },
-    humiliation: { name: 'Ośmieszenie', hint: 'Publiczne upokorzenie: dający traci prestiż, drugi go zyskuje.' }
+    humiliation: { name: 'Ośmieszenie', hint: 'Publiczne upokorzenie: dający traci projekcję siły, drugi ją zyskuje.' }
   },
   peaceGoldLevel: '{d} dr',
   peaceLandLevel: '{n} km²',

@@ -168,3 +168,18 @@
     border-right: 1px solid color("neutral-0");
   }
 }
+
+// Neutral cities: the patron's banner after the sign of its sway (¤ tribute, ★ fascination).
+.item__sway {
+  margin-left: auto;
+  font-size: font-size("xs");
+  color: palette("warning-800");
+
+  &--free {
+    color: color("text-dim");
+  }
+}
+
+.item--mine .item__name {
+  font-weight: 700;
+}

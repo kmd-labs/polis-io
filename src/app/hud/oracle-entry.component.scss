@@ -1,0 +1,55 @@
+@use "variables" as *;
+@use "app/theme/strategy" as strategy;
+
+:host {
+  display: block;
+  margin-top: spacing("md");
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(strategy.$bronze, 0.45);
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(palette("warning-200"), 0.5), transparent 70%),
+    rgba(palette("neutral-0"), 0.4);
+
+  &__title {
+    margin: 0;
+    font-family: var(--font-family-display);
+    font-size: font-size("sm");
+    color: strategy.$bronze;
+    @include strategy.title-rule;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: font-size("xxs");
+    line-height: 1.5;
+    color: color("text-main");
+  }
+
+  &__go {
+    align-self: flex-start;
+    padding: 7px 16px;
+    @include strategy.cartouche;
+    font-family: var(--font-family-display);
+    font-size: font-size("xs");
+    letter-spacing: 0.06em;
+    cursor: pointer;
+
+    &:hover {
+      filter: brightness(1.15);
+    }
+  }
+
+  &__wait {
+    margin: 0;
+    font-size: font-size("xxs");
+    font-style: italic;
+    color: color("text-dim");
+  }
+}

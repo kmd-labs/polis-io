@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { LucideAngularModule, ArrowDown, ArrowUp, Crown } from 'lucide-angular';
 import { TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
-import { fmt1, formatCompact, formatNumber, formatOrdinal, formatYear, interpolate } from '../core/i18n/format';
+import { formatNumber, formatOrdinal, formatYear, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { HEGEMONY_CATEGORIES, HegemonyCategory } from '../game/hegemony';
 import { LineChartComponent } from './line-chart.component';
@@ -28,18 +28,18 @@ export class HegemonyPanelComponent {
 
   readonly view = computed(() => {
     const h = this.game.hegemony();
-    const past = this.game.hegemonyPast();
+    // Trend against last year, so the arrows show from the second year on.
+    const past = this.game.hegemonyPrev() ?? this.game.hegemonyPast();
     const t = this.i18n.t();
     const lang = this.i18n.lang();
     const me = this.game.player();
     if (!h) return null;
+    // Whole numbers throughout: no 20.2K beside 157.6 dr/mo.
     const value = (cat: HegemonyCategory, v: number) =>
       cat === 'finance'
-        ? interpolate(t.hegUnitFinance, { n: fmt1(v, lang) })
+        ? interpolate(t.hegUnitFinance, { n: formatNumber(Math.round(v), lang) })
         : cat === 'population'
-          ? v >= 10000
-            ? formatCompact(v, lang)
-            : formatNumber(v, lang)
+          ? formatNumber(Math.round(v), lang)
           : interpolate(t.hegUnitArms, { n: formatNumber(v, lang) });
     const def = (idx: number) => this.game.sim.poleis[idx].def;
 
@@ -49,7 +49,7 @@ export class HegemonyPanelComponent {
       desc: t.hegemonyCats[cat].desc,
       podium: h[cat].slice(0, 3).map((r, i) => {
         const then = past?.[cat].find(x => x.idx === r.idx)?.value;
-        const trend = then === undefined ? 0 : r.value > then * 1.05 ? 1 : r.value < then * 0.95 ? -1 : 0;
+        const trend = then === undefined ? 0 : r.value > then * 1.02 ? 1 : r.value < then * 0.98 ? -1 : 0;
         return {
           idx: r.idx,
           place: i + 1,
@@ -84,6 +84,17 @@ export class HegemonyPanelComponent {
               from: log[0].year,
               to: log[log.length - 1].year,
               format: (v: number) => interpolate(t.hegScore, { s: Math.round(v) }),
+              formatYear: (y: number) => formatYear(y, t)
+            }
+          : null,
+      // The player's place in the ranking over the years (drawn upside down: first place at the top).
+      places:
+        log.length > 1
+          ? {
+              points: log.map(l => ({ year: l.year, value: -l.place })),
+              from: log[0].year,
+              to: log[log.length - 1].year,
+              format: (v: number) => interpolate(t.hegPlace, { n: formatOrdinal(Math.round(-v), lang) }),
               formatYear: (y: number) => formatYear(y, t)
             }
           : null

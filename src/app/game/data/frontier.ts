@@ -4,7 +4,7 @@
  */
 
 /** Peoples on the northern fringe c. 600 BC, raiding the Greek lands from beyond the map's Greek border. */
-export type TribeId = 'illyrians' | 'paeonians' | 'thracians';
+export type TribeId = 'illyrians' | 'paeonians' | 'thracians' | 'lydians' | 'persians' | 'carians' | 'mysians' | 'messapians' | 'oenotrians';
 
 export interface TribeDef {
   kind: 'tribe';
@@ -24,11 +24,23 @@ export interface TribeDef {
 export const TRIBES: readonly TribeDef[] = [
   { kind: 'tribe', id: 'illyrians', lon: 19.8, lat: 41.0, color: 'neutral-900', militarism: 4, culture: 0 },
   { kind: 'tribe', id: 'paeonians', lon: 22.2, lat: 41.4, color: 'warning-900', militarism: 3, culture: 0 },
-  { kind: 'tribe', id: 'thracians', lon: 23.9, lat: 41.3, color: 'neutral-700', militarism: 4, culture: 0 }
+  { kind: 'tribe', id: 'thracians', lon: 23.9, lat: 41.3, color: 'neutral-700', militarism: 4, culture: 0 },
+  // Anatolia: the kingdom of Lydia at Sardis (until Cyrus takes it in 546 BC: then the Persians), the
+  // Carians of the hills behind Halicarnassus and Miletus, the Mysians behind the Troad.
+  { kind: 'tribe', id: 'lydians', lon: 28.04, lat: 38.48, color: 'purple-600', militarism: 4, culture: 2 },
+  { kind: 'tribe', id: 'carians', lon: 28.15, lat: 37.45, color: 'neutral-800', militarism: 3, culture: 1 },
+  { kind: 'tribe', id: 'mysians', lon: 27.7, lat: 39.75, color: 'neutral-500', militarism: 3, culture: 0 },
+  // Italy: the Messapians of the heel, foes of Taras; the Oenotrians of the Calabrian hills.
+  { kind: 'tribe', id: 'messapians', lon: 17.9, lat: 40.65, color: 'neutral-400', militarism: 3, culture: 1 },
+  { kind: 'tribe', id: 'oenotrians', lon: 16.4, lat: 39.25, color: 'warning-800', militarism: 3, culture: 0 }
 ];
 
+/** The Lydian kingdom passes to the Great King when Sardis falls: from then on its warbands are Persian. */
+export const PERSIANS: TribeDef = { kind: 'tribe', id: 'persians', lon: 28.04, lat: 38.48, color: 'info-900', militarism: 5, culture: 2 };
+export const SARDIS_FALLS = 546;
+
 /** Neutral merchant cities on small islands: they hold their island, never go to war and live by the sea trade. */
-export type TraderId = 'aegina' | 'siphnos' | 'thera' | 'keos';
+export type TraderId = 'aegina' | 'siphnos' | 'thera' | 'keos' | 'melos' | 'delos' | 'lipara' | 'tenedos';
 
 export interface TraderDef {
   kind: 'trader';
@@ -50,7 +62,13 @@ export const TRADERS: readonly TraderDef[] = [
   { kind: 'trader', id: 'aegina', lon: 23.43, lat: 37.75, color: 'warning-500', militarism: 1, culture: 3 },
   { kind: 'trader', id: 'siphnos', lon: 24.71, lat: 36.98, color: 'warning-300', militarism: 1, culture: 2 },
   { kind: 'trader', id: 'thera', lon: 25.43, lat: 36.4, color: 'warning-700', militarism: 1, culture: 2 },
-  { kind: 'trader', id: 'keos', lon: 24.33, lat: 37.63, color: 'warning-400', militarism: 1, culture: 2 }
+  { kind: 'trader', id: 'keos', lon: 24.33, lat: 37.63, color: 'warning-400', militarism: 1, culture: 2 },
+  // Melos, the Dorian island that would stay neutral until Athens came in 416 BC; Delos, Apollo's
+  // sacred island; Lipara of the Cnidians, on its volcanic islands off Sicily; Tenedos before Troy.
+  { kind: 'trader', id: 'melos', lon: 24.42, lat: 36.72, color: 'warning-600', militarism: 2, culture: 2 },
+  { kind: 'trader', id: 'delos', lon: 25.27, lat: 37.4, color: 'warning-200', militarism: 0, culture: 4 },
+  { kind: 'trader', id: 'lipara', lon: 14.96, lat: 38.47, color: 'warning-800', militarism: 2, culture: 1 },
+  { kind: 'trader', id: 'tenedos', lon: 26.05, lat: 39.82, color: 'warning-100', militarism: 1, culture: 2 }
 ];
 
 /** Islets too small for the map's coastline data: added as land where the raster shows only sea. */
@@ -84,7 +102,6 @@ export const ISLETS: readonly { id: string; lon: number; lat: number; r: number 
 
 /** Trading harbours on small islands that belong to no polis: anyone may sell there, no one may take them. */
 export type NeutralPortId =
-  | 'delos'
   | 'syros'
   | 'seriphos'
   | 'ios'
@@ -98,7 +115,6 @@ export type NeutralPortId =
   | 'kythnos';
 
 export const NEUTRAL_PORTS: readonly { id: NeutralPortId; lon: number; lat: number }[] = [
-  { id: 'delos', lon: 25.27, lat: 37.4 },
   { id: 'syros', lon: 24.92, lat: 37.44 },
   { id: 'seriphos', lon: 24.47, lat: 37.15 },
   { id: 'ios', lon: 25.28, lat: 36.73 },
