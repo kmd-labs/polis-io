@@ -4,6 +4,7 @@ import { ButtonComponent } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
 import { formatNumber, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
+import { SCENARIOS } from '../game/codex';
 import { POLEIS } from '../game/data/poleis';
 import { TraitPipsComponent } from './trait-pips.component';
 import { PolisFlagComponent } from './polis-flag.component';
@@ -24,6 +25,18 @@ export class StartScreenComponent {
   readonly game = inject(GameService);
 
   readonly icons = { MapIcon, Play, Swords, Users };
+
+  /** Short games with a score: one city, about fifty years. */
+  readonly scenarios = computed(() => {
+    const t = this.i18n.t();
+    const best = this.game.codex().best;
+    return SCENARIOS.map(s => ({
+      id: s.id,
+      title: t.scenarios[s.id].title,
+      text: t.scenarios[s.id].text,
+      best: best[s.id] ? interpolate(t.scenarioBest, { n: formatNumber(best[s.id], this.i18n.lang()) }) : ''
+    }));
+  });
 
   readonly cards = computed(() => {
     const t = this.i18n.t();

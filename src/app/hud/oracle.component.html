@@ -33,6 +33,7 @@
       </div>
     }
 
+    <p class="oracle__streak" [class.oracle__streak--on]="v.streak > 0">{{ v.streakText }}</p>
     <h3 class="oracle__label">{{ t.oracleOdds }}</h3>
     <div class="lots" [class.lots--drawing]="phase() !== 'choose'" [style.--target]="target() + '%'">
       @for (lot of v.lots; track lot.outcome) {

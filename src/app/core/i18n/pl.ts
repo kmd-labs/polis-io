@@ -1,3 +1,4 @@
+import { META_PL } from './meta.pl';
 import { ORACLE_PL } from './oracle.pl';
 import { SWAY_PL } from './sway.pl';
 import { WAR_PL } from './war.pl';
@@ -8,6 +9,7 @@ export const PL: Dict = {
   ...WAR_PL,
   ...SWAY_PL,
   ...ORACLE_PL,
+  ...META_PL,
   htmlLang: 'pl',
   docTitle: 'KMD · Polis',
   langName: 'Polski',
@@ -48,12 +50,20 @@ export const PL: Dict = {
       desc: 'Od czasu do czasu miasto musi wybrać: list z malowaną sceną, opowieścią i dwiema lub trzema odpowiedziami, z których każda mówi, ile kosztuje i co przyniesie. Niektóre przychodzą w swoim historycznym roku — prawa Solona, wojna święta, zaćmienie Talesa, złoto Krezusa, upadek Sardes, wojny perskie — inne w dowolnym czasie. Pierwszy przychodzi w drugim lub trzecim roku, później jeden co trzy do pięciu lat. Listu wymagającego decyzji nie można odłożyć: trzeba odpowiedzieć. Najwyżej dziesięć listów rocznie zatrzymuje grę, a po stu latach najwyżej jedno zdarzenie losowe na rok. Kronika odnotowuje w swoim roku, co dzieje się w szerokim świecie.'
     },
     {
+      term: 'Ambicje, horyzont i kodeks',
+      desc: 'Miasto zawsze ma trzy ambicje (panel sytuacji): wieniec w Olimpii, dwa miasta neutralne pod wpływem, odpartą bandę, trzy lata wysokiego zadowolenia, wygraną wojnę… Każda pokazuje postęp; spełniona daje miesiące dochodu i projekcję siły, a jej miejsce zajmuje nowa. Na horyzoncie odlicza czas do igrzysk, odpowiedzi Pytii, następnej kolonii, zmęczenia wojną i końca traktatów. Kodeks Hellady (zakładka Kronika) zapisuje w tej przeglądarce, ze wszystkich twoich gier, usłyszane przepowiednie, przeżyte wydarzenia, spełnione ambicje, zdobyte wieńce i najlepsze wyniki scenariuszy.'
+    },
+    {
+      term: 'Scenariusze',
+      desc: 'Krótkie partie na około pięćdziesiąt lat z wynikiem (ekran startowy): Milet przed Persami (600–546 p.n.e.), Ateny Solona, Sparta i Peloponez, Perła Zachodu (Syrakuzy). Wynik liczy punkty hegemonii z kolejnych lat, posiadaną ziemię, spełnione ambicje, wieńce olimpijskie, miasta neutralne pod wpływem i zadowolenie na koniec — a najlepszy zostaje zapamiętany.'
+    },
+    {
       term: 'Miasta neutralne i strefy wpływów',
       desc: 'Osiem miast neutralnych — Egina, Sifnos, Thera, Keos, Melos, Delos, Lipara i Tenedos — trzyma swoje wyspy i nie da się ich zdobyć. Każde ocenia greckie miasta wokół: strach przed potężnym wojskiem w pobliżu (hoplici, najemnicy, galery) i fascynację miastem słynącym z kultury i projekcji siły, która niesie się dalej przez morze. Miasto o największym wpływie zostaje patronem: ze strachu miasto neutralne płaci mu haracz, ćwierć swojego dochodu; z fascynacji przysyła dary, projekcję siły i swoje statki kupieckie. Zobacz tryb mapy Strefy wpływów, znaczki przy miastach neutralnych i grupę Miasta neutralne w panelu sytuacji.'
     },
     {
       term: 'Wyrocznia w Delfach',
-      desc: 'Raz w roku (zakładka Polis) miasto może wysłać posłów do Delf z pytaniem — wojna, plony, morze, kolonie albo święta — i ofiarą: jeden, trzy lub sześć miesięcy dochodu. Pytia losuje: błogosławieństwo (pięciokrotność ofiary i projekcja siły), pomyślną odpowiedź (1,7 raza), zagadkę (zwrot połowy) albo złą wróżbę (nic, a lud się niepokoi). Co bóg da, trafia do funduszu z pytania. Hojniejsze ofiary i skarbce wzniesione w Delfach przechylają losy na korzyść miasta.'
+      desc: 'Raz w roku (zakładka Polis) miasto może wysłać posłów do Delf z pytaniem — wojna, plony, morze, kolonie albo święta — i ofiarą: jeden, trzy lub sześć miesięcy dochodu. Pytia losuje: błogosławieństwo (pięciokrotność ofiary i projekcja siły), pomyślną odpowiedź (1,7 raza), zagadkę (zwrot połowy) albo złą wróżbę (nic, a lud się niepokoi). Co bóg da, trafia do funduszu z pytania. Hojniejsze ofiary i skarbce wzniesione w Delfach przechylają losy na korzyść miasta, podobnie jak passa pomyślnych odpowiedzi (każda podnosi szansę na błogosławieństwo i to, co bóg daje) — dopóki nie przerwie jej zła wróżba.'
     },
     {
       term: 'Wielkie dzieła i neutralne porty',

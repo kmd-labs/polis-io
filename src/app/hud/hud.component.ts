@@ -25,6 +25,7 @@ import { GameService } from '../game/game.service';
 import { MapView } from '../game/map-renderer';
 import { AlertsComponent } from './alerts.component';
 import { OracleEntryComponent } from './oracle-entry.component';
+import { CodexComponent } from './codex.component';
 import { BudgetPanelComponent } from './budget-panel.component';
 import { ChronicleComponent } from './chronicle.component';
 import { DiplomacyListComponent } from './diplomacy-list.component';
@@ -62,7 +63,7 @@ import { TopBarComponent } from './top-bar.component';
     GreatWorksComponent,
     DiplomacyPanelComponent,
     ChronicleComponent,
-    OutlinerComponent, OracleEntryComponent],
+    OutlinerComponent, OracleEntryComponent, CodexComponent],
   templateUrl: './hud.component.html',
   styleUrl: './hud.component.scss'
 })

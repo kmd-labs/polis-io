@@ -7,6 +7,22 @@
     <p class="start__intro">{{ t.startIntro }}</p>
   </header>
 
+  <div class="scenarios" role="radiogroup" [attr.aria-label]="t.scenarioPick">
+    <button type="button" role="radio" class="scenario" [class.scenario--on]="!game.scenario()" [attr.aria-checked]="!game.scenario()" (click)="game.chooseScenario(null)">
+      <span class="scenario__title">{{ t.scenarioFree }}</span>
+      <span class="scenario__text">{{ t.scenarioFreeText }}</span>
+    </button>
+    @for (s of scenarios(); track s.id) {
+      <button type="button" role="radio" class="scenario" [class.scenario--on]="game.scenario()?.id === s.id" [attr.aria-checked]="game.scenario()?.id === s.id" (click)="game.chooseScenario(s.id)">
+        <span class="scenario__title">{{ s.title }}</span>
+        <span class="scenario__text">{{ s.text }}</span>
+        @if (s.best) {
+          <span class="scenario__best">{{ s.best }}</span>
+        }
+      </button>
+    }
+  </div>
+
   <ul class="start__list">
     @for (c of cards(); track c.idx) {
       @let active = c.idx === game.selected();

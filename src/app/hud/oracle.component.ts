@@ -57,6 +57,8 @@ export class OracleComponent implements OnDestroy {
     });
     const wait = sim.oracleWait(me);
     return {
+      streak: me.oracleStreak,
+      streakText: me.oracleStreak > 0 ? interpolate(t.oracleStreak, { n: me.oracleStreak }) : t.oracleStreakNone,
       stakes,
       lots,
       ready: sim.oracleReady(me),

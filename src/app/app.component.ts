@@ -53,6 +53,7 @@ import { StartScreenComponent } from './hud/start-screen.component';
 import { EventCardComponent } from './hud/event-card.component';
 import { WarPostureComponent } from './hud/war-posture.component';
 import { OracleComponent } from './hud/oracle.component';
+import { AmbitionId } from './game/ambitions';
 import { PeaceTableComponent } from './hud/peace-table.component';
 import { describeTerms } from './hud/peace-terms';
 import { CampaignReport, PeaceItem } from './game/war';
@@ -312,6 +313,7 @@ export class AppComponent {
         else if (n.kind === 'peaceTable') this.openPeaceTable(n.enemy, n.deal);
         else if (n.kind === 'campaign') this.openCampaign(n.report);
         else if (n.kind === 'oracle') this.openOracle();
+        else if (n.kind === 'ambition') this.openAmbition(n.id, n.silver, n.prestige);
         else this.openReport(n.near);
       });
     });
@@ -472,6 +474,19 @@ export class AppComponent {
       componentInputs: { enemy, initial: deal, close: () => this.popup.close() },
       size: 'lg',
       onClose: () => this.game.closeNotice()
+    });
+  }
+
+  /** An ambition fulfilled: the reward, and a new ambition in its place. */
+  private openAmbition(id: AmbitionId, silver: number, prestige: number) {
+    const t = () => this.i18n.t();
+    this.popup.open({
+      id: 'ambition',
+      title: computed(() => interpolate(t().ambitionDone, { name: t().ambitions[id].name })),
+      description: computed(() => interpolate(t().ambitionDoneText, { d: formatNumber(silver, this.i18n.lang()), p: fmt1(prestige, this.i18n.lang()) })),
+      size: 'sm',
+      onClose: () => this.game.closeNotice(),
+      actions: [{ label: computed(() => t().reportAction), variant: 'play', hot: true }]
     });
   }
 
@@ -858,6 +873,33 @@ export class AppComponent {
     const me = sim.poleis[sim.player];
     const name = (idx: number) => (idx >= 0 ? this.game.name(idx) : '');
     const won = status === 'won';
+    // A scenario ends with its score, part by part, against the best so far.
+    const score = this.game.score();
+    if (won && score) {
+      const t = () => this.i18n.t();
+      const lang = () => this.i18n.lang();
+      const parts = () =>
+        (['hegemony', 'land', 'ambitions', 'wreaths', 'sway', 'satisfaction'] as const)
+          .map(k => `${t().scoreParts[k]}: ${formatNumber(score[k], lang())}`)
+          .join(' · ');
+      const best = this.game.codex().best[this.game.scenario()?.id ?? ''] ?? score.total;
+      this.popup.open({
+        id: 'game-over',
+        title: computed(() => t().scenarioEndTitle),
+        description: computed(
+          () =>
+            `${interpolate(t().scenarioEndText, { name: name(me.idx), year: formatYear(sim.year, t()), s: formatNumber(score.total, lang()) })} ${parts()}. ${
+              this.game.record() ? t().scoreRecord : interpolate(t().scoreBest, { n: formatNumber(best, lang()) })
+            }`
+        ),
+        size: 'sm',
+        actions: [
+          { label: computed(() => t().close), variant: 'default' },
+          { label: computed(() => t().playAgain), variant: 'play', hot: true, onClick: () => this.restart() }
+        ]
+      });
+      return;
+    }
     this.popup.open({
       id: 'game-over',
       title: computed(() => (won ? this.i18n.t().victoryTitle : this.i18n.t().defeatTitle)),

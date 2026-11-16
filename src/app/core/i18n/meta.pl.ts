@@ -1,0 +1,72 @@
+import { MetaTexts } from './meta.en';
+
+export const META_PL: MetaTexts = {
+  ambitions: {
+    land: { name: 'Szersze pola', goal: 'Utrzymaj {t}% greckiej ziemi' },
+    people: { name: 'Tłoczna agora', goal: 'Wyrośnij do {t} mieszkańców' },
+    treasury: { name: 'Pełny skarbiec', goal: 'Odłóż roczny dochód ({t} miesięcy)' },
+    colony: { name: 'Synowie za morzem', goal: 'Załóż kolonię' },
+    farms: { name: 'Nowe pola', goal: 'Zbuduj trzy farmy' },
+    ports: { name: 'Nowe przystanie', goal: 'Zbuduj dwa porty' },
+    wreath: { name: 'Wieniec oliwny', goal: 'Zdobądź wieniec w Olimpii' },
+    sway: { name: 'Wyspy u naszych stóp', goal: 'Weź pod swój wpływ {t} miasta neutralne' },
+    warWon: { name: 'Wygrana wojna', goal: 'Wygraj wojnę' },
+    battles: { name: 'Trzy tropaja', goal: 'Wygraj trzy bitwy' },
+    happy: { name: 'Złoty wiek', goal: 'Utrzymaj zadowolenie powyżej 80% przez {t} lata' },
+    greatWork: { name: 'Dzieło na wieki', goal: 'Ukończ wielkie dzieło' },
+    blessing: { name: 'Łaska Apollina', goal: 'Uzyskaj pomyślną odpowiedź w Delfach' },
+    repel: { name: 'Tarcza Hellady', goal: 'Odeprzyj bandę najeźdźców' },
+    culture: { name: 'Szkoła Hellady', goal: 'Podnieś kulturę do {t}' },
+    hegemon: { name: 'Pierwsi wśród Greków', goal: 'Zostań Hegemonem Hellady' }
+  },
+  outAmbitions: 'Ambicje',
+  ambitionReward: 'Nagroda: {d} mies. dochodu · +{p} projekcji siły',
+  ambitionDone: 'Ambicja spełniona: {name}',
+  ambitionDoneText: '{d} dr do skarbca i +{p} projekcji siły. Jej miejsce zajmuje nowa ambicja.',
+  evAmbition: '{a} spełnia ambicję: {w}',
+  outHorizon: 'Na horyzoncie',
+  horizon: {
+    games: 'Igrzyska olimpijskie',
+    truce: 'Trwa święty rozejm',
+    oracle: 'Pytia odpowie',
+    oracleReady: 'Pytia czeka na twoich posłów',
+    colony: 'Następna kolonia możliwa',
+    weary: 'Zmęczenie wojną — {name}',
+    treaty: 'Koniec traktatu — {name}',
+    end: 'Koniec scenariusza'
+  },
+  horizonNone: 'Nic na horyzoncie.',
+  codexTitle: 'Kodeks Hellady',
+  codexIntro: 'Co zobaczyłeś we wszystkich swoich grach: przepowiednie, wydarzenia, ambicje i wieńce. Zapisane w tej przeglądarce.',
+  codexVerses: 'Przepowiednie Pytii',
+  codexEvents: 'Przeżyte wydarzenia',
+  codexAmbitions: 'Spełnione ambicje',
+  codexWreaths: 'Zdobyte wieńce olimpijskie',
+  codexBest: 'Najlepsze wyniki',
+  codexLocked: 'jeszcze nieodkryte',
+  scenarioFree: 'Wolna gra',
+  scenarioFreeText: 'Dowolne miasto, koniec tylko przez zwycięstwo albo klęskę.',
+  scenarioPick: 'Scenariusz',
+  scenarioBest: 'rekord {n}',
+  scenarios: {
+    miletus: { title: 'Milet przed Persami', text: '600–546 p.n.e. Utrzymaj Jonię, zanim padnie Sardes — i bądź wtedy pierwszy w srebrze.' },
+    athens: { title: 'Ateny Solona', text: '600–550 p.n.e. Prawa, oliwki i morze: uczyń Ateny szkołą Hellady w pięćdziesiąt lat.' },
+    sparta: { title: 'Sparta i Peloponez', text: '600–550 p.n.e. Ujarzmij Tegeę i Argos i uczyń Peloponez swoim.' },
+    syracuse: { title: 'Perła Zachodu', text: '600–550 p.n.e. Z Ortygii zostań pierwszym miastem Sycylii i Wielkiej Grecji.' }
+  },
+  scenarioEndTitle: 'Koniec scenariusza',
+  scenarioEndText: '{name}, {year}. Twój wynik: {s}.',
+  scoreParts: {
+    hegemony: 'Punkty hegemonii',
+    land: 'Posiadana ziemia',
+    ambitions: 'Spełnione ambicje',
+    wreaths: 'Wieńce olimpijskie',
+    sway: 'Miasta neutralne pod wpływem',
+    satisfaction: 'Zadowolenie',
+    total: 'Razem'
+  },
+  scoreRecord: 'Nowy rekord!',
+  scoreBest: 'Dotychczasowy rekord: {n}',
+  oracleStreak: 'Passa łaski: {n} — błogosławieństwa przychodzą łatwiej, a bóg daje więcej.',
+  oracleStreakNone: 'Każda kolejna pomyślna odpowiedź podnosi szansę na błogosławieństwo; zła wróżba przerywa passę.'
+};

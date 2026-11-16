@@ -32,6 +32,8 @@ import { Fortune } from './fortune';
 import { DilemmaChoice, DilemmaId } from './data/dilemmas';
 import { CampaignReport, PeaceItem, Posture } from './war';
 import { OracleAnswer, OracleQuestion } from './oracle';
+import { AmbitionId } from './ambitions';
+import { CodexData, SCENARIOS, Scenario, ScenarioScore, loadCodex, saveCodex, verseKey } from './codex';
 import { GREAT_WORKS, GreatWorkId } from './data/frontier';
 
 /** Immutable UI snapshot of one polis, refreshed a few times per second. */
@@ -168,6 +170,7 @@ export type Notice =
   | { kind: 'peaceTable'; enemy: number; deal: PeaceItem[] }
   | { kind: 'campaign'; report: CampaignReport }
   | { kind: 'oracle' }
+  | { kind: 'ambition'; id: AmbitionId; silver: number; prestige: number; year: number }
   | ({ kind: 'develop' } & Omit<DevelopmentPlan, 'kind'> & { work: DevelopmentPlan['kind'] });
 
 /** Clock multipliers behind the five speed keys (1–5). */
@@ -175,7 +178,7 @@ export const SPEEDS = [1, 2, 4, 8, 16] as const;
 /** A report the player may read when they like (it does not stop the game). */
 export interface ReportItem {
   id: number;
-  notice: Extract<Notice, { kind: 'victory' | 'warEnd' | 'develop' | 'fortune' | 'campaign' | 'built' | 'greatWork' }>;
+  notice: Extract<Notice, { kind: 'victory' | 'warEnd' | 'develop' | 'fortune' | 'campaign' | 'built' | 'greatWork' | 'ambition' }>;
   year: number;
   time: number;
 }
@@ -298,6 +301,8 @@ export class GameService {
   private reportId = 0;
   private pausedBeforeNotice = false;
   private readonly queue: Notice[] = [];
+  /** Olympic wreaths of the player's already counted in the codex. */
+  private wreathsSeen = 0;
   /** Year of the letters counted so far, and how many have stopped the game in it. */
   private noticeYear = 0;
   private noticesThisYear = 0;
@@ -351,6 +356,12 @@ export class GameService {
     const idx = this.selected();
     if (idx < 0) return;
     this.sim.choose(idx);
+    // A scenario ends in its year.
+    const scenario = this.scenario();
+    this.sim.endYear = scenario && this.sim.poleis[idx].def.id === scenario.polis ? scenario.endYear : 0;
+    if (!this.sim.endYear) this.scenario.set(null);
+    this.score.set(null);
+    this.wreathsSeen = 0;
     this.selected.set(-1);
     this.preview.set(-1);
     this.paused.set(false);
@@ -716,6 +727,7 @@ export class GameService {
     const greek = this.world.greekCells.length;
     const cellArea = this.world.cellKm * this.world.cellKm;
     this.status.set(sim.status);
+    if (sim.status === 'won' && sim.endYear && !this.score()) this.finishScenario();
     this.truce.set(sim.truce);
     this.player.set(sim.player);
     this.year.set(sim.year);
@@ -891,7 +903,21 @@ export class GameService {
     }
     for (const report of games) incoming.push({ kind: 'olympics', report });
     // A choice put before the city.
-    for (const d of sim.takeDilemmas()) incoming.push({ kind: 'dilemma', id: d.id, year: d.year, choices: sim.dilemmaChoices(me, d.id) });
+    for (const d of sim.takeDilemmas()) {
+      incoming.push({ kind: 'dilemma', id: d.id, year: d.year, choices: sim.dilemmaChoices(me, d.id) });
+      if (!this.codex().events.includes(d.id)) this.updateCodex(c => c.events.push(d.id));
+    }
+    // Ambitions fulfilled: the reward is paid; the news waits in the alerts row (and goes into the codex).
+    for (const a of sim.takeAmbitionReports()) {
+      filed.push({ kind: 'ambition', ...a });
+      if (!this.codex().ambitions.includes(a.id)) this.updateCodex(c => c.ambitions.push(a.id));
+    }
+    // Olympic wreaths, counted across games.
+    if (me.wreaths > this.wreathsSeen) {
+      const won = me.wreaths - this.wreathsSeen;
+      this.updateCodex(c => (c.wreaths += won));
+    }
+    this.wreathsSeen = me.wreaths;
     // A warband on our land: pay it off or fight it.
     for (const c of sim.takeRaidChoices()) {
       const band = sim.armies.find(a => a.id === c.band);
@@ -941,6 +967,50 @@ export class GameService {
     return out;
   }
 
+  /** The Codex of Hellas, kept in this browser across games. */
+  readonly codex = signal<CodexData>(loadCodex());
+  /** The scenario being played (null: a free game), and the score when it ended. */
+  readonly scenario = signal<Scenario | null>(null);
+  readonly score = signal<ScenarioScore | null>(null);
+  /** Whether the score just set is the best ever for this scenario. */
+  readonly record = signal(false);
+
+  private updateCodex(change: (c: CodexData) => void) {
+    const next = structuredClone(this.codex());
+    change(next);
+    saveCodex(next);
+    this.codex.set(next);
+  }
+
+  /** Picks a scenario on the start screen (its city is selected and shown), or a free game (null). */
+  chooseScenario(id: string | null) {
+    const s = SCENARIOS.find(x => x.id === id) ?? null;
+    this.scenario.set(s);
+    if (s) {
+      const idx = this.sim.poleis.findIndex(p => p.def.id === s.polis);
+      if (idx >= 0) this.focus(idx);
+    }
+  }
+
+  /** The score of a finished scenario (and the best one is kept in the codex). */
+  private finishScenario() {
+    const s = this.scenario();
+    const sim = this.sim;
+    const me = sim.poleis[sim.player];
+    if (!s || !me) return;
+    const hegemony = this.hegemonyLog().reduce((sum, l) => sum + l.score, 0) * 10;
+    const land = Math.round((me.cells / sim.world.greekCells.length) * 100 * 30);
+    const ambitions = sim.ambitionsDone.length * 20;
+    const wreaths = me.wreaths * 10;
+    const sway = sim.swayOf(me.idx).length * 10;
+    const satisfaction = me.alive ? Math.round(me.satisfaction / 2) : 0;
+    const total = hegemony + land + ambitions + wreaths + sway + satisfaction;
+    const best = this.codex().best[s.id] ?? 0;
+    this.record.set(total > best);
+    if (total > best) this.updateCodex(c => (c.best[s.id] = total));
+    this.score.set({ hegemony, land, ambitions, wreaths, sway, satisfaction, total });
+  }
+
   /** Opens the oracle at Delphi (the game waits while the envoys are away). */
   openOracle() {
     if (this.sim.status !== 'playing') return;
@@ -950,6 +1020,10 @@ export class GameService {
   /** The player's envoys put a question to the Pythia. */
   consultOracle(question: OracleQuestion, level: number): OracleAnswer | null {
     const answer = this.sim.consultOracle(this.sim.player, question, level);
+    if (answer) {
+      const key = verseKey(answer.outcome, answer.verse);
+      if (!this.codex().verses.includes(key)) this.updateCodex(c => c.verses.push(key));
+    }
     this.publish();
     return answer;
   }
