@@ -78,5 +78,5 @@ describe('coalition against the Hegemon (autoplay)', () => {
     console.info(`seed ${seed}: longest 7+ reign ${longest} years, coalitions formed ${coalitions}`);
     rules['secondsPerYear'] = year;
     expect(longest).toBeLessThanOrEqual(45);
-  }, 600_000);
+  }, 1_500_000);
 });

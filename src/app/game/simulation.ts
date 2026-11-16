@@ -104,6 +104,9 @@ export const WILD = -1;
 const YEAR = 64;
 
 /** Tunable game balance. Times are in game seconds (1 game second = 1 real second at 1× speed). */
+/** Cells kept per side of each front by the border scan. */
+const FRONT_SAMPLE = 160;
+
 /** The wider world's news in the order it happens. */
 const WORLD_NOTES_BY_YEAR = [...WORLD_NOTES].sort((a, b) => b.year - a.year);
 
@@ -998,6 +1001,10 @@ export class Simulation {
   private raidChoices: { band: number; tribe: number; cost: number }[] = [];
   /** Every war's front, by the pair of cities (see frontKey). */
   fronts = new Map<number, Front>();
+  /** A sample of the cells along each front, by owner × 4096 + enemy (refreshed every second). */
+  private frontLines = new Map<number, number[]>();
+  /** The edge of a city's land nearest an enemy across the wilderness, cached for a second. */
+  private edgeCache = new Map<number, { at: number; cell: number }>();
   /** The player's dispatches from the fronts, wars whose posture the player has yet to choose, and peace offers. */
   private campaignReports: CampaignReport[] = [];
   private postureChoices: number[] = [];
@@ -1298,6 +1305,8 @@ export class Simulation {
     this.olympicResults = [];
     this.raidChoices = [];
     this.fronts = new Map();
+    this.frontLines = new Map();
+    this.edgeCache = new Map();
     this.campaignReports = [];
     this.postureChoices = [];
     this.peaceOffers = [];
@@ -1916,16 +1925,38 @@ export class Simulation {
     const w = this.world;
     const own = this.owner;
     const set = new Set<number>();
+    const lines = new Map<number, number[]>();
+    const seen = new Map<number, number>();
+    // Keep up to FRONT_SAMPLE cells of each side along every front (a fair sample: reservoir sampling).
+    const keep = (owner: number, enemy: number, cell: number) => {
+      const key = owner * 4096 + enemy;
+      const n = (seen.get(key) ?? 0) + 1;
+      seen.set(key, n);
+      let list = lines.get(key);
+      if (!list) lines.set(key, (list = []));
+      if (list.length < FRONT_SAMPLE) list.push(cell);
+      else {
+        const j = Math.floor(this.rand() * n);
+        if (j < FRONT_SAMPLE) list[j] = cell;
+      }
+    };
     for (const c of w.greekCells) {
       const o = own[c];
       if (o < 0) continue;
       for (let k = 1; k < 4; k += 2) {
         const n = w.neighbour(c, k);
         const q = n >= 0 ? own[n] : -1;
-        if (q >= 0 && q !== o) set.add(Math.min(o, q) * 4096 + Math.max(o, q));
+        if (q < 0 || q === o) continue;
+        const pair = Math.min(o, q) * 4096 + Math.max(o, q);
+        set.add(pair);
+        if (this.fronts.has(pair)) {
+          keep(o, q, c);
+          keep(q, o, n);
+        }
       }
     }
     this.borders = set;
+    this.frontLines = lines;
   }
 
   /**
@@ -2233,7 +2264,10 @@ export class Simulation {
     const my = (pd.cy + pa.cy) / 2 + (this.rand() - 0.5) * 30 * L;
     let best = -1;
     let bestD = Infinity;
-    for (const c of w.greekCells) {
+    // The sample of this front's cells from the last border scan; a front opened this second has none yet.
+    const sample = this.frontLines.get(def * 4096 + att);
+    const candidates = sample?.length ? sample : w.greekCells;
+    for (const c of candidates) {
       if (this.owner[c] !== def || c === pd.capital) continue;
       let touches = false;
       for (let k = 0; k < 4 && !touches; k++) touches = this.owner[w.neighbour(c, k)] === att;
@@ -2259,6 +2293,9 @@ export class Simulation {
     const pa = this.poleis[att];
     const pd = this.poleis[def];
     if (w.landmass[pa.capital] !== w.landmass[pd.capital]) return -1;
+    const key = def * 4096 + att;
+    const cached = this.edgeCache.get(key);
+    if (cached && this.time - cached.at < 1 && this.owner[cached.cell] === def) return cached.cell;
     let best = -1;
     let bestD = Infinity;
     for (const c of w.greekCells) {
@@ -2269,7 +2306,14 @@ export class Simulation {
         best = c;
       }
     }
+    if (best >= 0) this.edgeCache.set(key, { at: this.time, cell: best });
     return best;
+  }
+
+  /** Whether land can change hands between two cities: they border each other, or share a body of land. */
+  private landReach(a: number, b: number): boolean {
+    const w = this.world;
+    return this.bordering(a, b) || w.landmass[this.poleis[a].capital] === w.landmass[this.poleis[b].capital];
   }
 
   /** The stretch of `def`'s coast nearest `att` (where a landing would come ashore). */
@@ -2584,7 +2628,7 @@ export class Simulation {
   peaceAmount(item: PeaceItem, to: number): number {
     const p = this.poleis[item.from];
     if (item.kind === 'gold') return Math.round(this.monthIncome(p) * PEACE_GOLD_MONTHS[item.level - 1]);
-    if (item.kind === 'land') return this.frontLine(item.from, to) >= 0 ? Math.round(p.cells * PEACE_LAND_SHARE[item.level - 1]) : 0;
+    if (item.kind === 'land') return this.landReach(item.from, to) ? Math.round(p.cells * PEACE_LAND_SHARE[item.level - 1]) : 0;
     return 0;
   }
 
@@ -2657,7 +2701,7 @@ export class Simulation {
     const need = this.peaceNeed(ai, other);
     const from = need > 0 ? other : ai;
     const to = from === ai ? other : ai;
-    const land = this.frontLine(from, to) >= 0;
+    const land = this.landReach(from, to);
     const g = (level: number): PeaceItem => ({ kind: 'gold', from, level });
     const l = (level: number): PeaceItem => ({ kind: 'land', from, level });
     const h: PeaceItem = { kind: 'humiliation', from, level: 1 };

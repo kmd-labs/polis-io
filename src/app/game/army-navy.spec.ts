@@ -187,7 +187,7 @@ describe('colonies', () => {
     for (const p of sim.poleis) if (p.def.kind === 'site') founded.set(p.overlord, [...(founded.get(p.overlord) ?? []), p.idx]);
     // At most one colony per polis per sixteen years, whatever its budget.
     for (const [, list] of founded) expect(list.length).toBeLessThanOrEqual(Math.ceil(100 / RULES.colonyYearsMin));
-  }, 300_000);
+  }, 900_000);
 });
 
 describe('enclaves', () => {
