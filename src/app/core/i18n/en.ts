@@ -1,3 +1,4 @@
+import { META_EN } from './meta.en';
 import { ORACLE_EN } from './oracle.en';
 import { SWAY_EN } from './sway.en';
 import { WAR_EN } from './war.en';
@@ -8,6 +9,7 @@ export const EN: Dict = {
   ...WAR_EN,
   ...SWAY_EN,
   ...ORACLE_EN,
+  ...META_EN,
   htmlLang: 'en',
   docTitle: 'KMD · Polis',
   langName: 'English',
@@ -48,12 +50,20 @@ export const EN: Dict = {
       desc: 'Now and then the city must choose: a letter with a painted scene, the story and two or three answers, each listing what it will cost and bring. Some come in their historical year — Solon’s laws, the Sacred War, Thales’ eclipse, the gold of Croesus, the fall of Sardis, the Persian Wars — others at any time. The first comes in the second or third year; after that one every three to five years. A letter that asks for a decision cannot be put aside: an answer must be given. At most ten letters a year stop the game, and after a century at most one chance event a year. The chronicle notes what happens in the wider world in its year.'
     },
     {
+      term: 'Ambitions, the horizon and the codex',
+      desc: 'The city always pursues three ambitions (situation panel): a wreath at Olympia, two neutral cities under its sway, a warband driven off, three years of high satisfaction, a war won… Each shows its progress; fulfilled, it pays months of income and power projection, and a new one takes its place. On the horizon counts down to the next Games, the Pythia’s answer, the next colony, war weariness and treaties ending. The Codex of Hellas (Chronicle tab) keeps, across all your games in this browser, the prophecies heard, the events lived through, the ambitions fulfilled, the wreaths won and your best scenario scores.'
+    },
+    {
+      term: 'Scenarios',
+      desc: 'Short games of about fifty years with a score (start screen): Miletus before the Persians (600–546 BC), the Athens of Solon, Sparta and the Peloponnese, the pearl of the West (Syracuse). The score counts hegemony points over the years, land held, ambitions fulfilled, Olympic wreaths, neutral cities under your sway and satisfaction at the end — and the best is kept.'
+    },
+    {
       term: 'Neutral cities and spheres of influence',
       desc: 'Eight neutral cities — Aegina, Siphnos, Thera, Keos, Melos, Delos, Lipara and Tenedos — hold their islands and cannot be conquered. Each weighs the Greek cities around it: fear of a mighty army nearby (hoplites, mercenaries, war galleys) and fascination with a city famed for its culture and power projection, which carries further over the sea. The city of greatest influence holds sway: out of fear the neutral city pays it tribute, a quarter of its income; out of fascination it sends gifts, power projection and its merchant ships. See the Spheres of influence map mode, the badges by each neutral city and the Neutral cities group of the situation panel.'
     },
     {
       term: 'The oracle at Delphi',
-      desc: 'Once a year (Polis tab) the city may send envoys to Delphi with a question — war, harvest, sea, colonies or festival — and an offering of one, three or six months of income. The Pythia draws a lot: a blessing (five times the offering and power projection), a favourable answer (1.7 times), a riddle (half back) or an ill omen (nothing, and the citizens grow uneasy). What the god grants goes to the fund of the question. Richer offerings and treasuries raised at Delphi tilt the lots in the city’s favour.'
+      desc: 'Once a year (Polis tab) the city may send envoys to Delphi with a question — war, harvest, sea, colonies or festival — and an offering of one, three or six months of income. The Pythia draws a lot: a blessing (five times the offering and power projection), a favourable answer (1.7 times), a riddle (half back) or an ill omen (nothing, and the citizens grow uneasy). What the god grants goes to the fund of the question. Richer offerings and treasuries raised at Delphi tilt the lots in the city’s favour, and so does a run of favourable answers (each one raises the odds of a blessing and what the god gives) — until an ill omen ends it.'
     },
     {
       term: 'Great works and neutral harbours',

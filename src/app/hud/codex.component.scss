@@ -1,0 +1,68 @@
+@use "variables" as *;
+@use "app/theme/strategy" as strategy;
+
+:host {
+  display: block;
+  margin-top: spacing("lg");
+}
+
+.codex {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__title {
+    margin: 0;
+    @include strategy.plaque;
+    font-size: font-size("sm");
+  }
+
+  &__intro,
+  &__line {
+    margin: 0;
+    font-size: font-size("xxs");
+    line-height: 1.5;
+    color: color("text-main");
+  }
+}
+
+.part {
+  border: 1px solid rgba(strategy.$bronze, 0.35);
+  border-radius: 2px;
+  background: rgba(palette("neutral-0"), 0.4);
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    font-family: var(--font-family-display);
+    font-size: font-size("xs");
+    color: strategy.$bronze;
+    cursor: pointer;
+  }
+
+  &__count {
+    font-family: var(--font-family-mono);
+    color: palette("warning-700");
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 0;
+    padding: 0 10px 8px;
+    list-style: none;
+  }
+
+  &__item {
+    font-size: font-size("xxs");
+    line-height: 1.45;
+    color: color("text-main");
+
+    &--locked {
+      color: color("text-dim");
+      font-style: italic;
+    }
+  }
+}

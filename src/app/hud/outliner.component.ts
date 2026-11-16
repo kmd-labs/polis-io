@@ -1,12 +1,15 @@
 import { Component, computed, inject } from '@angular/core';
-import { LucideAngularModule, ChevronDown, Handshake, ScrollText, Swords, Tent, Coins, Star } from 'lucide-angular';
+import { LucideAngularModule, ChevronDown, Handshake, ScrollText, Swords, Tent, Coins, Star, Hourglass, Trophy } from 'lucide-angular';
 import { TooltipDirective } from '@kmd/design-system';
 import { I18nService } from '../core/i18n/i18n.service';
-import { formatNumber, interpolate } from '../core/i18n/format';
+import { fmt1, formatEta, formatNumber, interpolate } from '../core/i18n/format';
 import { GameService } from '../game/game.service';
 import { ChronicleComponent } from './chronicle.component';
 import { HudStateService, OutlinerGroup } from './hud-state.service';
 import { PolisFlagComponent } from './polis-flag.component';
+import { AMBITION_BY_ID } from '../game/ambitions';
+import { RULES } from '../game/simulation';
+import { isOlympicYear } from '../game/olympics';
 
 /**
  * The right-hand outliner: the player's wars (with a strength bar), allies, sieges and the latest
@@ -24,7 +27,7 @@ export class OutlinerComponent {
   readonly game = inject(GameService);
   readonly hud = inject(HudStateService);
 
-  readonly icons = { ChevronDown, Coins, Handshake, ScrollText, Star, Swords, Tent };
+  readonly icons = { ChevronDown, Coins, Handshake, Hourglass, ScrollText, Star, Swords, Tent, Trophy };
 
   /** Each war with our share of the hoplites both sides can field (0–1). */
   readonly wars = computed(() => {
@@ -46,6 +49,65 @@ export class OutlinerComponent {
         hint: `${t.warScoreLabel}: ${Math.round(this.game.warScore(idx))} · ${interpolate(t.outAdvantageHint, { a: formatNumber(ours, lang), b: formatNumber(theirs, lang) })}`
       };
     });
+  });
+
+  /** The player's three ambitions, with their progress. */
+  readonly ambitions = computed(() => {
+    this.game.poleis();
+    const sim = this.game.sim;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const me = sim.poleis[this.game.player()];
+    if (!me) return [];
+    return sim.ambitions.map(a => {
+      const def = AMBITION_BY_ID.get(a.id)!;
+      const target = a.id === 'land' ? fmt1(a.target, lang) : formatNumber(Math.round(a.target), lang);
+      return {
+        id: a.id,
+        name: t.ambitions[a.id].name,
+        goal: interpolate(t.ambitions[a.id].goal, { t: target }),
+        reward: interpolate(t.ambitionReward, { d: def.silver, p: fmt1(def.prestige, lang) }),
+        progress: sim.ambitionProgress(me, a)
+      };
+    });
+  });
+
+  /** What is coming: the Games, the oracle, the next colony, war weariness, treaties ending, the scenario's end. */
+  readonly horizon = computed(() => {
+    this.game.poleis();
+    const sim = this.game.sim;
+    const t = this.i18n.t();
+    const lang = this.i18n.lang();
+    const me = sim.poleis[this.game.player()];
+    if (!me) return [];
+    const Y = RULES.secondsPerYear;
+    const eta = (s: number) => formatEta(Math.max(0, s), Y, t, lang);
+    const out: { key: string; label: string; when: string; soon: boolean }[] = [];
+    if (sim.truce) out.push({ key: 'truce', label: t.horizon.truce, when: '', soon: true });
+    else {
+      // The next truce: two months before the Games of the next Olympic year.
+      for (let year = sim.year; year > sim.year - 6; year--) {
+        if (!isOlympicYear(year)) continue;
+        const at = (RULES.startYear - year) * Y + ((RULES.gamesMonth - RULES.truceBefore) / 12) * Y;
+        if (at <= sim.time) continue;
+        out.push({ key: 'games', label: t.horizon.games, when: eta(at - sim.time), soon: at - sim.time < Y / 2 });
+        break;
+      }
+    }
+    const oracle = sim.oracleWait(me);
+    out.push({ key: 'oracle', label: oracle > 0 ? t.horizon.oracle : t.horizon.oracleReady, when: oracle > 0 ? eta(oracle) : '', soon: oracle <= 0 });
+    if (me.nextColonyAt > sim.time) out.push({ key: 'colony', label: t.horizon.colony, when: eta(me.nextColonyAt - sim.time), soon: false });
+    for (const e of me.wars) {
+      const f = sim.front(me.idx, e);
+      if (!f) continue;
+      const at = f.start + RULES.wearyYears * Y;
+      if (at > sim.time) out.push({ key: `weary-${e}`, label: interpolate(t.horizon.weary, { name: this.game.name(e) }), when: eta(at - sim.time), soon: at - sim.time < Y });
+    }
+    for (const [idx, until] of me.treaties) {
+      if (until > sim.time && sim.poleis[idx]?.alive) out.push({ key: `treaty-${idx}`, label: interpolate(t.horizon.treaty, { name: this.game.name(idx) }), when: eta(until - sim.time), soon: until - sim.time < Y });
+    }
+    if (sim.endYear) out.push({ key: 'end', label: t.horizon.end, when: eta((RULES.startYear - sim.endYear) * Y - sim.time), soon: false });
+    return out;
   });
 
   /** Every neutral city: who holds sway over it (ours first). */

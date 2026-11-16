@@ -160,7 +160,9 @@ export class AlertsComponent {
                     })
                   : n.kind === 'greatWork'
                     ? interpolate(t.builtTitle, { name: t.greatWorks[n.id].name })
-                    : t.alertDevelop;
+                    : n.kind === 'ambition'
+                      ? interpolate(t.ambitionDone, { name: t.ambitions[n.id].name })
+                      : t.alertDevelop;
       out.push({
         key: `report-${r.id}`,
         icon:
@@ -174,7 +176,9 @@ export class AlertsComponent {
                   : Flame
                 : n.kind === 'campaign'
                   ? Swords
-                  : Hammer,
+                  : n.kind === 'ambition'
+                    ? Trophy
+                    : Hammer,
         tone:
           n.kind === 'develop' || n.kind === 'built' || n.kind === 'greatWork'
             ? 'info'

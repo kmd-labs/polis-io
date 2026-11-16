@@ -305,3 +305,17 @@
     transform: scale(0.96);
   }
 }
+
+.oracle__streak {
+  margin: 0;
+  font-size: font-size("xxs");
+  font-style: italic;
+  color: color("text-dim");
+
+  &--on {
+    font-style: normal;
+    font-weight: 700;
+    color: palette("warning-700");
+    animation: breathe 1.2s ease-in-out infinite alternate;
+  }
+}

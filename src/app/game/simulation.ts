@@ -12,6 +12,7 @@ import {
 } from './war';
 import { DILEMMAS, DILEMMA_BY_ID, DilemmaDef, DilemmaEffects, DilemmaId, WORLD_NOTES } from './data/dilemmas';
 import { PERSIANS, SARDIS_FALLS } from './data/frontier';
+import { AMBITIONS, AMBITIONS_ACTIVE, AMBITION_BY_ID, Ambition, AmbitionId } from './ambitions';
 import { ORACLE_FUND, ORACLE_RULES, ORACLE_STAKES, OracleAnswer, OracleOutcome, OracleQuestion, drawLot, oracleOdds } from './oracle';
 import { GREAT_WORKS, GreatWorkId, NEUTRAL_PORTS, TRADERS, NeutralPortId, TRIBES } from './data/frontier';
 import { POLEIS, PolisDef, SITES, SiteId } from './data/poleis';
@@ -651,8 +652,14 @@ export interface PolisState {
   greatWork: GreatWorkId | null;
   greatFund: number;
   greatBuilt: Partial<Record<GreatWorkId, number>>;
-  /** When the city last consulted the oracle at Delphi. */
+  /** When the city last consulted the oracle at Delphi; its run of favourable answers, and how many it had. */
   oracleAt: number;
+  oracleStreak: number;
+  oracleWins: number;
+  /** Olympic wreaths won, warbands driven off, and since when the citizens have been very content (−1 not). */
+  wreaths: number;
+  raidsRepelled: number;
+  happySince: number;
   /** Lasting bonuses from great works: walls (against sieges and raids) and growth. */
   bonusWalls: number;
   bonusGrowth: number;
@@ -971,7 +978,8 @@ export type GameEventKind =
   | 'peaceBought'
   | 'sway'
   | 'swayLost'
-  | 'oracle';
+  | 'oracle'
+  | 'ambition';
 
 export interface GameEvent {
   id: number;
@@ -999,6 +1007,12 @@ export class Simulation {
   neutralPorts: NeutralPort[] = [];
   /** Warbands awaiting the player's answer (pay or fight). */
   private raidChoices: { band: number; tribe: number; cost: number }[] = [];
+  /** The player's ambitions, those fulfilled this game, and the reports of the fulfilled ones. */
+  ambitions: Ambition[] = [];
+  ambitionsDone: AmbitionId[] = [];
+  private ambitionReports: { id: AmbitionId; silver: number; prestige: number; year: number }[] = [];
+  /** A scenario ends the game in this year (BC), or never (0). */
+  endYear = 0;
   /** Every war's front, by the pair of cities (see frontKey). */
   fronts = new Map<number, Front>();
   /** A sample of the cells along each front, by owner × 4096 + enemy (refreshed every second). */
@@ -1185,6 +1199,11 @@ export class Simulation {
       greatFund: 0,
       greatBuilt: {},
       oracleAt: -Infinity,
+      oracleStreak: 0,
+      oracleWins: 0,
+      wreaths: 0,
+      raidsRepelled: 0,
+      happySince: -1,
       bonusWalls: 0,
       bonusGrowth: 0,
       surplus: 'none',
@@ -1304,6 +1323,9 @@ export class Simulation {
     this.olympicInvites = [];
     this.olympicResults = [];
     this.raidChoices = [];
+    this.ambitions = [];
+    this.ambitionsDone = [];
+    this.ambitionReports = [];
     this.fronts = new Map();
     this.frontLines = new Map();
     this.edgeCache = new Map();
@@ -1459,6 +1481,7 @@ export class Simulation {
     if (this.status !== 'choosing' || !this.poleis[idx]) return;
     this.player = idx;
     this.status = 'playing';
+    if (!this.autoplay) this.drawAmbitions();
   }
 
   // ─── Derived figures ──────────────────────────────────────────────────────
@@ -3105,6 +3128,7 @@ export class Simulation {
       this.updateBorders();
       this.driftRelations(1);
       this.updateSway(1);
+      this.checkAmbitions();
       this.nextDiplomacy = this.time + 1;
     }
 
@@ -3898,6 +3922,7 @@ export class Simulation {
       // Bloodied by the defenders: the warband gives up and runs for home.
       a.homeward = true;
       if (victim?.alive) victim.prestige += RULES.raidRepelPrestige;
+      if (victim) victim.raidsRepelled++;
       this.emit('raidRepelled', victim.idx, t.idx);
     }
     if (!a.homeward && (!victim?.alive || a.loot >= RULES.raidLoot || this.time >= a.raidUntil)) a.homeward = true;
@@ -4217,6 +4242,7 @@ export class Simulation {
       p.prestige += prestige;
       if (relation) for (const q of this.poleis) if (q.alive && q.idx !== p.idx) this.shiftRelation(p.idx, q.idx, relation);
       if (row.wreaths) this.mood(p, row.wreaths * RULES.olympicWreathMood);
+      p.wreaths += row.wreaths;
       if (isTriumph(row.wreaths, events) && p.culture < 5) {
         p.culture = Math.min(5, p.culture + 1);
         triumphs.push(p.idx);
@@ -4342,7 +4368,7 @@ export class Simulation {
 
   /** The odds of each lot for this city and offering. */
   oracleOdds(p: PolisState, level: number): Record<OracleOutcome, number> {
-    return oracleOdds(level, p.greatBuilt.delphi ?? 0);
+    return oracleOdds(level, p.greatBuilt.delphi ?? 0, p.oracleStreak);
   }
 
   /**
@@ -4356,14 +4382,155 @@ export class Simulation {
     const stake = this.oracleStake(p, level);
     if (!this.spend(p, stake)) return null;
     const outcome = drawLot(this.oracleOdds(p, level), this.rand());
-    const payout = Math.round(stake * ORACLE_RULES.payout[outcome]);
+    // A run of favour raises what the god grants; an ill omen ends it.
+    const streakBonus = 1 + ORACLE_RULES.streakPayout * Math.min(ORACLE_RULES.streakMax, p.oracleStreak);
+    const payout = Math.round(stake * ORACLE_RULES.payout[outcome] * (outcome === 'blessing' || outcome === 'favour' ? streakBonus : 1));
+    const streak = p.oracleStreak;
+    if (outcome === 'blessing' || outcome === 'favour') {
+      p.oracleStreak++;
+      p.oracleWins++;
+    } else if (outcome === 'ill') {
+      p.oracleStreak = 0;
+    }
     p.funds[ORACLE_FUND[question]] += payout;
     if (outcome === 'blessing') p.prestige += ORACLE_RULES.blessingPrestige;
     if (outcome === 'ill') this.mood(p, ORACLE_RULES.illMood);
     p.oracleAt = this.time;
-    const answer: OracleAnswer = { question, level, outcome, stake, payout, verse: Math.floor(this.rand() * 3), year: this.year };
+    const answer: OracleAnswer = { question, level, outcome, stake, payout, verse: Math.floor(this.rand() * 3), year: this.year, streak, streakAfter: p.oracleStreak };
     this.emit('oracle', idx, -1, payout, `${question}.${outcome}`);
     return answer;
+  }
+
+  // ─── Ambitions ──
+
+  /** How an ambition is measured now. */
+  ambitionValue(p: PolisState, id: AmbitionId): number {
+    switch (id) {
+      case 'land':
+        return (p.cells / this.world.greekCells.length) * 100;
+      case 'people':
+        return this.totalPopulation(p);
+      case 'treasury':
+        return this.treasury(p) / Math.max(1, this.monthIncome(p));
+      case 'colony':
+        return p.colonies;
+      case 'farms':
+        return p.farms;
+      case 'ports':
+        return p.ports;
+      case 'wreath':
+        return p.wreaths;
+      case 'sway':
+        return this.swayOf(p.idx).length;
+      case 'warWon':
+        return p.warsWon;
+      case 'battles':
+        return p.battlesWon;
+      case 'happy':
+        return p.satisfaction >= 80 && p.happySince >= 0 ? (this.time - p.happySince) / RULES.secondsPerYear : 0;
+      case 'greatWork':
+        return Object.values(p.greatBuilt).reduce((s, n) => s + (n ?? 0), 0);
+      case 'blessing':
+        return p.oracleWins;
+      case 'repel':
+        return p.raidsRepelled;
+      case 'culture':
+        return p.culture;
+      case 'hegemon':
+        return this.hegemon === p.idx ? 1 : 0;
+    }
+  }
+
+  /** The mark an ambition sets from where the city stands. */
+  private ambitionTarget(p: PolisState, id: AmbitionId, base: number): number {
+    switch (id) {
+      case 'land':
+        return base + Math.max(1, base * 0.3);
+      case 'people':
+        return Math.round(base * 1.3);
+      case 'treasury':
+        return 12;
+      case 'farms':
+        return base + 3;
+      case 'ports':
+        return base + 2;
+      case 'sway':
+        return Math.max(2, base + 1);
+      case 'battles':
+        return base + 3;
+      case 'happy':
+        return 3;
+      case 'culture':
+        return Math.min(5, Math.floor(base) + 1);
+      case 'hegemon':
+        return 1;
+      default:
+        return base + 1;
+    }
+  }
+
+  /** Progress towards an ambition, 0–1 (marks counted from zero, like the treasury, ignore the base). */
+  ambitionProgress(p: PolisState, a: Ambition): number {
+    const value = this.ambitionValue(p, a.id);
+    const absolute = a.id === 'treasury' || a.id === 'happy' || a.id === 'hegemon';
+    const from = absolute ? 0 : a.base;
+    return Math.max(0, Math.min(1, (value - from) / Math.max(1e-9, a.target - from)));
+  }
+
+  /** Sets the player new ambitions until three are pursued (fit for the city, not just fulfilled). */
+  private drawAmbitions() {
+    const p = this.poleis[this.player];
+    if (!p?.alive) return;
+    const raided = this.poleis.some(t => t.tribe && t.alive && Math.hypot(t.cx - p.cx, t.cy - p.cy) <= RULES.raidReach);
+    const recent = this.ambitionsDone.slice(-4);
+    while (this.ambitions.length < AMBITIONS_ACTIVE) {
+      const pool = AMBITIONS.filter(
+        a =>
+          !this.ambitions.some(x => x.id === a.id) &&
+          !recent.includes(a.id) &&
+          (a.need !== 'coastal' || this.harbourOf(p) >= 0) &&
+          (a.need !== 'raided' || raided) &&
+          (a.id !== 'culture' || p.culture < 5) &&
+          // Only a colony the city may found within a few years.
+          (a.id !== 'colony' || p.nextColonyAt - this.time < 8 * RULES.secondsPerYear) &&
+          (a.id !== 'hegemon' || this.gameYear >= 10)
+      );
+      if (!pool.length) break;
+      const def = pool[Math.floor(this.rand() * pool.length)];
+      const base = this.ambitionValue(p, def.id);
+      this.ambitions.push({ id: def.id, base, target: this.ambitionTarget(p, def.id, base) });
+    }
+  }
+
+  /** Fulfilled ambitions bring their reward and give way to new ones. */
+  private checkAmbitions() {
+    if (this.autoplay || this.player < 0 || this.status !== 'playing') return;
+    const p = this.poleis[this.player];
+    if (!p?.alive) return;
+    if (p.satisfaction >= 80) {
+      if (p.happySince < 0) p.happySince = this.time;
+    } else {
+      p.happySince = -1;
+    }
+    const done = this.ambitions.filter(a => this.ambitionProgress(p, a) >= 1);
+    if (!done.length) return;
+    for (const a of done) {
+      const def = AMBITION_BY_ID.get(a.id)!;
+      const silver = Math.round(this.monthIncome(p) * def.silver);
+      p.drachmae += silver;
+      p.prestige += def.prestige;
+      this.ambitionsDone.push(a.id);
+      this.ambitionReports.push({ id: a.id, silver, prestige: def.prestige, year: this.year });
+      this.emit('ambition', p.idx, -1, silver, a.id);
+    }
+    this.ambitions = this.ambitions.filter(a => !done.includes(a));
+    this.drawAmbitions();
+  }
+
+  takeAmbitionReports(): { id: AmbitionId; silver: number; prestige: number; year: number }[] {
+    const out = this.ambitionReports;
+    this.ambitionReports = [];
+    return out;
   }
 
   /** Whole years since the game began. */
@@ -5788,6 +5955,8 @@ export class Simulation {
     const cells = mine.reduce((sum, i) => sum + this.poleis[i].cells, 0);
     const rivals = this.poleis.some(p => p.alive && !p.tribe && !p.trader && !mine.includes(p.idx));
     if (!rivals || cells >= this.world.greekCells.length * RULES.victoryShare) this.status = 'won';
+    // A scenario ends in its year, however things stand.
+    else if (this.endYear && this.year <= this.endYear) this.status = 'won';
   }
 
   /** Adds an entry to the chronicle from outside the simulation (e.g. hegemony changes). */

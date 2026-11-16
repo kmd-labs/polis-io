@@ -38,7 +38,12 @@ export const ORACLE_RULES = {
   blessingPrestige: 1,
   illMood: -6,
   /** Years between consultations. */
-  cooldownYears: 1
+  cooldownYears: 1,
+  /** A run of favourable answers: each one before raises a favourable payout by this much, and moves this
+   * much of the chance from an ill omen to a blessing (counted up to streakMax). */
+  streakPayout: 0.15,
+  streakBlessing: 0.02,
+  streakMax: 5
 };
 
 /** One answer of the Pythia. */
@@ -51,15 +56,22 @@ export interface OracleAnswer {
   /** Which of the outcome's prophecies she spoke. */
   verse: number;
   year: number;
+  /** The run of favourable answers before this one, and after it. */
+  streak: number;
+  streakAfter: number;
 }
 
 /** The odds of each lot for an offering of the given level (0–2), with this many treasuries at Delphi. */
-export function oracleOdds(level: number, treasuries: number): Record<OracleOutcome, number> {
+export function oracleOdds(level: number, treasuries: number, streak = 0): Record<OracleOutcome, number> {
   const shift = ORACLE_RULES.stakeBonus[level] + Math.min(3, treasuries) * ORACLE_RULES.treasuryBonus;
   const o = { ...ORACLE_RULES.odds };
   const moved = Math.min(o.ill - 0.05, shift);
   o.ill -= moved;
   o.favour += moved;
+  // A run of favour: the god's hand opens wider (from the ill omens to the blessings).
+  const run = Math.min(o.ill - 0.05, Math.min(ORACLE_RULES.streakMax, streak) * ORACLE_RULES.streakBlessing);
+  o.ill -= run;
+  o.blessing += run;
   return o;
 }
 

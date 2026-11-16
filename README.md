@@ -137,9 +137,20 @@ twinkling waves and drifting cloud shadows — and has three views: political, t
   (carrying further). The strongest influence holds sway: tribute (a quarter of the neutral's income) out of fear, or
   gifts, power projection and merchant ships out of fascination. Shown in the *Spheres of influence* map mode, by badges
   on the map and in the situation panel.
+- **Ambitions**: three goals at a time in the situation panel (a wreath at Olympia, neutral cities under your sway, a
+  warband driven off, three years of high satisfaction, a war won, a great work, Hegemon of Hellas…), each with a
+  progress bar; fulfilled, they pay months of income and power projection and a new one is drawn.
+- **On the horizon**: countdowns to the next Games, the Pythia's answer, the next colony, war weariness, treaties ending
+  and the end of a scenario.
+- **Codex of Hellas** (Chronicle tab): across all games in this browser, the prophecies heard, events lived through,
+  ambitions fulfilled, Olympic wreaths and best scenario scores.
+- **Scenarios**: short games with a score — Miletus before the Persians (600–546 BC), the Athens of Solon, Sparta and
+  the Peloponnese, the pearl of the West (Syracuse), each about fifty years. The score counts hegemony points, land,
+  ambitions, wreaths, neutral cities under your sway and satisfaction; the best is kept.
 - **The oracle at Delphi** (Polis tab), a game of chance once a year: a question and an offering of 1, 3 or 6 months of
   income; the Pythia draws a lot — blessing (×5 and power projection), favour (×1.7), riddle (×0.5) or ill omen (lost,
-  satisfaction −6) — paid into the fund of the question. Richer offerings and Delphic treasuries tilt the lots.
+  satisfaction −6) — paid into the fund of the question. Richer offerings, Delphic treasuries and a run of favourable
+  answers (ended by an ill omen) tilt the lots.
 - **Neutral merchant cities**: Aegina, Siphnos, Thera, Keos, Melos, Delos, Lipara and Tenedos each hold their whole small island, go to war with no
   one (nor do barbarians raid them), found no colonies and stand outside the hegemony and victory reckoning. They spend
   mostly on their harbours, keep three extra merchantmen at sea, sail twice as often and draw other cities' ships twice

@@ -2,6 +2,45 @@
 
 <section class="outliner glass-panel" [attr.aria-label]="t.outlinerTitle">
   <div class="group">
+    <button type="button" class="group__head" [attr.aria-expanded]="!folded('ambitions')" (click)="hud.toggleGroup('ambitions')">
+      <lucide-icon class="group__icon" [img]="icons.Trophy" [size]="13"></lucide-icon>
+      <span class="group__title">{{ t.outAmbitions }}</span>
+      <lucide-icon class="group__chevron" [class.group__chevron--open]="!folded('ambitions')" [img]="icons.ChevronDown" [size]="13"></lucide-icon>
+    </button>
+    @if (!folded('ambitions')) {
+      <ul class="group__list ambitions">
+        @for (a of ambitions(); track a.id) {
+          <li class="ambition" [appTooltip]="a.reward">
+            <span class="ambition__name">{{ a.name }}</span>
+            <span class="ambition__goal">{{ a.goal }}</span>
+            <span class="ambition__bar"><span [style.width.%]="a.progress * 100"></span></span>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  <div class="group">
+    <button type="button" class="group__head" [attr.aria-expanded]="!folded('horizon')" (click)="hud.toggleGroup('horizon')">
+      <lucide-icon class="group__icon" [img]="icons.Hourglass" [size]="13"></lucide-icon>
+      <span class="group__title">{{ t.outHorizon }}</span>
+      <lucide-icon class="group__chevron" [class.group__chevron--open]="!folded('horizon')" [img]="icons.ChevronDown" [size]="13"></lucide-icon>
+    </button>
+    @if (!folded('horizon')) {
+      <ul class="group__list horizon">
+        @for (h of horizon(); track h.key) {
+          <li class="horizon__row" [class.horizon__row--soon]="h.soon">
+            <span class="horizon__label">{{ h.label }}</span>
+            <span class="horizon__when">{{ h.when }}</span>
+          </li>
+        } @empty {
+          <li class="group__empty">{{ t.horizonNone }}</li>
+        }
+      </ul>
+    }
+  </div>
+
+  <div class="group">
     <button type="button" class="group__head" [attr.aria-expanded]="!folded('wars')" (click)="hud.toggleGroup('wars')">
       <lucide-icon class="group__icon" [img]="icons.Swords" [size]="13"></lucide-icon>
       <span class="group__title">{{ t.outWars }}</span>
